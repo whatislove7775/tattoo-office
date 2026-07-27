@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tattoo Office</title>
+<meta name="description" content="Tattoo Office — тату-студия и коворкинг для мастеров. The Tattoo Office Private Club.">
+<meta name="theme-color" content="#e8e8e6">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ============ верхняя строка: ABOUT + бегущая строка ============ -->
+<header class="topbar">
+  <div class="topbar__label">ABOUT:</div>
+  <div class="marquee" id="marquee">
+    <div class="marquee__track" id="marqueeTrack"></div>
+  </div>
+</header>
+
+<!-- ============ шапка справа: лого / язык / тема ============ -->
+<div class="brand panel">
+  <a class="brand__logo" href="#/masters" aria-label="Tattoo Office">
+    <img src="assets/logo.svg" alt="Tattoo Office">
+  </a>
+  <div class="brand__controls">
+    <div class="lang">
+      <button class="lang__btn" data-lang="ru">ru</button><span class="lang__sep">/</span><button class="lang__btn" data-lang="en">en</button>
+    </div>
+    <button class="theme" id="themeToggle" title="">
+      <span class="theme__icon" aria-hidden="true">☀</span><span class="theme__state" id="themeState">on</span>
+    </button>
+  </div>
+</div>
+
+<!-- ============ основная сцена ============ -->
+<main class="stage panel" id="stage" tabindex="-1">
+  <div class="stage__inner" id="view"><!-- сюда рендерятся страницы --></div>
+</main>
+
+<!-- ============ правая колонка ============ -->
+<aside class="rail">
+  <nav class="panel menu" id="menu">
+    <div class="menu__title" data-i18n="menu.title">Menu:</div>
+    <ul class="menu__list" id="menuList"></ul>
+  </nav>
+
+  <div class="panel login" id="loginPanel"></div>
+
+  <footer class="panel foot">
+    <div class="foot__links" id="footLinks"></div>
+    <div class="foot__copy">
+      <a href="#/about">Tattoo Office</a> / <a href="#/about">The Tattoo Office Private Club</a> <span>2026 ©</span>
+    </div>
+    <img class="foot__mark" src="assets/mark.svg" alt="">
+  </footer>
+</aside>
+
+<!-- декоративный скролл-бар в стиле 2010-х -->
+<div class="deco-scroll" aria-hidden="true"><div class="deco-scroll__thumb" id="decoThumb"></div></div>
+
+<!-- всплывающие окошки -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__window panel" role="dialog" aria-modal="true">
+    <div class="modal__bar">
+      <span class="modal__title" id="modalTitle"></span>
+      <button class="modal__x" data-close aria-label="close">✕</button>
+    </div>
+    <div class="modal__body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/sound.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/drift.js"></script>
+<script src="js/pages.js"></script>
+<script src="js/booking.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
