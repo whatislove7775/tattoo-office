@@ -1,8 +1,8 @@
 /* =========================================================================
    SFX — интерфейсные звуки в духе старых операционных систем.
    Синтезируются через WebAudio, поэтому не тянут за собой ни одного файла
-   и не грузят страницу. Только мягкие синусы с плавной огибающей,
-   только на нажатие: наведение и набор текста не озвучиваются.
+   и не грузят страницу. Звучат только нажатия: наведение, набор текста
+   и смена значений намеренно молчат.
    ========================================================================= */
 (function (global) {
   'use strict';
@@ -26,13 +26,14 @@
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 1.0;
+    master.gain.value = 0.5;
 
-    /* Мягкий срез: без верхних частот звук слышен, но не режет ухо. */
+    /* «Корпусной» фильтр: снимаем самый верх, но оставляем щелчкам щёлк.
+       Слишком низкий срез делал звуки почти неслышными. */
     var bus = ctx.createBiquadFilter();
     bus.type = 'lowpass';
-    bus.frequency.value = 3400;
-    bus.Q.value = 0.3;
+    bus.frequency.value = 6500;
+    bus.Q.value = 0.4;
 
     bus.connect(master);
     master.connect(ctx.destination);
@@ -78,84 +79,112 @@
     osc.frequency.setValueAtTime(opts.freq, t0);
     if (opts.to) osc.frequency.exponentialRampToValueAtTime(opts.to, t0 + dur);
 
-    /* Плавно вводим и так же плавно уводим: атака в треть длительности,
-       затухание по кривой — щелчков на старте и обрыве не остаётся. */
-    var attack = Math.max(0.035, dur * 0.34);
     var g = c.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(peak, t0 + attack);
-    g.gain.setTargetAtTime(0.0001, t0 + attack, dur * 0.32);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + Math.min(0.012, dur * 0.25));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     osc.connect(g);
     g.connect(ensure.bus);
     osc.start(t0);
-    osc.stop(t0 + dur + attack + 0.4);
+    osc.stop(t0 + dur + 0.03);
+  }
+
+  /* Короткий шумовой «щелчок» механической клавиши. */
+  function noise(opts) {
+    var c = ensure();
+    if (!c || !enabled) return;
+    if (c.state === 'suspended') c.resume();
+
+    opts = opts || {};
+    var dur = opts.dur || 0.05;
+    var len = Math.max(1, Math.floor(c.sampleRate * dur));
+    var buf = c.createBuffer(1, len, c.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+    }
+
+    var src = c.createBufferSource();
+    src.buffer = buf;
+
+    var bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = opts.freq || 1800;
+    bp.Q.value = opts.q || 1.1;
+
+    var g = c.createGain();
+    g.gain.value = opts.gain == null ? 0.12 : opts.gain;
+
+    src.connect(bp); bp.connect(g); g.connect(ensure.bus);
+    src.start(now());
   }
 
   /* ------------------------------ библиотека ------------------------------ */
-  /* Всё на синусах с плавной огибающей: шумовые «щелчки» убраны — именно
-     они делали интерфейс дробным и резким. */
   var SFX = {
-    /* обычное нажатие — короткий мягкий отклик */
+    /* обычный клик — мягкая клавиша офисного телефона */
     click: function () {
-      tone({ freq: 480, to: 400, dur: 0.18, gain: 0.22, type: 'sine' });
+      noise({ freq: 2600, dur: 0.04, gain: 0.30 });
+      tone({ freq: 660, to: 520, dur: 0.09, gain: 0.34, type: 'triangle' });
     },
 
     /* переход между разделами — «перелистывание» */
     nav: function () {
-      tone({ freq: 420, to: 560, dur: 0.24, gain: 0.21, type: 'sine' });
-      tone({ freq: 700, dur: 0.20, gain: 0.06, type: 'sine', delay: 0.07 });
+      tone({ freq: 520, to: 780, dur: 0.13, gain: 0.34, type: 'sine' });
+      tone({ freq: 1040, dur: 0.11, gain: 0.16, type: 'sine', delay: 0.05 });
     },
 
-    /* открытие окна */
+    /* открытие окна / модалки */
     open: function () {
-      tone({ freq: 520, dur: 0.26, gain: 0.20, type: 'sine' });
-      tone({ freq: 780, dur: 0.26, gain: 0.08, type: 'sine', delay: 0.08 });
+      tone({ freq: 620, dur: 0.12, gain: 0.30, type: 'sine' });
+      tone({ freq: 930, dur: 0.16, gain: 0.26, type: 'sine', delay: 0.06 });
     },
 
     /* закрытие */
     close: function () {
-      tone({ freq: 700, to: 470, dur: 0.28, gain: 0.19, type: 'sine' });
+      tone({ freq: 880, to: 560, dur: 0.15, gain: 0.28, type: 'sine' });
     },
 
-    /* успех — тихий мажорный аккорд */
+    /* успех — маленький мажорный аккорд, как приветствие системы */
     ok: function () {
-      tone({ freq: 523.25, dur: 0.30, gain: 0.18, type: 'sine' });               // C5
-      tone({ freq: 659.25, dur: 0.32, gain: 0.09, type: 'sine', delay: 0.09 });  // E5
-      tone({ freq: 783.99, dur: 0.42, gain: 0.08, type: 'sine', delay: 0.18 });  // G5
+      tone({ freq: 587.33, dur: 0.18, gain: 0.30, type: 'sine' });               // D5
+      tone({ freq: 739.99, dur: 0.20, gain: 0.28, type: 'sine', delay: 0.07 });  // F#5
+      tone({ freq: 987.77, dur: 0.32, gain: 0.24, type: 'sine', delay: 0.14 });  // B5
     },
 
-    /* ошибка — вежливая, без резкости */
+    /* ошибка — вежливая, не «системный крик» */
     error: function () {
-      tone({ freq: 300, dur: 0.28, gain: 0.21, type: 'sine' });
-      tone({ freq: 225, dur: 0.34, gain: 0.11, type: 'sine', delay: 0.14 });
+      tone({ freq: 320, dur: 0.15, gain: 0.34, type: 'triangle' });
+      tone({ freq: 240, dur: 0.22, gain: 0.30, type: 'triangle', delay: 0.11 });
     },
 
-    /* переключатель */
+    /* тумблер темы */
     toggle: function () {
-      tone({ freq: 400, to: 620, dur: 0.22, gain: 0.19, type: 'sine' });
+      noise({ freq: 900, dur: 0.045, gain: 0.26, q: 0.8 });
+      tone({ freq: 440, to: 880, dur: 0.10, gain: 0.22, type: 'square' });
     },
 
-    /* вход в личный кабинет */
+    /* вход в личный кабинет — «загрузка системы» */
     login: function () {
       var seq = [392.00, 523.25, 659.25, 783.99];
       seq.forEach(function (f, i) {
-        tone({ freq: f, dur: 0.34, gain: 0.14, type: 'sine', delay: i * 0.10 });
+        tone({ freq: f, dur: 0.28, gain: 0.26, type: 'sine', delay: i * 0.085 });
       });
     },
 
-    /* бронирование подтверждено — мягкая «печать» */
+    /* бронирование подтверждено — «печать поставлена» */
     stamp: function () {
-      tone({ freq: 190, to: 130, dur: 0.32, gain: 0.26, type: 'sine' });
-      tone({ freq: 570, dur: 0.30, gain: 0.07, type: 'sine', delay: 0.10 });
+      noise({ freq: 420, dur: 0.10, gain: 0.52, q: 0.6 });
+      tone({ freq: 180, to: 120, dur: 0.16, gain: 0.40, type: 'triangle' });
+      tone({ freq: 880, dur: 0.24, gain: 0.20, type: 'sine', delay: 0.10 });
     }
   };
 
   SFX.play = function (name) { if (SFX[name]) SFX[name](); };
 
   /* --------------------------- озвучка нажатий ---------------------------- */
-  /* Звук только на нажатие. Наведение, набор текста, смена значения в
-     списках и фокус не озвучиваются: от них интерфейс трещал без остановки. */
+  /* Элемент с data-sfx звучит указанным звуком; любой другой интерактивный
+     элемент получает клик по умолчанию — чтобы «немых» кнопок не осталось. */
   var CLICKABLE = 'a, button, .slot, .tab, .dot, .polaroid, [role="button"], summary';
 
   document.addEventListener('pointerdown', function (e) {

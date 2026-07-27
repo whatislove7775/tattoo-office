@@ -13,18 +13,22 @@
   }
 
   /* --------------------------------- мастера ------------------------------ */
-  /* photo / works — пути к файлам. Положите фото в assets/… с этими именами,
-     и заглушки исчезнут сами. */
-  function works(id, prefix, n, capRu, capEn) {
+  /* Портфолио и черновики пока общие для всех резидентов: присланные работы
+     не разделены по авторам. Когда появятся свои — задайте у мастера
+     собственные portfolio / drafts вместо PORTFOLIO / DRAFTS. */
+  function shots(prefix, n, capRu, capEn) {
     var out = [];
     for (var i = 1; i <= n; i++) {
       out.push({
-        src: 'assets/works/' + id + '-' + prefix + i + '.jpg',
+        src: 'assets/works/' + prefix + '-' + i + '.png',
         cap: { ru: capRu + ' ' + i + '.png', en: capEn + ' ' + i + '.png' }
       });
     }
     return out;
   }
+
+  var PORTFOLIO = shots('tattoo', 8, 'работа', 'work');
+  var DRAFTS    = shots('draft',  7, 'эскиз',  'sketch');
 
   var MASTERS = [
     {
@@ -37,8 +41,8 @@
         en: 'works in baroque. properly, slowly and with character.'
       },
       photo: 'assets/masters/master-1.png',
-      portfolio: works('zinaida', 'p', 10, 'эскиз', 'sketch'),
-      drafts: works('zinaida', 'd', 6, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'mr-a',
@@ -50,8 +54,8 @@
         en: 'founder of the office. ornamental, blackwork, everything that cuts the eye.'
       },
       photo: 'assets/masters/master-2.png',
-      portfolio: works('mr-a', 'p', 8, 'эскиз', 'sketch'),
-      drafts: works('mr-a', 'd', 4, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'sexova',
@@ -63,8 +67,8 @@
         en: 'fine line, lettering, everything small and mean.'
       },
       photo: 'assets/masters/master-3.png',
-      portfolio: works('sexova', 'p', 9, 'эскиз', 'sketch'),
-      drafts: works('sexova', 'd', 5, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'kostya',
@@ -76,8 +80,8 @@
         en: 'old school, traditional, flash days on wednesdays.'
       },
       photo: 'assets/masters/master-4.png',
-      portfolio: works('kostya', 'p', 7, 'эскиз', 'sketch'),
-      drafts: works('kostya', 'd', 4, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'vera',
@@ -89,8 +93,8 @@
         en: 'black and grey realism, portraits of animals and people who are gone.'
       },
       photo: 'assets/masters/master-5.png',
-      portfolio: works('vera', 'p', 8, 'эскиз', 'sketch'),
-      drafts: works('vera', 'd', 3, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'gleb',
@@ -102,8 +106,8 @@
         en: 'cybersigilism, techno ornament, loves big projects.'
       },
       photo: 'assets/masters/master-6.png',
-      portfolio: works('gleb', 'p', 9, 'эскиз', 'sketch'),
-      drafts: works('gleb', 'd', 5, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'nastya',
@@ -115,8 +119,8 @@
         en: 'watercolour, botanics, colour. booked a month ahead.'
       },
       photo: 'assets/masters/master-7.png',
-      portfolio: works('nastya', 'p', 8, 'эскиз', 'sketch'),
-      drafts: works('nastya', 'd', 4, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'petr',
@@ -128,8 +132,8 @@
         en: 'japanese traditional, sleeves and backpieces. by appointment only.'
       },
       photo: 'assets/masters/master-8.png',
-      portfolio: works('petr', 'p', 10, 'эскиз', 'sketch'),
-      drafts: works('petr', 'd', 4, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'liza',
@@ -141,8 +145,8 @@
         en: 'graphics, engraving, everything black and very dense.'
       },
       photo: 'assets/masters/master-9.png',
-      portfolio: works('liza', 'p', 8, 'эскиз', 'sketch'),
-      drafts: works('liza', 'd', 4, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     },
     {
       id: 'sasha',
@@ -154,8 +158,8 @@
         en: 'lettering and type. writes on skin the same way as on paper.'
       },
       photo: 'assets/masters/master-10.png',
-      portfolio: works('sasha', 'p', 7, 'эскиз', 'sketch'),
-      drafts: works('sasha', 'd', 3, 'черновик', 'draft')
+      portfolio: PORTFOLIO,
+      drafts: DRAFTS
     }
   ];
 

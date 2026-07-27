@@ -1,7 +1,8 @@
 /* =========================================================================
    DRIFT — «летающие» карточки мастеров внутри белого окна.
    Отскок от границ как у заставки DVD, плюс:
-   — карточки свободно наезжают друг на друга и лежат внахлёст;
+   — карточки лежат внахлёст, но заходят одна на другую не более чем
+     на четверть площади: глубже расталкиваются;
    — траектории сбиваются случайными толчками, поэтому движение хаотичное;
    — карточку можно схватить курсором и перетащить, при броске она
      улетает с той скоростью, с которой её вели;
@@ -15,7 +16,7 @@
   var SPEED_MIN = 34;    /* px/сек */
   var SPEED_MAX = 58;
   var PAD = 6;           /* отступ от краёв: покачивание чуть расширяет габарит */
-  var OVERLAP = 0.25;    /* насколько карточки наезжают друг на друга */
+  var OVERLAP = 0.25;    /* предельная доля площади, на которую заходят карточки */
   var DRAG_SLOP = 5;     /* сдвиг в пикселях, после которого это уже не клик */
 
   function Drift(container) {
@@ -160,7 +161,7 @@
     if (this.paused || dt <= 0) return;
     if (dt > 0.1) dt = 0.1;
 
-    var i, it;
+    var i, j, it;
 
     /* 1. движение, толчки и отскок от стен */
     for (i = 0; i < this.items.length; i++) {
@@ -202,8 +203,52 @@
       if (it.ease > 0) it.ease = Math.max(0, it.ease - dt * 2.4);
     }
 
-    /* Столкновений между карточками нет: они намеренно лежат внахлёст. */
+    /* Наезд разрешён, но не глубже четверти площади карточки. */
+    for (i = 0; i < this.items.length; i++) {
+      for (j = i + 1; j < this.items.length; j++) {
+        this._limitOverlap(this.items[i], this.items[j]);
+      }
+    }
+
     for (i = 0; i < this.items.length; i++) this._draw(this.items[i]);
+  };
+
+  /* Считаем площадь пересечения. Пока она не больше четверти карточки —
+     не трогаем. Если больше, раздвигаем по той оси, где для возврата
+     к четверти нужен меньший сдвиг. */
+  Drift.prototype._limitOverlap = function (a, b) {
+    var ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    if (ox <= 0) return;
+    var oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (oy <= 0) return;
+
+    var limit = OVERLAP * Math.min(a.w * a.h, b.w * b.h);
+    if (ox * oy <= limit) return;
+
+    /* сколько нужно убрать по каждой оси, чтобы площадь стала ровно предельной */
+    var needX = ox - limit / oy;
+    var needY = oy - limit / ox;
+
+    var aFixed = a.hover || a.drag;
+    var bFixed = b.hover || b.drag;
+    if (aFixed && bFixed) return;
+    var sa = aFixed ? 0 : (bFixed ? 1 : 0.5);
+    var sb = bFixed ? 0 : (aFixed ? 1 : 0.5);
+
+    if (needX <= needY) {
+      var dirX = (a.x + a.w / 2) < (b.x + b.w / 2) ? -1 : 1;
+      a.x += dirX * needX * sa;
+      b.x -= dirX * needX * sb;
+      if (!aFixed && !bFixed) { var tx = a.vx; a.vx = b.vx; b.vx = tx; }
+    } else {
+      var dirY = (a.y + a.h / 2) < (b.y + b.h / 2) ? -1 : 1;
+      a.y += dirY * needY * sa;
+      b.y -= dirY * needY * sb;
+      if (!aFixed && !bFixed) { var ty = a.vy; a.vy = b.vy; b.vy = ty; }
+    }
+
+    this._contain(a);
+    this._contain(b);
   };
 
   /* ------------------------- перетаскивание мышью ------------------------- */
