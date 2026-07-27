@@ -36,7 +36,7 @@
         ru: 'работает в стиле барокко. качественно, долго и с характером.',
         en: 'works in baroque. properly, slowly and with character.'
       },
-      photo: 'assets/masters/zinaida.jpg',
+      photo: 'assets/masters/master-1.png',
       portfolio: works('zinaida', 'p', 10, 'эскиз', 'sketch'),
       drafts: works('zinaida', 'd', 6, 'черновик', 'draft')
     },
@@ -49,7 +49,7 @@
         ru: 'основатель офиса. орнаменты, блэкворк, всё, что режет глаз.',
         en: 'founder of the office. ornamental, blackwork, everything that cuts the eye.'
       },
-      photo: 'assets/masters/mr-a.jpg',
+      photo: 'assets/masters/master-2.png',
       portfolio: works('mr-a', 'p', 8, 'эскиз', 'sketch'),
       drafts: works('mr-a', 'd', 4, 'черновик', 'draft')
     },
@@ -62,7 +62,7 @@
         ru: 'тонкие линии, шрифты, всё маленькое и злое.',
         en: 'fine line, lettering, everything small and mean.'
       },
-      photo: 'assets/masters/sexova.jpg',
+      photo: 'assets/masters/master-3.png',
       portfolio: works('sexova', 'p', 9, 'эскиз', 'sketch'),
       drafts: works('sexova', 'd', 5, 'черновик', 'draft')
     },
@@ -75,7 +75,7 @@
         ru: 'олдскул, традишнл, флэши по средам.',
         en: 'old school, traditional, flash days on wednesdays.'
       },
-      photo: 'assets/masters/kostya.jpg',
+      photo: 'assets/masters/master-4.png',
       portfolio: works('kostya', 'p', 7, 'эскиз', 'sketch'),
       drafts: works('kostya', 'd', 4, 'черновик', 'draft')
     },
@@ -88,7 +88,7 @@
         ru: 'реализм в сером, портреты животных и людей, которых уже нет.',
         en: 'black and grey realism, portraits of animals and people who are gone.'
       },
-      photo: 'assets/masters/vera.jpg',
+      photo: 'assets/masters/master-5.png',
       portfolio: works('vera', 'p', 8, 'эскиз', 'sketch'),
       drafts: works('vera', 'd', 3, 'черновик', 'draft')
     },
@@ -101,7 +101,7 @@
         ru: 'киберсигилизм, техно-орнамент, любит большие проекты.',
         en: 'cybersigilism, techno ornament, loves big projects.'
       },
-      photo: 'assets/masters/gleb.jpg',
+      photo: 'assets/masters/master-6.png',
       portfolio: works('gleb', 'p', 9, 'эскиз', 'sketch'),
       drafts: works('gleb', 'd', 5, 'черновик', 'draft')
     },
@@ -114,7 +114,7 @@
         ru: 'акварель, ботаника, цвет. записывается на месяц вперёд.',
         en: 'watercolour, botanics, colour. booked a month ahead.'
       },
-      photo: 'assets/masters/nastya.jpg',
+      photo: 'assets/masters/master-7.png',
       portfolio: works('nastya', 'p', 8, 'эскиз', 'sketch'),
       drafts: works('nastya', 'd', 4, 'черновик', 'draft')
     },
@@ -127,22 +127,46 @@
         ru: 'японская традиция, рукава и спины. работает только по записи.',
         en: 'japanese traditional, sleeves and backpieces. by appointment only.'
       },
-      photo: 'assets/masters/petr.jpg',
+      photo: 'assets/masters/master-8.png',
       portfolio: works('petr', 'p', 10, 'эскиз', 'sketch'),
       drafts: works('petr', 'd', 4, 'черновик', 'draft')
+    },
+    {
+      id: 'liza',
+      name: { ru: 'Лиза Печатная', en: 'Liza Pechatnaya' },
+      age: 25,
+      exp: { ru: '6 лет', en: '6 years' },
+      bio: {
+        ru: 'графика, гравюра, всё чёрное и очень плотное.',
+        en: 'graphics, engraving, everything black and very dense.'
+      },
+      photo: 'assets/masters/master-9.png',
+      portfolio: works('liza', 'p', 8, 'эскиз', 'sketch'),
+      drafts: works('liza', 'd', 4, 'черновик', 'draft')
+    },
+    {
+      id: 'sasha',
+      name: { ru: 'Саша Штампов', en: 'Sasha Shtampov' },
+      age: 27,
+      exp: { ru: '8 лет', en: '8 years' },
+      bio: {
+        ru: 'леттеринг и шрифты. пишет на коже так же, как на бумаге.',
+        en: 'lettering and type. writes on skin the same way as on paper.'
+      },
+      photo: 'assets/masters/master-10.png',
+      portfolio: works('sasha', 'p', 7, 'эскиз', 'sketch'),
+      drafts: works('sasha', 'd', 3, 'черновик', 'draft')
     }
   ];
 
   /* -------------------------------- интерьер ------------------------------ */
   var INTERIOR = {
-    scan: 'assets/interior/scan.jpg',
+    scan: 'assets/interior/1.jpg',
     photos: [
       { src: 'assets/interior/1.jpg', cap: { ru: 'общая зона', en: 'common area' } },
       { src: 'assets/interior/2.jpg', cap: { ru: 'кабинет №1', en: 'room no.1' } },
       { src: 'assets/interior/3.jpg', cap: { ru: 'кабинет №2', en: 'room no.2' } },
-      { src: 'assets/interior/4.jpg', cap: { ru: 'переговорная', en: 'meeting room' } },
-      { src: 'assets/interior/5.jpg', cap: { ru: 'стерилизационная', en: 'sterilisation' } },
-      { src: 'assets/interior/6.jpg', cap: { ru: 'коридор', en: 'hallway' } }
+      { src: 'assets/interior/4.jpg', cap: { ru: 'переговорная', en: 'meeting room' } }
     ]
   };
 

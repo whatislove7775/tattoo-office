@@ -255,6 +255,15 @@ p  { margin: 0 0 .8em; }
 .stage__inner { scrollbar-width: none; -ms-overflow-style: none; }
 .stage__inner::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
+/* На вкладке мастеров плашки под карточками нет: они лежат прямо на фоне.
+   Скрываем корпус стола, оставляя саму область прокрутки. */
+.stage--bare {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+.stage--bare::before { display: none; }
+
 /* появление страницы */
 .view-enter { animation: viewIn .34s cubic-bezier(.2,.7,.3,1) both; }
 @keyframes viewIn {
@@ -454,7 +463,7 @@ p  { margin: 0 0 .8em; }
 .polaroid {
   position: absolute;
   top: 0; left: 0;
-  width: 132px;
+  width: 112px;
   padding: 0;
   background: none;
   cursor: grab;
@@ -482,11 +491,11 @@ p  { margin: 0 0 .8em; }
 .polaroid__cap {
   padding: 6px 2px 8px;
   font-size: 11px;
+  line-height: 1.25;
   text-align: center;
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* карточки узкие: длинное имя переносим, а не обрезаем многоточием */
+  overflow-wrap: anywhere;
 }
 /* подпись лежит на фоне окна, а не на белой рамке */
 :root[data-theme="dark"] .polaroid__cap { color: var(--ink); }
@@ -498,7 +507,7 @@ p  { margin: 0 0 .8em; }
 /* сетка-фолбэк для мобильных и для reduce-motion */
 .drift--static {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 20px;
   height: auto;
   min-height: 0;

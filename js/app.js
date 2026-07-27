@@ -70,6 +70,10 @@
     if (page.mount) page.mount(root, params);
     if (root.__cleanup) currentCleanup = root.__cleanup;
 
+    /* каталог мастеров показывается без корпуса стола */
+    document.getElementById('stage')
+      .classList.toggle('stage--bare', !!found && found.route.page === 'masters');
+
     stageInner.scrollTop = 0;
     paintMenu(found ? found.route.nav : null);
     updateThumb();
