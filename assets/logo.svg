@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 220" role="img" aria-label="Tattoo Office">
+  <!-- ЗАМЕНИТЕ ЭТОТ ФАЙЛ НА ОРИГИНАЛЬНЫЙ ЛОГОТИП (см. README) -->
+  <g>
+    <rect x="4" y="4" width="212" height="212" rx="30" fill="#000"/>
+    <g fill="#fff">
+      <!-- стоящий человек с татуированной рукой -->
+      <circle cx="72" cy="52" r="21"/>
+      <path d="M46 82h52a8 8 0 0 1 8 8v56h-14V196a6 6 0 0 1-6 6h-9a6 6 0 0 1-6-6v-50h-8v50a6 6 0 0 1-6 6h-9a6 6 0 0 1-6-6V90a8 8 0 0 1 4-8z"/>
+      <path d="M38 90h10v62H38z"/>
+      <!-- «татуировка»: узор на предплечье и голени -->
+      <path d="M104 96c9 4 14 12 14 22s-6 18-14 22c4-8 5-14 5-22s-1-14-5-22z" opacity=".95"/>
+      <path d="M60 150c7 5 10 12 10 21s-4 16-10 21v-42z" opacity=".95"/>
+      <!-- сидящий мастер с машинкой -->
+      <circle cx="152" cy="66" r="18"/>
+      <path d="M136 92h30a10 10 0 0 1 10 10v44h-40z" />
+      <path d="M136 146h44v12h-44z"/>
+      <path d="M148 158h11v44h-11z"/>
+      <path d="M148 190h44v12h-44z"/>
+      <path d="M180 62h9v140h-9z"/>
+      <!-- рука с машинкой, направленная к клиенту -->
+      <path d="M136 104l-28 16 6 11 28-16z"/>
+      <path d="M104 118l14-8 7 12-14 8z"/>
+    </g>
+  </g>
+  <g fill="#000" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" font-size="96" letter-spacing="-3">
+    <text x="248" y="96">Tattoo</text>
+    <text x="248" y="196">Office</text>
+  </g>
+</svg>
