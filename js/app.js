@@ -254,8 +254,7 @@
     document.querySelectorAll('.lang__btn').forEach(function (btn) {
       btn.setAttribute('aria-current', String(btn.dataset.lang === global.I18N.get()));
       btn.addEventListener('click', function () {
-        if (!global.I18N.set(btn.dataset.lang)) return;
-        global.SFX.toggle();
+        if (!global.I18N.set(btn.dataset.lang)) return;   /* звук уже дал data-sfx */
         document.querySelectorAll('.lang__btn').forEach(function (b) {
           b.setAttribute('aria-current', String(b.dataset.lang === global.I18N.get()));
         });
@@ -272,8 +271,7 @@
     themeBtn.title = t('theme.title');
     themeBtn.addEventListener('click', function () {
       var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      global.SFX.toggle();
-      applyTheme(next);
+      applyTheme(next);   /* звук уже дал data-sfx */
     });
 
     /* звук: выключается двойным кликом по индикатору темы —
