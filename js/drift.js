@@ -1,8 +1,10 @@
 /* =========================================================================
    DRIFT — «летающие» карточки мастеров внутри белого окна.
    Отскок от границ как у заставки DVD, плюс:
-   — карточки сталкиваются друг с другом и не наезжают одна на другую;
+   — карточки свободно наезжают друг на друга и лежат внахлёст;
    — траектории сбиваются случайными толчками, поэтому движение хаотичное;
+   — карточку можно схватить курсором и перетащить, при броске она
+     улетает с той скоростью, с которой её вели;
    — карточка под курсором и в фокусе замирает, иначе в неё не попасть.
    ========================================================================= */
 (function (global) {
@@ -12,8 +14,9 @@
 
   var SPEED_MIN = 34;    /* px/сек */
   var SPEED_MAX = 58;
-  var GAP = 8;           /* зазор между карточками при расталкивании */
   var PAD = 6;           /* отступ от краёв: покачивание чуть расширяет габарит */
+  var OVERLAP = 0.25;    /* насколько карточки наезжают друг на друга */
+  var DRAG_SLOP = 5;     /* сдвиг в пикселях, после которого это уже не клик */
 
   function Drift(container) {
     this.el = container;
@@ -33,6 +36,11 @@
     this.el.addEventListener('focusin', this._hover.bind(this, true));
     this.el.addEventListener('focusout', this._hover.bind(this, false));
 
+    this._down = this._down.bind(this);
+    this._move = this._move.bind(this);
+    this._up = this._up.bind(this);
+    this.el.addEventListener('pointerdown', this._down);
+
     this.ro = global.ResizeObserver ? new ResizeObserver(this._measure) : null;
     if (this.ro) this.ro.observe(this.el);
     else global.addEventListener('resize', this._measure);
@@ -49,6 +57,7 @@
       speed: rand(SPEED_MIN, SPEED_MAX),
       nudgeIn: rand(0.8, 3.2),   /* через сколько секунд следующий толчок */
       hover: false,
+      drag: false,
       ease: 0
     };
     this.items.push(item);
@@ -67,32 +76,33 @@
     var cw = this.items[0].node.offsetWidth;
     var ch = this.items[0].node.offsetHeight;
 
-    /* подбираем сетку с пропорциями поля */
-    var cols = Math.max(1, Math.round(Math.sqrt(n * (this.w / Math.max(this.h, 1)))));
-    var rows = Math.ceil(n / cols);
-    while (cols > 1 && this.w / cols < cw + GAP) { cols--; rows = Math.ceil(n / cols); }
-    while (rows * (ch + GAP) > this.h && cols < n) { cols++; rows = Math.ceil(n / cols); }
-
-    var cellW = this.w / cols;
-    var cellH = this.h / rows;
-
-    /* если карточки физически не помещаются — отдаём обычную сетку */
-    this.fits = cellW >= cw && cellH >= ch;
+    /* Карточки раскладываются парами: внутри пары вторая заходит на первую
+       на четверть корпуса, а сами пары разнесены по всему полю — иначе
+       при сплошном шаге «минус четверть» всё сбивается в кучу в центре. */
+    this.fits = this.w >= cw * 2 && this.h >= ch + PAD * 2;
     if (!this.fits) { this.el.classList.add('drift--static'); return; }
+
+    var groups = Math.ceil(n / 2);
+    var gcols = Math.max(1, Math.round(Math.sqrt(groups * (this.w / Math.max(this.h, 1)))));
+    var pairW = cw * (2 - OVERLAP);
+    while (gcols > 1 && this.w / gcols < pairW) gcols--;
+    var grows = Math.ceil(groups / gcols);
+
+    var cellW = this.w / gcols;
+    var cellH = this.h / grows;
 
     this.items.forEach(function (it, i) {
       it.w = it.node.offsetWidth;
       it.h = it.node.offsetHeight;
 
-      var col = i % cols;
-      var row = Math.floor(i / cols);
-      var slackX = (cellW - it.w) / 2;
-      var slackY = (cellH - it.h) / 2;
+      var g = Math.floor(i / 2);
+      var second = i % 2 === 1;
+      var gx = (g % gcols) * cellW;
+      var gy = Math.floor(g / gcols) * cellH;
 
-      it.x = col * cellW + slackX + rand(-slackX, slackX) * 0.7;
-      it.y = row * cellH + slackY + rand(-slackY, slackY) * 0.7;
-      it.x = clamp(it.x, 0, Math.max(self.w - it.w, 0));
-      it.y = clamp(it.y, 0, Math.max(self.h - it.h, 0));
+      it.x = gx + (cellW - pairW) / 2 + (second ? cw * (1 - OVERLAP) : 0) + rand(-10, 10);
+      it.y = gy + (cellH - it.h) / 2 + (second ? it.h * 0.16 : -it.h * 0.06) + rand(-10, 10);
+      self._contain(it);
 
       self._aim(it);
       self._draw(it);
@@ -150,12 +160,12 @@
     if (this.paused || dt <= 0) return;
     if (dt > 0.1) dt = 0.1;
 
-    var i, j, it;
+    var i, it;
 
     /* 1. движение, толчки и отскок от стен */
     for (i = 0; i < this.items.length; i++) {
       it = this.items[i];
-      if (it.hover) { if (it.ease > 0) it.ease = Math.max(0, it.ease - dt * 2.4); continue; }
+      if (it.hover || it.drag) { if (it.ease > 0) it.ease = Math.max(0, it.ease - dt * 2.4); continue; }
 
       it.phase += dt * 0.9;
 
@@ -192,51 +202,99 @@
       if (it.ease > 0) it.ease = Math.max(0, it.ease - dt * 2.4);
     }
 
-    /* 2. столкновения карточек — расталкиваем, чтобы не было нахлёста */
-    for (i = 0; i < this.items.length; i++) {
-      for (j = i + 1; j < this.items.length; j++) {
-        this._collide(this.items[i], this.items[j]);
-      }
-    }
-
+    /* Столкновений между карточками нет: они намеренно лежат внахлёст. */
     for (i = 0; i < this.items.length; i++) this._draw(this.items[i]);
   };
 
-  /* Прямоугольники: расходятся по оси наименьшего перекрытия
-     и обмениваются скоростью вдоль неё — как два бильярдных шара. */
-  Drift.prototype._collide = function (a, b) {
-    var ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) + GAP;
-    if (ox <= 0) return;
-    var oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) + GAP;
-    if (oy <= 0) return;
+  /* ------------------------- перетаскивание мышью ------------------------- */
+  Drift.prototype._down = function (e) {
+    if (e.button != null && e.button !== 0) return;
+    var node = e.target.closest('.polaroid');
+    if (!node || !node.__drift) return;
 
-    var aFixed = a.hover, bFixed = b.hover;
-    if (aFixed && bFixed) return;
+    /* Без этого браузер запускает собственное перетаскивание картинки
+       и отменяет наш захват указателя на первом же движении. */
+    e.preventDefault();
 
-    /* доли расталкивания: пойманная курсором карточка не двигается */
-    var sa = aFixed ? 0 : (bFixed ? 1 : 0.5);
-    var sb = bFixed ? 0 : (aFixed ? 1 : 0.5);
+    var it = node.__drift;
+    it.drag = true;
+    it.node.classList.add('is-dragging');
+    it.node.style.zIndex = ++Drift.topZ;
 
-    if (ox < oy) {
-      var dirX = (a.x + a.w / 2) < (b.x + b.w / 2) ? -1 : 1;
-      a.x += dirX * ox * sa;
-      b.x -= dirX * ox * sb;
-      if (!aFixed && !bFixed) { var tx = a.vx; a.vx = b.vx * 0.98; b.vx = tx * 0.98; }
-      else if (aFixed) b.vx = -b.vx;
-      else a.vx = -a.vx;
+    var rect = this.el.getBoundingClientRect();
+    it.grabX = e.clientX - rect.left - it.x;   /* где именно взяли карточку */
+    it.grabY = e.clientY - rect.top - it.y;
+    it.lastX = e.clientX;
+    it.lastY = e.clientY;
+    it.startX = e.clientX;
+    it.startY = e.clientY;
+    it.throwX = 0;
+    it.throwY = 0;
+    it.moved = false;
+
+    this.dragging = it;
+    if (node.setPointerCapture) { try { node.setPointerCapture(e.pointerId); } catch (err) {} }
+    global.addEventListener('pointermove', this._move);
+    global.addEventListener('pointerup', this._up);
+    global.addEventListener('pointercancel', this._up);
+  };
+
+  Drift.prototype._move = function (e) {
+    var it = this.dragging;
+    if (!it) return;
+
+    var rect = this.el.getBoundingClientRect();
+    it.x = e.clientX - rect.left - it.grabX;
+    it.y = e.clientY - rect.top - it.grabY;
+    this._contain(it);
+
+    /* запоминаем скорость ведения — с ней карточка улетит после броска */
+    it.throwX = e.clientX - it.lastX;
+    it.throwY = e.clientY - it.lastY;
+    it.lastX = e.clientX;
+    it.lastY = e.clientY;
+
+    if (Math.abs(e.clientX - it.startX) > DRAG_SLOP ||
+        Math.abs(e.clientY - it.startY) > DRAG_SLOP) {
+      it.moved = true;
+    }
+    this._draw(it);
+  };
+
+  Drift.prototype._up = function () {
+    var it = this.dragging;
+    if (!it) return;
+
+    it.drag = false;
+    it.node.classList.remove('is-dragging');
+
+    /* бросок: переводим последний сдвиг за кадр в скорость */
+    var vx = it.throwX * 40;
+    var vy = it.throwY * 40;
+    var sp = Math.hypot(vx, vy);
+    if (sp > 4) {
+      it.speed = clamp(sp, SPEED_MIN, 260);
+      it.vx = vx / sp * it.speed;
+      it.vy = vy / sp * it.speed;
     } else {
-      var dirY = (a.y + a.h / 2) < (b.y + b.h / 2) ? -1 : 1;
-      a.y += dirY * oy * sa;
-      b.y -= dirY * oy * sb;
-      if (!aFixed && !bFixed) { var ty = a.vy; a.vy = b.vy * 0.98; b.vy = ty * 0.98; }
-      else if (aFixed) b.vy = -b.vy;
-      else a.vy = -a.vy;
+      it.speed = rand(SPEED_MIN, SPEED_MAX);
+      this._aim(it);
     }
 
-    a.ease = 1; b.ease = 1;
-    this._contain(a);
-    this._contain(b);
+    /* Клик по карточке открывает профиль. Если её тащили — это был не клик,
+       и переход надо погасить: флаг снимается сразу после всплытия click. */
+    if (it.moved) {
+      it.node.__dragged = true;
+      setTimeout(function () { it.node.__dragged = false; }, 0);
+    }
+
+    this.dragging = null;
+    global.removeEventListener('pointermove', this._move);
+    global.removeEventListener('pointerup', this._up);
+    global.removeEventListener('pointercancel', this._up);
   };
+
+  Drift.topZ = 10;
 
   Drift.prototype._contain = function (it) {
     it.x = clamp(it.x, PAD, Math.max(this.w - it.w - PAD, PAD));

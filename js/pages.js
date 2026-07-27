@@ -38,7 +38,7 @@
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
-                 img(m.photo, m.id, name, 'polaroid__img') +
+                 img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') +
                  '<div class="polaroid__cap">' + esc(name) + '.png</div>' +
                '</button>';
       }).join('');
@@ -70,7 +70,8 @@
 
       box.addEventListener('click', function (e) {
         var card = e.target.closest('.polaroid');
-        if (card) global.TO.go('#/master/' + card.dataset.id);
+        /* если карточку тащили — это был не клик, профиль не открываем */
+        if (card && !card.__dragged) global.TO.go('#/master/' + card.dataset.id);
       });
     }
   };

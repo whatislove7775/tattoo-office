@@ -137,59 +137,62 @@ p  { margin: 0 0 .8em; }
   pointer-events: none;
 }
 
-/* ------------------------------ «чёлка» сайта ----------------------------- */
-/* Широкая плоская полоса слева: подпись ABOUT и бегущая строка в одном
-   корпусе. По правому краю совпадает со столом. */
-/* Правым краем полоса вплотную входит в блок с логотипом и перекрывает
-   его левую границу — сверху две плашки читаются как одна фигура. */
-.fringe {
+/* -------------------------------- шапка ----------------------------------- */
+/* Бегущая строка и логотип живут в одном корпусе. Корпус прижат к верху и
+   к обоим бокам, поэтому верхние углы прямые — скругляется только низ.
+
+   --rail-jut задаёт общую левую границу для правой колонки: по ней
+   выравниваются и логотип в шапке, и все плашки под ним. */
+:root { --rail-jut: 486px; }
+
+.topbar {
   position: fixed;
-  top: 14px; left: 24px;
-  width: calc(100% - 386px);
-  height: 66px;
+  top: 0; left: 0; right: 0;
+  height: 120px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 32px;
-  border-radius: 33px 0 0 33px;
+  gap: 24px;
+  padding-left: 34px;
+  border-top: 0;
+  border-left: 0;
   border-right: 0;
-  z-index: 46;
+  border-radius: 0 0 34px 34px;
+  z-index: 45;
 }
-.fringe__label {
+.topbar__label {
   font-weight: 700;
   font-size: 17px;
   letter-spacing: .01em;
   flex: none;
 }
-
-/* ---------------------------- шапка с логотипом --------------------------- */
-/* Пропорции сняты с макета: блок ~24% ширины и ~15.5% высоты экрана,
-   логотип занимает почти всю его высоту, справа — язык, тема и звук. */
-.brand {
-  position: fixed;
-  top: 14px; right: 24px;
-  width: 340px;
-  height: 140px;
+.topbar__line {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 18px 0 24px;
-  /* верхний левый угол прямой — в него встык входит строка ABOUT */
-  border-radius: 0 34px 34px 34px;
-  z-index: 45;
+  gap: 20px;
+}
+
+/* Правая группа фиксированной ширины: её левый край и есть та вертикаль,
+   по которой выстроена вся правая колонка. */
+.topbar__brand {
+  flex: none;
+  width: var(--rail-jut);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 28px;
 }
 .brand__logo { flex: 1 1 auto; min-width: 0; display: block; }
 .brand__logo img {
   width: 100%;
   height: auto;
-  max-height: 100px;
+  max-height: 92px;
   object-fit: contain;
 }
 :root[data-theme="dark"] .brand__logo img { filter: invert(1); }
 
 .brand__controls {
-  position: relative;
-  z-index: 1;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -235,9 +238,9 @@ p  { margin: 0 0 .8em; }
 /* --------------------------------- сцена ---------------------------------- */
 .stage {
   position: fixed;
-  top: 100px; left: 24px;
+  top: 134px; left: 24px;
   width: calc(100% - 468px);
-  height: calc(100% - 124px);
+  height: calc(100% - 158px);
   overflow: hidden;
   outline: none;
 }
@@ -299,7 +302,7 @@ p  { margin: 0 0 .8em; }
 /* -------------------------------- правая колонка -------------------------- */
 .rail {
   position: fixed;
-  top: 170px; right: 78px; bottom: 24px;
+  top: 134px; right: 78px; bottom: 24px;
   width: 322px;
   display: flex;
   flex-direction: column;
@@ -308,6 +311,10 @@ p  { margin: 0 0 .8em; }
   pointer-events: none;   /* пустое место между панелями не перехватывает клики */
 }
 .rail > * { pointer-events: auto; }
+
+/* Общая вертикаль колонки: --rail-jut отсчитывается от правого края экрана,
+   поэтому величина выступа подписей = jut - (right + width) колонки. */
+.rail { --jut: calc(var(--rail-jut) - 400px); }
 
 /* «Menu:» стоит слева от столбца пунктов — как в макете, не над ним */
 .menu {
@@ -324,7 +331,7 @@ p  { margin: 0 0 .8em; }
   isolation: isolate;
   font-size: 19px;
   flex: none;
-  margin-left: -86px;
+  margin-left: calc((var(--jut) + 3px) * -1);   /* 27 отступ панели − 24 вылет пятки */
   padding: 4px 0 4px 4px;
 }
 .menu__title::before {
@@ -367,7 +374,7 @@ p  { margin: 0 0 .8em; }
   isolation: isolate;
   font-size: 18px;
   flex: none;
-  margin-left: -74px;
+  margin-left: calc((var(--jut) + 5px) * -1);   /* 27 отступ панели − 22 вылет пятки */
 }
 .login__label::before {
   content: "";
@@ -388,6 +395,7 @@ p  { margin: 0 0 .8em; }
 /* подвал — прижат к низу боковой колонки, как в макете */
 .foot {
   margin-top: auto;
+  margin-left: calc(var(--jut) * -1);
   padding: 15px 64px 15px 22px;
   background: var(--beige-2);
   border-radius: 26px;
@@ -411,7 +419,7 @@ p  { margin: 0 0 .8em; }
 /* декоративная полоса скролла справа */
 .deco-scroll {
   position: fixed;
-  top: 170px; right: 24px; bottom: 24px;
+  top: 134px; right: 24px; bottom: 24px;
   width: 26px;
   border-radius: 14px;
   background: linear-gradient(to right, #d5d5d1, #f4f4f2 40%, #cfcfcb);
@@ -443,29 +451,41 @@ p  { margin: 0 0 .8em; }
 .drift {
   position: relative;
   width: 100%;
-  height: calc(100vh - 252px);
+  height: calc(100vh - 286px);
   min-height: 380px;
   overflow: hidden;
   border-radius: 8px;
 }
 
+/* Карточку можно схватить и перетащить, поэтому курсор — рука.
+   Белой полароидной рамки нет: только сама фотография и подпись. */
 .polaroid {
   position: absolute;
   top: 0; left: 0;
   width: 132px;
-  padding: 7px 7px 0;
-  background: var(--polaroid-bg);
-  box-shadow: var(--shadow-md);
-  cursor: pointer;
+  padding: 0;
+  background: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
   will-change: transform;
-  transition: box-shadow .2s ease;
+  transition: filter .2s ease;
 }
+.polaroid.is-dragging { cursor: grabbing; filter: brightness(1.03); }
+/* Перехватывать жест пальца можно только там, где карточки правда таскают:
+   в обычной сетке это сломало бы прокрутку страницы. */
+.drift:not(.drift--static) .polaroid { touch-action: none; }
+.drift--static .polaroid { cursor: pointer; }
 .polaroid__img {
   width: 100%;
   aspect-ratio: 3 / 3.4;
   object-fit: cover;
   background: #ddd;
   display: block;
+  /* нативный drag картинки отменяет наш pointer-capture — отключаем */
+  -webkit-user-drag: none;
+  /* лёгкая тень отделяет карточки там, где они лежат внахлёст */
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
 }
 .polaroid__cap {
   padding: 6px 2px 8px;
@@ -478,9 +498,11 @@ p  { margin: 0 0 .8em; }
 }
 /* Полароид остаётся светлым и в тёмной теме — как настоящая карточка,
    поэтому подпись на нём всегда тёмная. */
-:root[data-theme="dark"] .polaroid__cap { color: #1a1a18; }
+/* подпись лежит на фоне окна, а не на белой рамке */
+:root[data-theme="dark"] .polaroid__cap { color: var(--ink); }
 
-.polaroid:hover { box-shadow: 0 16px 32px rgba(0,0,0,.22); z-index: 5 !important; }
+.polaroid:hover { z-index: 9 !important; }
+.polaroid:hover .polaroid__img { box-shadow: 0 14px 30px rgba(0,0,0,.26); }
 .polaroid:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 /* сетка-фолбэк для мобильных и для reduce-motion */
@@ -849,36 +871,32 @@ p  { margin: 0 0 .8em; }
 
 /* ============================== адаптивность ============================= */
 @media (max-width: 1240px) {
-  .fringe { gap: 14px; padding: 0 22px; width: calc(100% - 344px); height: 58px; }
-  .brand { width: 300px; height: 120px; padding: 0 14px 0 18px; gap: 12px; }
-  .brand__logo img { max-height: 84px; }
-  .rail { width: 280px; right: 68px; top: 148px; }
-  .deco-scroll { top: 148px; }
-  .stage { width: calc(100% - 410px); top: 90px; height: calc(100% - 114px); }
+  :root { --rail-jut: 400px; }
+  .topbar { height: 104px; padding-left: 24px; }
+  .topbar__brand { padding-right: 20px; gap: 12px; }
+  .brand__logo img { max-height: 78px; }
+  .rail { width: 280px; right: 68px; top: 118px; }
+  .deco-scroll { top: 118px; }
+  .stage { width: calc(100% - 410px); top: 118px; height: calc(100% - 142px); }
 }
 
 @media (max-width: 900px) {
   body { background-size: 130px 130px; }
-  .fringe {
+  /* Шапка перестаёт быть одной широкой полосой: строка уходит под
+     логотип, иначе на узком экране они наезжают друг на друга. */
+  .topbar {
     position: static;
-    width: auto;
     height: auto;
-    margin: 14px 16px 0;
-    padding: 14px 20px;
-    border-radius: 26px;
-    border-right: 1px solid var(--panel-edge);
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin: 0 0 14px;
+    padding: 14px 16px;
+    border-radius: 0 0 26px 26px;
   }
-  .brand {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 14px 16px;
-    padding: 16px 20px;
-    border-radius: 26px;
-    justify-content: space-between;
-  }
+  .topbar__line { order: 2; flex: 1 1 100%; }
+  .topbar__brand { order: 1; width: 100%; padding-right: 0; justify-content: space-between; }
   .brand__logo { flex: 0 1 auto; }
-  .brand__logo img { max-height: 62px; width: auto; }
+  .brand__logo img { max-height: 58px; width: auto; }
   .brand__controls { flex-direction: row; gap: 18px; align-items: center; }
   .stage {
     position: static;
@@ -892,6 +910,7 @@ p  { margin: 0 0 .8em; }
   /* в узкой колонке выступать некуда — подписи возвращаются внутрь блоков */
   .menu__title, .login__label { margin-left: 0; }
   .menu__title::before, .login__label::before { display: none; }
+  .foot { margin-left: 0; }
   .deco-scroll { display: none; }
   .master { grid-template-columns: 1fr; gap: 20px; }
   .master__photo { max-width: 260px; }
@@ -900,8 +919,7 @@ p  { margin: 0 0 .8em; }
 }
 
 @media (max-width: 480px) {
-  .brand { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .brand__logo img { max-height: 48px; }
+  .brand__logo img { max-height: 46px; }
   .works { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
 
