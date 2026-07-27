@@ -9,12 +9,15 @@
 (function (global) {
   'use strict';
 
-  var KEY = 'to.db.v1';
+  /* версия поднята вместе с переходом логина на почту: старые демо-аккаунты
+     из прошлой схемы не должны оставаться в браузере */
+  var KEY = 'to.db.v2';
 
   var DEFAULTS = {
+    /* логин — это почта */
     users: [
-      { login: 'master',   pass: 'master',   name: 'Зинаида Петровна', role: 'master',   masterId: 'zinaida', createdAt: 0 },
-      { login: 'customer', pass: 'customer', name: 'Гость офиса',      role: 'customer', createdAt: 0 }
+      { login: 'master@tattoo.office',   pass: 'master',   name: 'Зинаида Петровна', role: 'master',   masterId: 'zinaida', createdAt: 0 },
+      { login: 'customer@tattoo.office', pass: 'customer', name: 'Гость офиса',      role: 'customer', createdAt: 0 }
     ],
     bookings: [],
     appointments: [],

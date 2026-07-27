@@ -13,6 +13,7 @@
   var SPEED_MIN = 34;    /* px/сек */
   var SPEED_MAX = 58;
   var GAP = 8;           /* зазор между карточками при расталкивании */
+  var PAD = 6;           /* отступ от краёв: покачивание чуть расширяет габарит */
 
   function Drift(container) {
     this.el = container;
@@ -126,8 +127,7 @@
     this.items.forEach(function (it) {
       it.w = it.node.offsetWidth || it.w;
       it.h = it.node.offsetHeight || it.h;
-      it.x = clamp(it.x, 0, Math.max(self.w - it.w, 0));
-      it.y = clamp(it.y, 0, Math.max(self.h - it.h, 0));
+      self._contain(it);
       self._draw(it);
     });
   };
@@ -172,12 +172,12 @@
       it.x += it.vx * dt;
       it.y += it.vy * dt;
 
-      var maxX = Math.max(this.w - it.w, 0);
-      var maxY = Math.max(this.h - it.h, 0);
+      var maxX = Math.max(this.w - it.w - PAD, PAD);
+      var maxY = Math.max(this.h - it.h - PAD, PAD);
 
-      if (it.x <= 0)    { it.x = 0;    it.vx = Math.abs(it.vx); it.vy += rand(-4, 4); it.ease = 1; }
+      if (it.x <= PAD)  { it.x = PAD;  it.vx = Math.abs(it.vx); it.vy += rand(-4, 4); it.ease = 1; }
       if (it.x >= maxX) { it.x = maxX; it.vx = -Math.abs(it.vx); it.vy += rand(-4, 4); it.ease = 1; }
-      if (it.y <= 0)    { it.y = 0;    it.vy = Math.abs(it.vy); it.vx += rand(-4, 4); it.ease = 1; }
+      if (it.y <= PAD)  { it.y = PAD;  it.vy = Math.abs(it.vy); it.vx += rand(-4, 4); it.ease = 1; }
       if (it.y >= maxY) { it.y = maxY; it.vy = -Math.abs(it.vy); it.vx += rand(-4, 4); it.ease = 1; }
 
       /* держим скорость в коридоре: иначе карточки либо встают, либо разгоняются */
@@ -239,8 +239,8 @@
   };
 
   Drift.prototype._contain = function (it) {
-    it.x = clamp(it.x, 0, Math.max(this.w - it.w, 0));
-    it.y = clamp(it.y, 0, Math.max(this.h - it.h, 0));
+    it.x = clamp(it.x, PAD, Math.max(this.w - it.w - PAD, PAD));
+    it.y = clamp(it.y, PAD, Math.max(this.h - it.h - PAD, PAD));
   };
 
   Drift.prototype._draw = function (it) {

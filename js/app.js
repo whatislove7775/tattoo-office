@@ -94,16 +94,18 @@
     var user = global.Store.current();
 
     if (user) {
+      /* вошёл — вместо «Log in:» карточка аккаунта с аватаром */
+      el.classList.add('login--user');
       el.innerHTML =
-        '<div class="login__row">' +
-          '<span class="login__label">' + esc(t('login.logged')) + '</span>' +
-          '<span class="login__links">' +
-            '<a href="#/cabinet" data-sfx="nav">' + esc(t('login.cabinet')) + '</a>' +
-            '<a href="#/masters" id="logoutLink" data-sfx="close">' + esc(t('login.out')) + '</a>' +
+        '<a class="who" href="#/cabinet" data-sfx="nav">' +
+          global.Pages.img(global.Pages.avatarSrc(user), 'ava-' + user.login, user.name, 'who__ava') +
+          '<span class="who__text">' +
+            '<span class="who__name">' + esc(user.name) + '</span>' +
+            '<span class="who__role">' + esc(t('login.role.' + user.role)) + '</span>' +
           '</span>' +
-        '</div>' +
-        '<div class="login__user">' + esc(user.name) + ' · ' +
-          esc(t('login.role.' + user.role)) + '</div>';
+        '</a>' +
+        '<a class="who__out" href="#/masters" id="logoutLink" data-sfx="close">' +
+          esc(t('cab.escape')) + '</a>';
 
       el.querySelector('#logoutLink').addEventListener('click', function () {
         global.Store.logout();
@@ -112,6 +114,7 @@
       });
 
     } else {
+      el.classList.remove('login--user');
       el.innerHTML =
         '<div class="login__row">' +
           '<span class="login__label">' + esc(t('login.title')) + '</span>' +
@@ -224,7 +227,8 @@
   /* ------------------------- заглушки для картинок ------------------------ */
   function imgFail(el) {
     el.onerror = null;   /* чтобы не зациклиться, если и заглушка не встанет */
-    el.src = global.DATA.placeholder(el.dataset.seed || el.alt || 'to', el.dataset.label || el.alt);
+    el.src = global.DATA.placeholder(el.dataset.seed || el.alt || 'to',
+                                    el.dataset.label || el.alt, el.dataset.kind);
     el.classList.add('is-placeholder');
   }
 
@@ -260,6 +264,7 @@
         });
         refillMarquee();
         applyTheme(document.documentElement.getAttribute('data-theme'));
+        if (boot.paintSound) boot.paintSound();
         paintLogin();
         paintFooter();
         render();
@@ -274,13 +279,19 @@
       applyTheme(next);   /* звук уже дал data-sfx */
     });
 
-    /* звук: выключается двойным кликом по индикатору темы —
-       спрятанный, но нужный тумблер для тех, кому звуки мешают */
-    themeBtn.addEventListener('dblclick', function (e) {
-      e.preventDefault();
+    /* звук — отдельный видимый тумблер рядом с темой */
+    var soundBtn = document.getElementById('soundToggle');
+    function paintSound() {
+      document.getElementById('soundState').textContent = t(global.SFX.isOn() ? 'theme.on' : 'theme.off');
+      soundBtn.title = t(global.SFX.isOn() ? 'sound.on' : 'sound.off');
+    }
+    soundBtn.addEventListener('click', function () {
       global.SFX.setEnabled(!global.SFX.isOn());
+      paintSound();
       toast(t(global.SFX.isOn() ? 'sound.on' : 'sound.off'));
     });
+    paintSound();
+    boot.paintSound = paintSound;
 
     stageInner.addEventListener('scroll', updateThumb, { passive: true });
     global.addEventListener('resize', updateThumb);
