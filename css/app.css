@@ -176,8 +176,8 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
    ABOUT и бегущая строка в одном корпусе, справа зазор до блока логотипа. */
 .fringe {
   position: fixed;
-  top: 18px; left: 24px;
-  width: calc(100% - 452px);
+  top: 0; left: 0;
+  width: calc(100% - 404px);
   height: 72px;
   display: flex;
   align-items: center;
@@ -200,7 +200,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
    Скругление по всем углам, между ним и строкой ABOUT — зазор. */
 .brand {
   position: fixed;
-  top: 10px; right: 24px;
+  top: 0; right: 0;
   width: 372px;
   height: 168px;
   display: flex;
@@ -267,9 +267,9 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 /* --------------------------------- сцена ---------------------------------- */
 .stage {
   position: fixed;
-  top: 110px; left: 24px;
+  top: 92px; left: 24px;
   width: calc(100% - 468px);
-  height: calc(100% - 134px);
+  height: calc(100% - 116px);
   overflow: hidden;
   outline: none;
 }
@@ -291,7 +291,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
    Скрываем корпус стола, оставляя саму область прокрутки. */
 .stage--bare {
   /* поле карточек должно доставать до нижнего края страницы */
-  height: calc(100% - 110px);
+  height: calc(100% - 92px);
   background: none;
   border-color: transparent;
   box-shadow: none;
@@ -342,7 +342,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 /* -------------------------------- правая колонка -------------------------- */
 .rail {
   position: fixed;
-  top: 196px; right: 78px; bottom: 24px;
+  top: 186px; right: 78px; bottom: 24px;
   width: 322px;
   display: flex;
   flex-direction: column;
@@ -454,7 +454,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 /* декоративная полоса скролла справа */
 .deco-scroll {
   position: fixed;
-  top: 196px; right: 24px; bottom: 24px;
+  top: 186px; right: 24px; bottom: 24px;
   width: 26px;
   border-radius: 14px;
   background: linear-gradient(to right, #d5d5d1, #f4f4f2 40%, #cfcfcb);
@@ -911,9 +911,9 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   .fringe { gap: 14px; padding: 0 22px; width: calc(100% - 344px); height: 58px; }
   .brand { width: 300px; height: 120px; padding: 0 14px 0 18px; gap: 12px; }
   .brand__logo img { max-height: 84px; }
-  .rail { width: 280px; right: 68px; top: 148px; }
-  .deco-scroll { top: 148px; }
-  .stage { width: calc(100% - 410px); top: 90px; height: calc(100% - 114px); }
+  .rail { width: 280px; right: 68px; top: 138px; }
+  .deco-scroll { top: 138px; }
+  .stage { width: calc(100% - 410px); top: 72px; height: calc(100% - 96px); }
 }
 
 @media (max-width: 900px) {
