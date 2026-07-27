@@ -264,7 +264,6 @@
         });
         refillMarquee();
         applyTheme(document.documentElement.getAttribute('data-theme'));
-        if (boot.paintSound) boot.paintSound();
         paintLogin();
         paintFooter();
         render();
@@ -278,20 +277,6 @@
       var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       applyTheme(next);   /* звук уже дал data-sfx */
     });
-
-    /* звук — отдельный видимый тумблер рядом с темой */
-    var soundBtn = document.getElementById('soundToggle');
-    function paintSound() {
-      document.getElementById('soundState').textContent = t(global.SFX.isOn() ? 'theme.on' : 'theme.off');
-      soundBtn.title = t(global.SFX.isOn() ? 'sound.on' : 'sound.off');
-    }
-    soundBtn.addEventListener('click', function () {
-      global.SFX.setEnabled(!global.SFX.isOn());
-      paintSound();
-      toast(t(global.SFX.isOn() ? 'sound.on' : 'sound.off'));
-    });
-    paintSound();
-    boot.paintSound = paintSound;
 
     stageInner.addEventListener('scroll', updateThumb, { passive: true });
     global.addEventListener('resize', updateThumb);

@@ -140,17 +140,20 @@ p  { margin: 0 0 .8em; }
 /* ------------------------------ «чёлка» сайта ----------------------------- */
 /* Широкая плоская полоса слева: подпись ABOUT и бегущая строка в одном
    корпусе. По правому краю совпадает со столом. */
+/* Правым краем полоса вплотную входит в блок с логотипом и перекрывает
+   его левую границу — сверху две плашки читаются как одна фигура. */
 .fringe {
   position: fixed;
   top: 14px; left: 24px;
-  width: calc(100% - 450px);   /* до блока с логотипом, зазор 18px */
+  width: calc(100% - 386px);
   height: 66px;
   display: flex;
   align-items: center;
   gap: 20px;
   padding: 0 32px;
-  border-radius: 33px;
-  z-index: 40;
+  border-radius: 33px 0 0 33px;
+  border-right: 0;
+  z-index: 46;
 }
 .fringe__label {
   font-weight: 700;
@@ -165,20 +168,21 @@ p  { margin: 0 0 .8em; }
 .brand {
   position: fixed;
   top: 14px; right: 24px;
-  width: 384px;
-  height: 156px;
+  width: 340px;
+  height: 140px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 0 20px 0 26px;
-  border-radius: 36px;
+  gap: 14px;
+  padding: 0 18px 0 24px;
+  /* верхний левый угол прямой — в него встык входит строка ABOUT */
+  border-radius: 0 34px 34px 34px;
   z-index: 45;
 }
 .brand__logo { flex: 1 1 auto; min-width: 0; display: block; }
 .brand__logo img {
   width: 100%;
   height: auto;
-  max-height: 122px;
+  max-height: 100px;
   object-fit: contain;
 }
 :root[data-theme="dark"] .brand__logo img { filter: invert(1); }
@@ -245,16 +249,11 @@ p  { margin: 0 0 .8em; }
   padding: 26px 34px 34px;
   border-radius: var(--radius);
 }
-.stage__inner::-webkit-scrollbar { width: 10px; }
-.stage__inner::-webkit-scrollbar-track { background: transparent; }
-.stage__inner::-webkit-scrollbar-thumb {
-  border-radius: 10px;
-  background: linear-gradient(to right, #cfcfcb, #f2f2f0 45%, #c4c4c0);
-  border: 1px solid var(--panel-edge);
-}
-:root[data-theme="dark"] .stage__inner::-webkit-scrollbar-thumb {
-  background: linear-gradient(to right, #3a3a40, #55555c 45%, #33333a);
-}
+/* Своего ползунка у блока контента нет: справа стоит декоративная
+   полоса прокрутки, две сразу выглядели бы мусором. Колесо и клавиши
+   при этом работают как обычно. */
+.stage__inner { scrollbar-width: none; -ms-overflow-style: none; }
+.stage__inner::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* появление страницы */
 .view-enter { animation: viewIn .34s cubic-bezier(.2,.7,.3,1) both; }
@@ -300,7 +299,7 @@ p  { margin: 0 0 .8em; }
 /* -------------------------------- правая колонка -------------------------- */
 .rail {
   position: fixed;
-  top: 186px; right: 78px; bottom: 24px;
+  top: 170px; right: 78px; bottom: 24px;
   width: 322px;
   display: flex;
   flex-direction: column;
@@ -412,7 +411,7 @@ p  { margin: 0 0 .8em; }
 /* декоративная полоса скролла справа */
 .deco-scroll {
   position: fixed;
-  top: 186px; right: 24px; bottom: 24px;
+  top: 170px; right: 24px; bottom: 24px;
   width: 26px;
   border-radius: 14px;
   background: linear-gradient(to right, #d5d5d1, #f4f4f2 40%, #cfcfcb);
@@ -453,11 +452,10 @@ p  { margin: 0 0 .8em; }
 .polaroid {
   position: absolute;
   top: 0; left: 0;
-  width: 168px;
-  padding: 9px 9px 0;
+  width: 132px;
+  padding: 7px 7px 0;
   background: var(--polaroid-bg);
   box-shadow: var(--shadow-md);
-  border: 1px solid rgba(0,0,0,.08);
   cursor: pointer;
   will-change: transform;
   transition: box-shadow .2s ease;
@@ -470,8 +468,8 @@ p  { margin: 0 0 .8em; }
   display: block;
 }
 .polaroid__cap {
-  padding: 7px 2px 9px;
-  font-size: 12.5px;
+  padding: 6px 2px 8px;
+  font-size: 11px;
   text-align: center;
   color: var(--ink);
   white-space: nowrap;
@@ -480,7 +478,6 @@ p  { margin: 0 0 .8em; }
 }
 /* Полароид остаётся светлым и в тёмной теме — как настоящая карточка,
    поэтому подпись на нём всегда тёмная. */
-:root[data-theme="dark"] .polaroid { border-color: rgba(0,0,0,.25); }
 :root[data-theme="dark"] .polaroid__cap { color: #1a1a18; }
 
 .polaroid:hover { box-shadow: 0 16px 32px rgba(0,0,0,.22); z-index: 5 !important; }
@@ -489,7 +486,7 @@ p  { margin: 0 0 .8em; }
 /* сетка-фолбэк для мобильных и для reduce-motion */
 .drift--static {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 20px;
   height: auto;
   min-height: 0;
@@ -852,11 +849,11 @@ p  { margin: 0 0 .8em; }
 
 /* ============================== адаптивность ============================= */
 @media (max-width: 1240px) {
-  .fringe { gap: 14px; padding: 0 22px; width: calc(100% - 392px); height: 58px; }
-  .brand { width: 330px; height: 130px; padding: 0 16px 0 20px; gap: 12px; }
-  .brand__logo img { max-height: 96px; }
-  .rail { width: 280px; right: 68px; top: 158px; }
-  .deco-scroll { top: 158px; }
+  .fringe { gap: 14px; padding: 0 22px; width: calc(100% - 344px); height: 58px; }
+  .brand { width: 300px; height: 120px; padding: 0 14px 0 18px; gap: 12px; }
+  .brand__logo img { max-height: 84px; }
+  .rail { width: 280px; right: 68px; top: 148px; }
+  .deco-scroll { top: 148px; }
   .stage { width: calc(100% - 410px); top: 90px; height: calc(100% - 114px); }
 }
 
@@ -869,6 +866,7 @@ p  { margin: 0 0 .8em; }
     margin: 14px 16px 0;
     padding: 14px 20px;
     border-radius: 26px;
+    border-right: 1px solid var(--panel-edge);
   }
   .brand {
     position: static;
@@ -876,6 +874,7 @@ p  { margin: 0 0 .8em; }
     height: auto;
     margin: 14px 16px;
     padding: 16px 20px;
+    border-radius: 26px;
     justify-content: space-between;
   }
   .brand__logo { flex: 0 1 auto; }
