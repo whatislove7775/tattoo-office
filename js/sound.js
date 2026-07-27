@@ -26,7 +26,7 @@
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.5;
+    master.gain.value = 0.32;
 
     /* «Корпусной» фильтр: снимаем самый верх, но оставляем щелчкам щёлк.
        Слишком низкий срез делал звуки почти неслышными. */

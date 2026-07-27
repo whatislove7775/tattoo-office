@@ -117,36 +117,37 @@ p  { margin: 0 0 .8em; }
 
 
 /* ------------------------------- курсор ----------------------------------- */
-/* Набор Aero из .cur сконвертирован в PNG: .cur не понимает Safari, а PNG
-   тянут все современные браузеры. Оригиналы лежат в assets/cursors/src.
-   У каждого правила есть штатный запасной курсор через запятую — если
-   картинка почему-то не загрузится, указатель не пропадёт. */
-html { cursor: url("../assets/cursors/arrow.png") 0 0, default; }
+/* Классический набор Windows XP из .cur сконвертирован в PNG: .cur не
+   понимает Safari, а PNG тянут все современные браузеры. Оригиналы лежат
+   в assets/cursors/src. У каждого правила есть штатный запасной курсор
+   через запятую — если картинка почему-то не загрузится, указатель не
+   пропадёт. */
+html { cursor: url("../assets/cursors/arrow.png") 10 10, default; }
 *, *::before, *::after { cursor: inherit; }
 
 a, button, summary, label,
 .slot, .tab, .dot, .lang__btn, .theme, .menu__link, .work, .thumbs img,
 [role="button"] {
-  cursor: url("../assets/cursors/aero_link.png") 11 4, pointer;
+  cursor: url("../assets/cursors/link.png") 10 10, pointer;
 }
 
 input, textarea, [contenteditable="true"] {
-  cursor: url("../assets/cursors/beam.png") 13 16, text;
+  cursor: url("../assets/cursors/beam.png") 15 16, text;
 }
 select, input[type="date"], input[type="checkbox"], input[type="radio"] {
-  cursor: url("../assets/cursors/aero_link.png") 11 4, pointer;
+  cursor: url("../assets/cursors/link.png") 10 10, pointer;
 }
 
 button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disabled] {
-  cursor: url("../assets/cursors/no.png") 0 0, not-allowed;
+  cursor: url("../assets/cursors/no.png") 10 10, not-allowed;
 }
 
-.polaroid { cursor: url("../assets/cursors/aero_pin.png") 6 2, grab; }
-.polaroid.is-dragging { cursor: url("../assets/cursors/sizeall.png") 16 16, grabbing; }
-.drift--static .polaroid { cursor: url("../assets/cursors/aero_link.png") 11 4, pointer; }
+.polaroid { cursor: url("../assets/cursors/pin.png") 5 1, grab; }
+.polaroid.is-dragging { cursor: url("../assets/cursors/sizeall.png") 10 10, grabbing; }
+.drift--static .polaroid { cursor: url("../assets/cursors/link.png") 10 10, pointer; }
 
-.textarea { cursor: url("../assets/cursors/beam.png") 13 16, text; }
-.modal__backdrop { cursor: url("../assets/cursors/no.png") 0 0, default; }
+.textarea { cursor: url("../assets/cursors/beam.png") 15 16, text; }
+.modal__backdrop { cursor: url("../assets/cursors/no.png") 10 10, default; }
 
 /* --------------------------- общая форма панели --------------------------- */
 .panel {

@@ -39,7 +39,7 @@
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
                  img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') +
-                 '<div class="polaroid__cap">' + esc(name) + '.png</div>' +
+                 '<div class="polaroid__cap">' + esc(name) + '</div>' +
                '</button>';
       }).join('');
 
