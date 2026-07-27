@@ -138,17 +138,18 @@ p  { margin: 0 0 .8em; }
 }
 
 /* ------------------------------ «чёлка» сайта ----------------------------- */
-/* Одна цельная панель через всю ширину: подпись, бегущая строка,
-   логотип и переключатели языка и темы живут в общем корпусе. */
+/* Широкая плоская полоса слева: подпись ABOUT и бегущая строка в одном
+   корпусе. По правому краю совпадает со столом. */
 .fringe {
   position: fixed;
-  top: 14px; left: 24px; right: 24px;
-  height: 86px;
+  top: 14px; left: 24px;
+  width: calc(100% - 468px);
+  height: 58px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 26px 0 30px;
-  border-radius: 34px;
+  gap: 18px;
+  padding: 0 30px;
+  border-radius: 29px;
   z-index: 40;
 }
 .fringe__label {
@@ -157,16 +158,31 @@ p  { margin: 0 0 .8em; }
   letter-spacing: .01em;
   flex: none;
 }
-.fringe__logo { flex: none; display: block; }
-.fringe__logo img { height: 54px; width: auto; }
-:root[data-theme="dark"] .fringe__logo img { filter: invert(1); }
 
-.fringe__controls {
+/* ---------------------------- шапка с логотипом --------------------------- */
+/* Отдельный высокий блок справа: крупное лого, под ним язык, тема и звук. */
+.brand {
+  position: fixed;
+  top: 14px; right: 24px;
+  width: 376px;
+  height: 152px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px 0 28px;
+  border-radius: 34px;
+  z-index: 45;
+}
+.brand__logo { flex: 1 1 auto; display: block; min-width: 0; }
+.brand__logo img { width: 100%; height: auto; max-height: 104px; object-fit: contain; }
+:root[data-theme="dark"] .brand__logo img { filter: invert(1); }
+
+.brand__controls {
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   font-size: 16px;
 }
 
@@ -207,9 +223,9 @@ p  { margin: 0 0 .8em; }
 /* --------------------------------- сцена ---------------------------------- */
 .stage {
   position: fixed;
-  top: 116px; left: 24px;
+  top: 96px; left: 24px;
   width: calc(100% - 468px);
-  height: calc(100% - 140px);
+  height: calc(100% - 120px);
   overflow: hidden;
   outline: none;
 }
@@ -275,7 +291,7 @@ p  { margin: 0 0 .8em; }
 /* -------------------------------- правая колонка -------------------------- */
 .rail {
   position: fixed;
-  top: 116px; right: 78px; bottom: 24px;
+  top: 182px; right: 78px; bottom: 24px;
   width: 322px;
   display: flex;
   flex-direction: column;
@@ -285,9 +301,16 @@ p  { margin: 0 0 .8em; }
 }
 .rail > * { pointer-events: auto; }
 
-.menu { padding: 22px 26px 24px; border-radius: 34px; }
-.menu__title { font-size: 19px; margin-bottom: 10px; }
-.menu__list { list-style: none; margin: 0; padding: 0 0 0 4px; }
+/* «Menu:» стоит слева от столбца пунктов — как в макете, не над ним */
+.menu {
+  padding: 22px 26px 24px;
+  border-radius: 34px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.menu__title { font-size: 19px; flex: none; padding-top: 3px; }
+.menu__list { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; }
 .menu__item {
   display: flex;
   align-items: center;
@@ -337,7 +360,7 @@ p  { margin: 0 0 .8em; }
 /* декоративная полоса скролла справа */
 .deco-scroll {
   position: fixed;
-  top: 116px; right: 24px; bottom: 24px;
+  top: 182px; right: 24px; bottom: 24px;
   width: 26px;
   border-radius: 14px;
   background: linear-gradient(to right, #d5d5d1, #f4f4f2 40%, #cfcfcb);
@@ -369,7 +392,7 @@ p  { margin: 0 0 .8em; }
 .drift {
   position: relative;
   width: 100%;
-  height: calc(100vh - 268px);
+  height: calc(100vh - 248px);
   min-height: 380px;
   overflow: hidden;
   border-radius: 8px;
@@ -665,9 +688,11 @@ p  { margin: 0 0 .8em; }
 
 /* ============================== адаптивность ============================= */
 @media (max-width: 1240px) {
-  .fringe { gap: 14px; padding: 0 18px 0 20px; }
-  .fringe__logo img { height: 44px; }
-  .rail { width: 280px; right: 68px; }
+  .fringe { gap: 14px; padding: 0 20px; width: calc(100% - 410px); }
+  .brand { width: 320px; height: 132px; padding: 0 18px 0 20px; gap: 12px; }
+  .brand__logo img { max-height: 84px; }
+  .rail { width: 280px; right: 68px; top: 162px; }
+  .deco-scroll { top: 162px; }
   .stage { width: calc(100% - 410px); }
 }
 
@@ -675,17 +700,23 @@ p  { margin: 0 0 .8em; }
   body { background-size: 130px 130px; }
   .fringe {
     position: static;
+    width: auto;
     height: auto;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    margin: 14px 16px;
-    padding: 16px 20px;
+    margin: 14px 16px 0;
+    padding: 14px 20px;
     border-radius: 26px;
   }
-  .marquee { flex: 1 1 100%; order: 3; }
-  .fringe__logo { order: 1; }
-  .fringe__controls { order: 2; margin-left: auto; flex-direction: row; gap: 16px; align-items: center; }
-  .fringe__label { order: 0; }
+  .brand {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 14px 16px;
+    padding: 16px 20px;
+    justify-content: space-between;
+  }
+  .brand__logo { flex: 0 1 auto; }
+  .brand__logo img { max-height: 62px; width: auto; }
+  .brand__controls { flex-direction: row; gap: 18px; align-items: center; }
   .stage {
     position: static;
     width: auto;
@@ -703,7 +734,8 @@ p  { margin: 0 0 .8em; }
 }
 
 @media (max-width: 480px) {
-  .fringe__logo img { height: 36px; }
+  .brand { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .brand__logo img { max-height: 48px; }
   .works { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
 

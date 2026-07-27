@@ -260,6 +260,7 @@
         });
         refillMarquee();
         applyTheme(document.documentElement.getAttribute('data-theme'));
+        if (boot.paintSound) boot.paintSound();
         paintLogin();
         paintFooter();
         render();
@@ -274,13 +275,19 @@
       applyTheme(next);   /* звук уже дал data-sfx */
     });
 
-    /* звук: выключается двойным кликом по индикатору темы —
-       спрятанный, но нужный тумблер для тех, кому звуки мешают */
-    themeBtn.addEventListener('dblclick', function (e) {
-      e.preventDefault();
+    /* звук — отдельный видимый тумблер рядом с темой */
+    var soundBtn = document.getElementById('soundToggle');
+    function paintSound() {
+      document.getElementById('soundState').textContent = t(global.SFX.isOn() ? 'theme.on' : 'theme.off');
+      soundBtn.title = t(global.SFX.isOn() ? 'sound.on' : 'sound.off');
+    }
+    soundBtn.addEventListener('click', function () {
       global.SFX.setEnabled(!global.SFX.isOn());
+      paintSound();
       toast(t(global.SFX.isOn() ? 'sound.on' : 'sound.off'));
     });
+    paintSound();
+    boot.paintSound = paintSound;
 
     stageInner.addEventListener('scroll', updateThumb, { passive: true });
     global.addEventListener('resize', updateThumb);
