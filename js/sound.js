@@ -161,19 +161,48 @@
   };
   SFX.play = function (name) { if (SFX[name]) SFX[name](); };
 
-  /* Делегирование: любой элемент с data-sfx озвучивается автоматически. */
+  /* ------------------------- озвучка всего интерфейса --------------------- */
+  /* Элемент с data-sfx звучит указанным звуком; любой другой интерактивный
+     элемент получает клик по умолчанию — чтобы «немых» кнопок не осталось. */
+  var CLICKABLE = 'a, button, .slot, .tab, .dot, .polaroid, [role="button"], summary';
+
   document.addEventListener('pointerdown', function (e) {
-    var el = e.target.closest('[data-sfx]');
-    if (el) SFX.play(el.getAttribute('data-sfx'));
+    var tagged = e.target.closest('[data-sfx]');
+    if (tagged) { SFX.play(tagged.getAttribute('data-sfx')); return; }
+    if (e.target.closest(CLICKABLE)) SFX.click();
   }, { passive: true });
 
+  /* наведение — общий тихий отклик для всего кликабельного */
   document.addEventListener('pointerover', function (e) {
-    var el = e.target.closest('[data-sfx-hover], .btn, .menu__link, .polaroid');
+    var el = e.target.closest(CLICKABLE + ', [data-sfx-hover]');
     if (el && !el.__hovered) {
       el.__hovered = true;
       SFX.hover();
       setTimeout(function () { el.__hovered = false; }, 260);
     }
+  }, { passive: true });
+
+  /* поля ввода: мягкая клавиша печатной машинки */
+  document.addEventListener('keydown', function (e) {
+    var el = e.target;
+    if (!el.matches || !el.matches('input, textarea')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === 'Enter')          tone({ freq: 520, to: 420, dur: 0.09, gain: 0.10, type: 'triangle' });
+    else if (e.key === 'Backspace') noise({ freq: 1200, dur: 0.03, gain: 0.05 });
+    else if (e.key.length === 1)    noise({ freq: 2000 + Math.random() * 700, dur: 0.026, gain: 0.045 });
+  }, { passive: true });
+
+  /* выпадающие списки, даты, чекбоксы */
+  document.addEventListener('change', function (e) {
+    if (e.target.matches && e.target.matches('select, input[type="date"], input[type="checkbox"], input[type="radio"]')) {
+      SFX.toggle();
+    }
+  }, { passive: true });
+
+  /* фокус с клавиатуры — едва слышный ориентир */
+  document.addEventListener('focusin', function (e) {
+    if (e.target.matches && e.target.matches('input, textarea, select')) SFX.hover();
   }, { passive: true });
 
   global.SFX = SFX;
