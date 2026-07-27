@@ -94,16 +94,18 @@
     var user = global.Store.current();
 
     if (user) {
+      /* вошёл — вместо «Log in:» карточка аккаунта с аватаром */
+      el.classList.add('login--user');
       el.innerHTML =
-        '<div class="login__row">' +
-          '<span class="login__label">' + esc(t('login.logged')) + '</span>' +
-          '<span class="login__links">' +
-            '<a href="#/cabinet" data-sfx="nav">' + esc(t('login.cabinet')) + '</a>' +
-            '<a href="#/masters" id="logoutLink" data-sfx="close">' + esc(t('login.out')) + '</a>' +
+        '<a class="who" href="#/cabinet" data-sfx="nav">' +
+          global.Pages.img(global.Pages.avatarSrc(user), 'ava-' + user.login, user.name, 'who__ava') +
+          '<span class="who__text">' +
+            '<span class="who__name">' + esc(user.name) + '</span>' +
+            '<span class="who__role">' + esc(t('login.role.' + user.role)) + '</span>' +
           '</span>' +
-        '</div>' +
-        '<div class="login__user">' + esc(user.name) + ' · ' +
-          esc(t('login.role.' + user.role)) + '</div>';
+        '</a>' +
+        '<a class="who__out" href="#/masters" id="logoutLink" data-sfx="close">' +
+          esc(t('cab.escape')) + '</a>';
 
       el.querySelector('#logoutLink').addEventListener('click', function () {
         global.Store.logout();
@@ -112,6 +114,7 @@
       });
 
     } else {
+      el.classList.remove('login--user');
       el.innerHTML =
         '<div class="login__row">' +
           '<span class="login__label">' + esc(t('login.title')) + '</span>' +

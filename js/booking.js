@@ -209,25 +209,44 @@
   }
 
   /* -------------------------------- профиль ------------------------------- */
+  /* Профиль по макету: круглый аватар, поля в столбик, «выйти» внизу. */
   function profileHtml(user) {
     var s = global.Store.stats();
-    return '<div class="grid-2">' +
-             '<div>' +
-               '<div class="field"><label for="pfName">' + esc(t('auth.name')) + '</label>' +
-                 '<input class="input" id="pfName" value="' + esc(user.name) + '"></div>' +
-               '<div class="field"><label for="pfPass">' + esc(t('auth.pass')) + '</label>' +
-                 '<input class="input" id="pfPass" type="password" placeholder="••••"></div>' +
-               '<button class="btn btn--sm" id="pfSave" data-sfx="click">' + esc(t('common.save')) + '</button>' +
+    return '<div class="profile">' +
+             '<div class="profile__side">' +
+               global.Pages.img(avatarSrc(user), 'ava-' + user.login, user.name, 'profile__ava') +
              '</div>' +
-             '<div class="card">' +
-               '<div class="card__title">' + esc(t('cab.stats')) + '</div>' +
-               '<table class="table" style="margin-top:8px"><tbody>' +
-                 '<tr><td>' + esc(t('cab.visits')) + '</td><td>' + s.visits + '</td></tr>' +
-                 '<tr><td>' + esc(t('cab.hours')) + '</td><td>' + s.hours + '</td></tr>' +
-                 '<tr><td>' + esc(t('cab.active')) + '</td><td>' + s.active + '</td></tr>' +
-               '</tbody></table>' +
+
+             '<div class="profile__form">' +
+               '<div class="field"><label for="pfName">' + esc(t('auth.fio')) + '</label>' +
+                 '<input class="input input--plain" id="pfName" value="' + esc(user.name) + '"></div>' +
+               '<div class="field"><label for="pfMail">' + esc(t('auth.mail')) + '</label>' +
+                 '<input class="input input--plain" id="pfMail" value="' + esc(user.login) + '" disabled></div>' +
+               '<div class="field"><label for="pfPass">' + esc(t('cab.changePass')) + '</label>' +
+                 '<input class="input input--plain" id="pfPass" type="password" ' +
+                 'placeholder="' + esc(t('auth.passPh')) + '"></div>' +
+
+               '<div class="card" style="margin-top:22px;max-width:340px">' +
+                 '<div class="card__title">' + esc(t('cab.stats')) + '</div>' +
+                 '<table class="table" style="margin-top:8px"><tbody>' +
+                   '<tr><td>' + esc(t('cab.visits')) + '</td><td>' + s.visits + '</td></tr>' +
+                   '<tr><td>' + esc(t('cab.hours')) + '</td><td>' + s.hours + '</td></tr>' +
+                   '<tr><td>' + esc(t('cab.active')) + '</td><td>' + s.active + '</td></tr>' +
+                 '</tbody></table>' +
+               '</div>' +
+             '</div>' +
+
+             '<div class="profile__actions">' +
+               '<button class="btn btn--sm" id="pfSave" data-sfx="click">' + esc(t('common.save')) + '</button>' +
+               '<button class="btn btn--big" id="pfOut" data-sfx="close">' + esc(t('cab.logout')) + '</button>' +
              '</div>' +
            '</div>';
+  }
+
+  /* Аватар: у мастера — портрет из каталога, у гостя — свой файл. */
+  function avatarSrc(user) {
+    var m = user.masterId && global.DATA.masterById(user.masterId);
+    return m ? m.photo : 'assets/users/' + encodeURIComponent(user.login) + '.jpg';
   }
 
   /* ------------------------------- кабинет -------------------------------- */
@@ -287,6 +306,11 @@
             global.TO.toast(t('common.saved'));
             global.TO.refreshChrome();
           });
+          pane.querySelector('#pfOut').addEventListener('click', function () {
+            global.Store.logout();
+            global.TO.refreshChrome();
+            global.TO.go('#/masters');
+          });
         }
       }
 
@@ -335,4 +359,5 @@
   };
 
   global.Pages.cabinet = Cabinet;
+  global.Pages.avatarSrc = avatarSrc;   /* нужен ещё и плашке вошедшего в правой колонке */
 })(window);

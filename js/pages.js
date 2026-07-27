@@ -382,40 +382,50 @@
       var role = params.role === 'master' ? 'master' : 'customer';
       var isReg = mode === 'signup';
 
+      /* поле с подсказкой справа — как в макете */
+      function field(id, label, ph, hint, type) {
+        return '<div class="auth__row">' +
+                 '<div class="auth__field">' +
+                   '<label for="' + id + '">' + esc(label) + '</label>' +
+                   '<input class="input input--pill" id="' + id + '" placeholder="' + esc(ph) + '"' +
+                     (type ? ' type="' + type + '"' : '') + '>' +
+                 '</div>' +
+                 (hint ? '<span class="auth__hint">' + esc(hint) + '</span>' : '') +
+               '</div>';
+      }
+
+      /* картинка-настроение: свой файл кладётся в assets/auth/ */
+      var meme = isReg ? '' :
+        '<div class="auth__meme">' +
+          img('assets/auth/' + role + '.jpg', 'meme-' + role, '', 'auth__memeImg') +
+          '<span class="auth__memeCap">' + esc(t('auth.meme' + (role === 'master' ? 'Master' : 'Customer'))) + '</span>' +
+        '</div>';
+
       return '<div class="section-head"><span class="bullet"></span>' +
-               '<h1>' + esc(t(isReg ? 'auth.regTitle' : 'auth.loginTitle')) + '</h1></div>' +
+               '<h1>' + esc(t('auth.' + (isReg ? 'regTitle.' : 'loginTitle.') + role)) + '</h1></div>' +
 
-             '<div style="max-width:420px">' +
-               '<div class="row" style="margin-bottom:18px">' +
-                 '<button class="btn btn--sm" data-role="customer" aria-pressed="' + (role === 'customer') + '" ' +
-                   'data-sfx="click">' + esc(t('auth.asCustomer')) + '</button>' +
-                 '<button class="btn btn--sm" data-role="master" aria-pressed="' + (role === 'master') + '" ' +
-                   'data-sfx="click">' + esc(t('auth.asMaster')) + '</button>' +
-               '</div>' +
+             '<div class="auth">' + meme +
 
-               (isReg ? '<div class="field"><label for="auName">' + esc(t('auth.name')) + '</label>' +
-                        '<input class="input" id="auName" autocomplete="name"></div>' : '') +
+               (isReg ? field('auName', t('auth.fio'), t('auth.fioPh'), t('auth.fioHint')) : '') +
+               field('auLogin', t('auth.mail'), t('auth.mailPh'), '', 'email') +
+               field('auPass', t(isReg ? 'auth.passNew' : 'auth.pass'), t('auth.passPh'),
+                     isReg ? t('auth.passHint') : '', 'password') +
 
-               '<div class="field"><label for="auLogin">' + esc(t('auth.login')) + '</label>' +
-                 '<input class="input" id="auLogin" autocomplete="username"></div>' +
-               '<div class="field"><label for="auPass">' + esc(t('auth.pass')) + '</label>' +
-                 '<input class="input" id="auPass" type="password" autocomplete="' +
-                 (isReg ? 'new-password' : 'current-password') + '"></div>' +
+               '<p class="auth__switch"><a href="#/' + (isReg ? 'login' : 'signup') + '/' + role + '" ' +
+                 'data-sfx="nav">' + esc(t(isReg ? 'auth.toLogin' : 'auth.toReg')) + '</a></p>' +
 
                '<div class="error" id="auErr"></div>' +
 
-               '<div class="row" style="margin-top:6px">' +
-                 '<button class="btn btn--primary" id="auGo" data-sfx="click">' +
+               '<div class="auth__go">' +
+                 '<button class="btn btn--big" id="auGo" data-sfx="click">' +
                    esc(t(isReg ? 'auth.register' : 'auth.enter')) + '</button>' +
-                 '<a href="#/' + (isReg ? 'login' : 'signup') + '/' + role + '" data-sfx="nav">' +
-                   esc(t(isReg ? 'auth.toLogin' : 'auth.toReg')) + '</a>' +
                '</div>' +
 
                (isReg ? '' :
-                 '<p style="margin-top:16px"><button class="btn btn--sm btn--ghost" id="auDemo" data-sfx="click">' +
+                 '<p class="auth__demo"><button class="btn btn--sm btn--ghost" id="auDemo" data-sfx="click">' +
                  esc(t('auth.tryDemo')) + '</button></p>') +
 
-               '<p class="hint" style="margin-top:22px">' + esc(t('auth.demo')) + '</p>' +
+               '<p class="hint auth__note">' + esc(t('auth.demo')) + '</p>' +
              '</div>';
     },
 
@@ -424,20 +434,22 @@
       var role = params.role === 'master' ? 'master' : 'customer';
       var err = root.querySelector('#auErr');
 
-      root.querySelectorAll('[data-role]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          global.TO.go('#/' + mode + '/' + b.dataset.role);
-        });
-      });
-
       function submit() {
+        var mail = root.querySelector('#auLogin').value.trim();
         var payload = {
-          login: root.querySelector('#auLogin').value,
+          login: mail,
           pass: root.querySelector('#auPass').value,
           role: role
         };
         var nameEl = root.querySelector('#auName');
         if (nameEl) payload.name = nameEl.value;
+
+        /* при регистрации почта должна быть похожа на почту */
+        if (mode === 'signup' && !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(mail)) {
+          err.textContent = t('auth.badMail');
+          global.SFX.error();
+          return;
+        }
 
         var res = mode === 'signup' ? global.Store.register(payload) : global.Store.login(payload);
         if (!res.ok) {
@@ -457,7 +469,8 @@
 
       var demo = root.querySelector('#auDemo');
       if (demo) demo.addEventListener('click', function () {
-        root.querySelector('#auLogin').value = role === 'master' ? 'master' : 'customer';
+        var acc = role === 'master' ? 'master@tattoo.office' : 'customer@tattoo.office';
+        root.querySelector('#auLogin').value = acc;
         root.querySelector('#auPass').value = role === 'master' ? 'master' : 'customer';
         submit();
       });

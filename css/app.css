@@ -6,7 +6,7 @@
 
 /* ---------------------------------- тема --------------------------------- */
 :root {
-  --bg:            #e8e8e6;
+  --bg:            #f4f4f2;
   --bg-2:          #dededb;
   --panel:         #ffffff;
   --panel-2:       #f7f7f5;
@@ -33,7 +33,7 @@
 }
 
 :root[data-theme="dark"] {
-  --bg:            #17171a;
+  --bg:            #1b1b1e;
   --panel:         #202024;
   --panel-2:       #26262b;
   --panel-edge:    rgba(255,255,255,.10);
@@ -75,7 +75,7 @@ body {
   color: var(--ink);
   background-color: var(--bg);
   background-image: url("../assets/pattern.svg");
-  background-size: 190px 190px;
+  background-size: 200px 200px;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   transition: background-color .35s ease, color .35s ease;
@@ -143,7 +143,7 @@ p  { margin: 0 0 .8em; }
 .fringe {
   position: fixed;
   top: 14px; left: 24px;
-  width: calc(100% - 468px);
+  width: calc(100% - 520px);
   height: 58px;
   display: flex;
   align-items: center;
@@ -173,11 +173,34 @@ p  { margin: 0 0 .8em; }
   border-radius: 34px;
   z-index: 45;
 }
-.brand__logo { flex: 1 1 auto; display: block; min-width: 0; }
+/* Логотип выходит за левый край шапки: под ним своя белая «пятка»,
+   которая уезжает правым краем под саму панель, поэтому шва не видно. */
+.brand__logo {
+  position: relative;
+  isolation: isolate;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  margin-left: -34px;
+}
+.brand__logo::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -20px; right: -26px; top: -20px; bottom: -20px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-right: 0;
+  border-radius: 32px 0 0 32px;
+  box-shadow: -7px 7px 16px rgba(0,0,0,.10);
+  pointer-events: none;
+}
 .brand__logo img { width: 100%; height: auto; max-height: 104px; object-fit: contain; }
 :root[data-theme="dark"] .brand__logo img { filter: invert(1); }
 
 .brand__controls {
+  position: relative;
+  z-index: 1;            /* поверх «пятки» логотипа */
   flex: none;
   display: flex;
   flex-direction: column;
@@ -267,6 +290,7 @@ p  { margin: 0 0 .8em; }
 .section-head .crumbs {
   font-size: 21px;
   font-style: italic;
+  font-weight: 400;      /* название раздела не жирное */
   margin: 0;
 }
 .crumbs a { font-style: normal; }
@@ -309,8 +333,33 @@ p  { margin: 0 0 .8em; }
   align-items: flex-start;
   gap: 20px;
 }
-.menu__title { font-size: 19px; flex: none; padding-top: 3px; }
-.menu__list { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; }
+/* Подпись «Menu:» вынесена за левый край блока — как в макете.
+   Своя белая подложка заходит под панель, шов прячется. */
+.menu__title {
+  position: relative;
+  isolation: isolate;
+  font-size: 19px;
+  flex: none;
+  margin-left: -86px;
+  padding: 4px 0 4px 4px;
+}
+.menu__title::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -24px; right: -34px; top: -16px; bottom: -16px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-right: 0;
+  border-radius: 28px 0 0 28px;
+  box-shadow: -7px 7px 16px rgba(0,0,0,.10);
+  pointer-events: none;
+}
+.menu__list {
+  position: relative;
+  z-index: 1;            /* поверх «пятки» подписи */
+  list-style: none; margin: 0; padding: 0; flex: 1 1 auto;
+}
 .menu__item {
   display: flex;
   align-items: center;
@@ -328,9 +377,27 @@ p  { margin: 0 0 .8em; }
 
 /* панель входа */
 .login { padding: 18px 26px 20px; border-radius: 34px; }
-.login__row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.login__label { font-size: 18px; }
-.login__links { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-left: auto; }
+.login__row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
+.login__label {
+  position: relative;
+  isolation: isolate;
+  font-size: 18px;
+  flex: none;
+  margin-left: -74px;
+}
+.login__label::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -22px; right: -32px; top: -16px; bottom: -16px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-right: 0;
+  border-radius: 26px 0 0 26px;
+  box-shadow: -7px 7px 16px rgba(0,0,0,.10);
+  pointer-events: none;
+}
+.login__links { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin-left: auto; }
 .login__links a { font-size: 17px; }
 .login__user { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
 
@@ -543,6 +610,118 @@ p  { margin: 0 0 .8em; }
 
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .stack-16 > * + * { margin-top: 16px; }
+
+/* ======================= вход / регистрация по макету ==================== */
+.auth {
+  max-width: 720px;
+  margin: 40px auto 0;
+  padding-left: 90px;
+}
+.auth__meme { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 34px; }
+.auth__memeImg {
+  width: 360px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--panel-2);
+}
+.auth__memeCap {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  white-space: pre-line;
+  padding-bottom: 2px;
+}
+
+.auth__row { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 20px; }
+.auth__field { flex: 0 1 380px; }
+.auth__field label {
+  display: block;
+  font-size: 19px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.auth__hint { font-size: 12.5px; color: var(--ink-2); padding-bottom: 12px; }
+
+/* поле-пилюля с внутренней тенью — «вдавленное», как в макете */
+.input--pill {
+  border-radius: 999px;
+  padding: 13px 24px;
+  font-size: 17px;
+  background: linear-gradient(to bottom, #ececea, #f7f7f6);
+  border-color: rgba(0,0,0,.12);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.10), 0 1px 0 #fff;
+}
+:root[data-theme="dark"] .input--pill {
+  background: linear-gradient(to bottom, #26262b, #2e2e34);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.5);
+}
+.input--pill::placeholder { color: var(--ink-3); }
+
+.auth__switch { margin: -4px 0 0; font-size: 13px; }
+.auth__switch a { color: var(--ink-2); }
+.auth__go { display: flex; justify-content: center; margin-top: 46px; }
+.auth__demo { text-align: center; margin-top: 14px; }
+.auth__note { max-width: 460px; margin: 26px auto 0; text-align: center; }
+
+.btn--big {
+  min-height: 52px;
+  padding: 0 54px;
+  font-size: 18px;
+  border-radius: 999px;
+}
+
+/* ============================= профиль в кабинете ======================== */
+.profile { display: grid; grid-template-columns: 260px 1fr; gap: 34px; align-items: start; }
+.profile__ava {
+  width: 230px; height: 230px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.profile__form { max-width: 420px; }
+.profile__form label { font-size: 13px; color: var(--ink-2); }
+/* поле без рамки — значение читается как текст, но остаётся редактируемым */
+.input--plain {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 2px 0;
+  font-size: 19px;
+}
+.input--plain:focus {
+  box-shadow: 0 2px 0 var(--ink);
+  border: 0;
+}
+.input--plain:disabled { color: var(--ink); opacity: 1; }
+.profile__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+/* ==================== карточка вошедшего в правой колонке ================ */
+.login--user { padding: 14px 22px 14px 18px; }
+.who { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.who__ava {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--panel-2);
+  flex: none;
+}
+.who__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.who__name { font-size: 19px; }
+.who__role { font-size: 12.5px; color: var(--ink-3); }
+.who__out {
+  display: block;
+  margin: 6px 0 0 68px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
 
 /* карточка-документ */
 .card {
