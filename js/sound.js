@@ -8,14 +8,14 @@
 
   var ctx = null;
   var master = null;
-  /* Ключ версионный намеренно. В ранней версии звук выключался двойным
-     кликом по переключателю темы — а это ровно то, что человек делает,
-     когда включает тёмную тему и сразу возвращает светлую. Звук молча
-     уходил в 'off' и оставался выключенным навсегда. Новый ключ сбрасывает
-     это состояние один раз, дальше работает видимый тумблер. */
-  var SOUND_KEY = 'to.sound.v2';
-  try { localStorage.removeItem('to.sound'); } catch (e) {}
-  var enabled = localStorage.getItem(SOUND_KEY) !== 'off';
+  /* Звук включён всегда и выключателя не имеет — так задумано.
+     Заодно подчищаем ключи прежних версий: там звук можно было
+     выключить, и это состояние осталось бы в браузере навсегда. */
+  try {
+    localStorage.removeItem('to.sound');
+    localStorage.removeItem('to.sound.v2');
+  } catch (e) {}
+  var enabled = true;
 
   /* Контекст создаётся только после первого жеста пользователя —
      иначе браузер его всё равно заблокирует. */
@@ -182,12 +182,6 @@
     }
   };
 
-  SFX.isOn = function () { return enabled; };
-  SFX.setEnabled = function (v) {
-    enabled = !!v;
-    localStorage.setItem(SOUND_KEY, enabled ? 'on' : 'off');
-    if (enabled) SFX.toggle();
-  };
   SFX.play = function (name) { if (SFX[name]) SFX[name](); };
 
   /* ------------------------- озвучка всего интерфейса --------------------- */
