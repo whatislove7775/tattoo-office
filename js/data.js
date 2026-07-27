@@ -7,42 +7,9 @@
 (function (global) {
   'use strict';
 
-  /* ------------------------- генератор заглушек --------------------------- */
-  var PALETTE = [
-    ['#efeae0', '#cfc6b4'], ['#e7e7e5', '#c2c2bd'], ['#eae3d6', '#c8bda6'],
-    ['#e4e6e8', '#bcc0c4'], ['#f0ece6', '#d3cabb']
-  ];
-
-  function hash(str) {
-    var h = 0;
-    for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-    return Math.abs(h);
-  }
-
-  /* Заглушка: бежево-серая карточка с инициалами и «служебным» номером. */
-  function placeholder(seed, label) {
-    var h = hash(seed || 'to');
-    var p = PALETTE[h % PALETTE.length];
-    var initials = (label || 'TO').trim().split(/\s+/).slice(0, 2)
-      .map(function (w) { return w[0]; }).join('').toUpperCase();
-    var code = String(h % 9000 + 1000);
-
-    var svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 340">' +
-        '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0" stop-color="' + p[0] + '"/>' +
-          '<stop offset="1" stop-color="' + p[1] + '"/>' +
-        '</linearGradient></defs>' +
-        '<rect width="300" height="340" fill="url(#g)"/>' +
-        '<circle cx="150" cy="132" r="58" fill="rgba(0,0,0,.07)"/>' +
-        '<path d="M150 202c48 0 84 26 92 66H58c8-40 44-66 92-66z" fill="rgba(0,0,0,.07)"/>' +
-        '<text x="150" y="150" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial" ' +
-          'font-size="52" font-weight="700" fill="rgba(0,0,0,.34)">' + initials + '</text>' +
-        '<text x="150" y="322" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial" ' +
-          'font-size="15" fill="rgba(0,0,0,.32)">NO. ' + code + '</text>' +
-      '</svg>';
-
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  /* Заглушки рисует js/placeholder.js — там же живут все варианты. */
+  function placeholder(seed, label, kind) {
+    return global.Placeholder.make(seed, label, kind);
   }
 
   /* --------------------------------- мастера ------------------------------ */

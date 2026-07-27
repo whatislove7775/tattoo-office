@@ -227,7 +227,8 @@
   /* ------------------------- заглушки для картинок ------------------------ */
   function imgFail(el) {
     el.onerror = null;   /* чтобы не зациклиться, если и заглушка не встанет */
-    el.src = global.DATA.placeholder(el.dataset.seed || el.alt || 'to', el.dataset.label || el.alt);
+    el.src = global.DATA.placeholder(el.dataset.seed || el.alt || 'to',
+                                    el.dataset.label || el.alt, el.dataset.kind);
     el.classList.add('is-placeholder');
   }
 

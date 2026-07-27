@@ -16,9 +16,10 @@
   }
 
   /* Картинка с автоматической заглушкой, если файла ещё нет в assets. */
-  function img(src, seed, label, cls, extra) {
+  function img(src, seed, label, cls, extra, kind) {
     return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(label || '') + '"' +
            ' loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
+           (kind ? ' data-kind="' + esc(kind) + '"' : '') +
            ' onerror="TO.imgFail(this)"' + (extra || '') + '>';
   }
 
@@ -132,7 +133,7 @@
           var cap = pick(w.cap);
           return '<figure class="work" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
                  'data-seed="' + esc(m.id + i) + '" data-sfx="open">' +
-                   img(w.src, m.id + '-' + tab + i, cap, 'work__img') +
+                   img(w.src, m.id + '-' + tab + i, cap, 'work__img', '', 'tattoo') +
                    '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' +
                  '</figure>';
         }).join('') + '</div>';
@@ -164,7 +165,7 @@
     html: function () {
       var d = global.DATA.interior;
       var thumbs = d.photos.map(function (p, i) {
-        return img(p.src, 'int' + i, pick(p.cap), '', ' data-i="' + i + '" data-sfx="click"');
+        return img(p.src, 'int' + i, pick(p.cap), '', ' data-i="' + i + '" data-sfx="click"', 'room');
       }).join('');
       var dots = d.photos.map(function (_, i) {
         return '<span class="dot" data-i="' + i + '"' + (i === 0 ? ' aria-current="true"' : '') + '></span>';
@@ -174,7 +175,7 @@
              '<div class="interior">' +
                '<div>' +
                  '<div class="interior__stagebox" id="intStage">' +
-                   img(d.scan, 'scan', t('interior.scan'), '') +
+                   img(d.scan, 'scan', t('interior.scan'), '', '', 'room') +
                  '</div>' +
                  '<div class="dots" id="intDots">' + dots + '</div>' +
                '</div>' +
@@ -193,7 +194,7 @@
 
       function show(i) {
         var p = d.photos[i];
-        stage.innerHTML = img(p.src, 'int' + i, pick(p.cap), '');
+        stage.innerHTML = img(p.src, 'int' + i, pick(p.cap), '', '', 'room');
         dots.querySelectorAll('.dot').forEach(function (el) {
           el.setAttribute('aria-current', String(+el.dataset.i === i));
         });
@@ -397,7 +398,8 @@
       /* картинка-настроение: свой файл кладётся в assets/auth/ */
       var meme = isReg ? '' :
         '<div class="auth__meme">' +
-          img('assets/auth/' + role + '.jpg', 'meme-' + role, '', 'auth__memeImg') +
+          img('assets/auth/' + role + '.png', 'meme-' + role,
+              t('auth.meme' + (role === 'master' ? 'Master' : 'Customer')), 'auth__memeImg', '', 'meme') +
           '<span class="auth__memeCap">' + esc(t('auth.meme' + (role === 'master' ? 'Master' : 'Customer'))) + '</span>' +
         '</div>';
 
