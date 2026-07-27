@@ -11,30 +11,29 @@
 </head>
 <body>
 
-<!-- ====== шапка: бегущая строка и логотип в одном корпусе, встык к верху ====== -->
-<header class="topbar panel">
-  <div class="topbar__line">
-    <div class="topbar__label">ABOUT:</div>
-    <div class="marquee" id="marquee">
-      <div class="marquee__track" id="marqueeTrack"></div>
-    </div>
-  </div>
-
-  <div class="topbar__brand">
-    <a class="brand__logo" href="#/masters" aria-label="Tattoo Office" data-sfx="nav">
-      <img src="assets/logo.svg" alt="Tattoo Office">
-    </a>
-
-    <div class="brand__controls">
-      <div class="lang">
-        <button class="lang__btn" data-lang="ru" data-sfx="toggle">ru</button><span class="lang__sep">/</span><button class="lang__btn" data-lang="en" data-sfx="toggle">en</button>
-      </div>
-      <button class="theme" id="themeToggle" title="" data-sfx="toggle">
-        <span class="theme__icon" aria-hidden="true">☀</span><span class="theme__state" id="themeState">on</span>
-      </button>
-    </div>
+<!-- ========== «чёлка»: цельная полоса ABOUT + бегущая строка ========== -->
+<header class="fringe panel">
+  <div class="fringe__label">ABOUT:</div>
+  <div class="marquee" id="marquee">
+    <div class="marquee__track" id="marqueeTrack"></div>
   </div>
 </header>
+
+<!-- ========== шапка: логотип и переключатели, отдельным блоком ========== -->
+<div class="brand panel">
+  <a class="brand__logo" href="#/masters" aria-label="Tattoo Office" data-sfx="nav">
+    <img src="assets/logo.svg" alt="Tattoo Office">
+  </a>
+
+  <div class="brand__controls">
+    <div class="lang">
+      <button class="lang__btn" data-lang="ru" data-sfx="toggle">ru</button><span class="lang__sep">/</span><button class="lang__btn" data-lang="en" data-sfx="toggle">en</button>
+    </div>
+    <button class="theme" id="themeToggle" title="" data-sfx="toggle">
+      <span class="theme__icon" aria-hidden="true">☀</span><span class="theme__state" id="themeState">on</span>
+    </button>
+  </div>
+</div>
 
 <!-- ============ основная сцена ============ -->
 <main class="stage panel" id="stage" tabindex="-1">
