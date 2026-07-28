@@ -76,6 +76,7 @@
 
     stageInner.scrollTop = 0;
     paintMenu(found ? found.route.nav : null);
+    paintMenuShape();
     updateThumb();
   }
 
@@ -216,6 +217,38 @@
     path.setAttribute('d', d);
   }
 
+  /* ---------------------------- форма меню --------------------------------- */
+  /* Тот же приём, что и для шапки: форма — один SVG-путь по присланному
+     menu.svg («Menu:» в собственной «пятке» сверху-слева, дуги радиуса 26),
+     координаты пересчитываются в реальных пикселях при загрузке, ресайзе
+     и смене языка (высота блока зависит от того, сколько строк займёт текст). */
+  function paintMenuShape() {
+    var menu = document.getElementById('menu');
+    var path = document.getElementById('menuShapePath');
+    if (getComputedStyle(menu).position === 'static') { path.removeAttribute('d'); return; }
+    var w = menu.offsetWidth;
+    var h = menu.offsetHeight;
+    if (!w || !h) return;
+    var r = 26;
+    var tabH = Math.round(h * 0.211);
+    var notchX = Math.round(w * 0.32);
+
+    var d = 'M0,' + r +
+      'A' + r + ',' + r + ' 0 0 1 ' + r + ',0' +
+      'H' + (w - r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + w + ',' + r +
+      'V' + (h - r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + (w - r) + ',' + h +
+      'H' + notchX +
+      'A' + r + ',' + r + ' 0 0 1 ' + (notchX - r) + ',' + (h - r) +
+      'V' + (tabH + r) +
+      'A' + r + ',' + r + ' 0 0 0 ' + (notchX - r) + ',' + tabH +
+      'H' + r +
+      'A' + r + ',' + r + ' 0 0 1 0,' + (tabH - r) +
+      'V' + r + 'Z';
+    path.setAttribute('d', d);
+  }
+
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
     var thumb = document.getElementById('decoThumb');
@@ -292,6 +325,7 @@
     paintFooter();
     render();
     paintHeaderShape();
+    paintMenuShape();
 
     /* переключение языка */
     document.querySelectorAll('.lang__btn').forEach(function (btn) {
@@ -320,6 +354,7 @@
     stageInner.addEventListener('scroll', updateThumb, { passive: true });
     global.addEventListener('resize', updateThumb);
     global.addEventListener('resize', paintHeaderShape);
+    global.addEventListener('resize', paintMenuShape);
     global.addEventListener('hashchange', render);
   }
 
