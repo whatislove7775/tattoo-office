@@ -182,6 +182,40 @@
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#17171a' : '#e8e8e6');
   }
 
+  /* ---------------------------- форма шапки -------------------------------- */
+  /* Единый корпус ABOUT + лого рисуется как одна SVG-фигура (не два div'а):
+     слева невысокая полоса, справа блок логотипа повыше, переход — ступенька
+     из двух дуг радиуса 26 с прямым участком между ними, как в присланном
+     макете. Координаты считаются в реальных пикселях при каждом ресайзе —
+     так углы остаются окружностями, а не растянутыми эллипсами. */
+  function paintHeaderShape() {
+    var header = document.getElementById('siteHeader');
+    var fringe = header.querySelector('.fringe');
+    var brand = header.querySelector('.brand');
+    var path = document.getElementById('headerShapePath');
+    if (getComputedStyle(fringe).position === 'static') { path.removeAttribute('d'); return; }
+
+    var w = header.clientWidth;
+    var h = brand.offsetHeight;
+    var a = fringe.offsetHeight;
+    var l = brand.offsetWidth;
+    var r = 26;
+    var notch = w - l;
+
+    var d = 'M0,0' +
+      'H' + w +
+      'V' + (h - r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + (w - r) + ',' + h +
+      'H' + (notch + r) +
+      'A' + r + ',' + r + ' 0 0 1 ' + notch + ',' + (h - r) +
+      'V' + (a + r) +
+      'A' + r + ',' + r + ' 0 0 0 ' + (notch - r) + ',' + a +
+      'H' + r +
+      'A' + r + ',' + r + ' 0 0 1 0,' + (a - r) +
+      'V0Z';
+    path.setAttribute('d', d);
+  }
+
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
     var thumb = document.getElementById('decoThumb');
@@ -257,6 +291,7 @@
     paintLogin();
     paintFooter();
     render();
+    paintHeaderShape();
 
     /* переключение языка */
     document.querySelectorAll('.lang__btn').forEach(function (btn) {
@@ -284,6 +319,7 @@
 
     stageInner.addEventListener('scroll', updateThumb, { passive: true });
     global.addEventListener('resize', updateThumb);
+    global.addEventListener('resize', paintHeaderShape);
     global.addEventListener('hashchange', render);
   }
 
