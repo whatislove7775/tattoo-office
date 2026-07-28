@@ -43,9 +43,7 @@
                '</button>';
       }).join('');
 
-      return head('masters.title',
-                  '<span class="spacer"></span><span class="hint">' + esc(t('masters.hint')) + '</span>') +
-             '<div class="drift" id="driftBox">' + cards + '</div>';
+      return '<div class="drift" id="driftBox">' + cards + '</div>';
     },
 
     mount: function (root) {

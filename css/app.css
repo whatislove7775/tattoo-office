@@ -143,7 +143,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 }
 
 .polaroid { cursor: url("../assets/cursors/pin.png") 5 1, grab; }
-.polaroid.is-dragging { cursor: url("../assets/cursors/sizeall.png") 10 10, grabbing; }
+.polaroid.is-dragging { cursor: url("../assets/cursors/pin.png") 5 1, grabbing; }
 .drift--static .polaroid { cursor: url("../assets/cursors/link.png") 10 10, pointer; }
 
 .textarea { cursor: url("../assets/cursors/beam.png") 15 16, text; }
@@ -376,39 +376,42 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 }
 .rail > * { pointer-events: auto; }
 
-/* «Menu:» стоит слева от столбца пунктов — как в макете, не над ним */
+/* «Menu:» стоит слева от столбца пунктов, в отдельной «пятке» сверху —
+   форма по присланному menu.svg, дуги считает js/app.js (paintMenuShape),
+   как и для шапки. Сама подпись «Menu:» при этом начинается на той же
+   вертикали, что и «Log in:» и подвал — этого просит текущий макет. */
 .menu {
+  position: relative;
   padding: 22px 26px 24px;
-  border-radius: 26px;
   display: flex;
   align-items: flex-start;
   gap: 20px;
 }
-/* Подпись «Menu:» вынесена за левый край блока — как в макете.
-   Своя белая подложка заходит под панель, шов прячется. */
+.menu__shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,.14)) drop-shadow(0 2px 6px rgba(0,0,0,.08));
+}
+:root[data-theme="dark"] .menu__shape { filter: drop-shadow(0 18px 34px rgba(0,0,0,.5)) drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+.menu__shape path {
+  fill: var(--panel);
+  stroke: var(--panel-edge);
+  stroke-width: 1;
+  transition: fill .35s ease, stroke .35s ease;
+}
 .menu__title {
   position: relative;
-  isolation: isolate;
+  z-index: 1;
   font-size: 19px;
   flex: none;
-  margin-left: -86px;
-  padding: 4px 0 4px 4px;
-}
-.menu__title::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: -24px; right: -34px; top: -16px; bottom: -16px;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-right: 0;
-  border-radius: 26px 0 0 26px;
-  box-shadow: -7px 7px 16px rgba(0,0,0,.10);
-  pointer-events: none;
 }
 .menu__list {
   position: relative;
-  z-index: 1;            /* поверх «пятки» подписи */
+  z-index: 1;
   list-style: none; margin: 0; padding: 0; flex: 1 1 auto;
 }
 .menu__item {
@@ -509,7 +512,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 .polaroid {
   position: absolute;
   top: 0; left: 0;
-  width: 112px;
+  width: 132px;
   padding: 0;
   background: none;
   user-select: none;
@@ -551,7 +554,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 /* сетка-фолбэк для мобильных и для reduce-motion */
 .drift--static {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
   gap: 20px;
   height: auto;
   min-height: 0;
@@ -963,9 +966,14 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   .stage__inner { position: static; padding: 20px; }
   .rail { position: static; width: auto; margin: 0 16px 24px; }
   .foot { margin-top: 0; }
-  /* в узкой колонке выступать некуда — подпись меню возвращается внутрь блока */
-  .menu__title { margin-left: 0; }
-  .menu__title::before { display: none; }
+  /* в узкой колонке форма из SVG не нужна — обычная плашка, как у входа */
+  .menu {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    box-shadow: var(--shadow-lg);
+    border-radius: 26px;
+  }
+  .menu__shape { display: none; }
   .deco-scroll { display: none; }
   .master { grid-template-columns: 1fr; gap: 20px; }
   .master__photo { max-width: 260px; }
