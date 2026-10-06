@@ -16,24 +16,24 @@
 | POST   | /me/password                             | current,password; отзывает все сессии                                           |
 | GET    | /bookings                                | Свои брони, платежи и баланс                                                    |
 | POST   | /bookings                                | date,hour,duration,resourceId,extras:[{id,qty}]; manual,userId только персоналу |
-| POST   | /bookings/:id/cancel                     | Своя бронь / админ / менеджер                                                   |
+| POST   | /bookings/:id/cancel                     | Своя бронь / админ                                                   |
 | POST   | /bookings/:id/upgrade                    | Мастер повышает тариф открытого итогового счёта                                 |
 | GET    | /payments/:id                            | Только владелец платежа                                                         |
 | GET    | /payments/:id/checkout                   | Параметры виджета с серверной суммой; live отключён                             |
 | POST   | /payments/:id/test                       | Только режим test, не production                                                |
 | GET    | /notifications                           | Входящие своего аккаунта                                                        |
 | POST   | /feedback                                | message, от 5 до 4000 символов                                                  |
-| GET    | /admin                                   | Данные по роли сотрудника; модератор не получает финансы/пользователей          |
+| GET    | /admin                                   | Полные данные управления; только админ          |
 | PATCH  | /admin/settings                          | Только админ                                                                    |
-| POST   | /admin/users                             | Админ; менеджеру разрешено создание гостя                                       |
+| POST   | /admin/users                             | Админ: создание резидента, гостя или администратора                                       |
 | PATCH  | /admin/users/:id                         | Только админ: email,role,active                                                 |
 | POST   | /admin/resources                         | Только админ: id?,name,active,calendarId                                        |
-| POST   | /admin/catalog                           | Админ/менеджер: id?,name,kind,price,stock,active                                |
-| POST   | /admin/blocks                            | Админ/менеджер: resourceId?,startsAt,endsAt,reason                              |
-| DELETE | /admin/blocks/:id                        | Админ/менеджер                                                                  |
-| POST   | /admin/bookings/:id/invoice              | Админ/менеджер: duration                                                        |
-| POST   | /admin/bookings/:id/resolve-cancel       | Админ/менеджер: credit:true/false                                               |
-| PUT    | /admin/content/:id                       | Админ/модератор: title,body,published; master-N для мастера                     |
+| POST   | /admin/catalog                           | Админ: id?,name,kind,price,stock,active                                |
+| POST   | /admin/blocks                            | Админ: resourceId?,startsAt,endsAt,reason                              |
+| DELETE | /admin/blocks/:id                        | Админ                                                                  |
+| POST   | /admin/bookings/:id/invoice              | Админ: duration                                                        |
+| POST   | /admin/bookings/:id/resolve-cancel       | Админ: credit:true/false                                               |
+| PUT    | /admin/content/:id                       | Админ: title,body,published; master-N для мастера                     |
 | PATCH  | /admin/feedback/:id                      | Сотрудник: status:new/done                                                      |
 | POST   | /webhooks/cloudpayments/check            | HMAC от исходного тела запроса                                                  |
 | POST   | /webhooks/cloudpayments/pay              | HMAC, сумма/валюта/аккаунт, идемпотентная фиксация                              |

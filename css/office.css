@@ -1,3 +1,4 @@
+@scope (.office-feature) {
 :root {
   font-family: Helvetica, Arial, sans-serif;
   color: #171715;
@@ -1463,4 +1464,6 @@ dialog img {
 :root {
   background-image:
     linear-gradient(#fafaf96b, #fafaf96b), url("../assets/pattern.svg");
+}
+
 }

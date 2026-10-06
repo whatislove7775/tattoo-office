@@ -373,32 +373,53 @@ test("worker prepares test receipts and in-app notifications without contacting 
   }
   assert.ok((await db.query("SELECT * FROM notifications")).rows.length > 0);
 });
-test("moderator cannot see users or finance; guest registration cannot be requested publicly", async () => {
+test("one site operator has full access and legacy staff roles cannot be created", async () => {
   const created = await request(
     "/admin/users",
     "POST",
     {
-      name: "Moderator",
-      email: "moderator@test.invalid",
+      name: "Site operator",
+      email: "operator@test.invalid",
       password,
-      role: "moderator",
+      role: "admin",
     },
     admin,
   );
   assert.equal(created.status, 201);
   const cookie = (
     await request("/auth/login", "POST", {
-      email: "moderator@test.invalid",
+      email: "operator@test.invalid",
       password,
     })
   ).cookie;
   const data = (await request("/admin", "GET", null, cookie)).data;
-  assert.equal(data.users, undefined);
-  assert.equal(data.payments, undefined);
+  assert.ok(Array.isArray(data.users));
+  assert.ok(Array.isArray(data.payments));
+  assert.ok(Array.isArray(data.audit));
+  assert.ok(data.integrations);
   assert.equal(
-    (await request("/admin/settings", "PATCH", { deposit: 0 }, cookie)).status,
-    403,
+    (
+      await request(
+        "/admin/settings",
+        "PATCH",
+        { studioName: "Tattoo Office" },
+        cookie,
+      )
+    ).status,
+    200,
   );
+  for (const role of ["manager", "moderator"])
+    assert.equal(
+      (
+        await request(
+          "/admin/users",
+          "POST",
+          { name: "Old role", email: role + "@test.invalid", password, role },
+          admin,
+        )
+      ).status,
+      403,
+    );
   const reg = await request("/auth/register", "POST", {
     name: "Attempt",
     email: "role@test.invalid",

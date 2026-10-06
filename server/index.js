@@ -174,7 +174,7 @@ export async function createApp(db) {
       req.user && r.includes(req.user.role)
         ? next()
         : res.status(403).json({ error: "Недостаточно прав" });
-  const staff = roles("admin", "manager");
+  const staff = roles("admin");
   const safe = (u) =>
     u
       ? {
@@ -424,9 +424,7 @@ export async function createApp(db) {
       await lock(q);
       await expire(q);
       const s = await settings(q),
-        manual =
-          ["admin", "manager"].includes(req.user.role) &&
-          req.body.manual === true,
+        manual = req.user.role === "admin" && req.body.manual === true,
         u = await one(
           q,
           "SELECT * FROM users WHERE id=$1 AND active=true FOR UPDATE",
@@ -563,11 +561,7 @@ export async function createApp(db) {
       const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [
         req.params.id,
       ]);
-      if (
-        !b ||
-        (b.user_id !== req.user.id &&
-          !["admin", "manager"].includes(req.user.role))
-      )
+      if (!b || (b.user_id !== req.user.id && req.user.role !== "admin"))
         fail("Бронь не найдена", 404);
       if (
         !["pending", "confirmed"].includes(b.status) ||
@@ -629,66 +623,59 @@ export async function createApp(db) {
       res.status(201).json({ ok: true });
     },
   );
-  app.get(
-    "/api/admin",
-    roles("admin", "manager", "moderator"),
-    async (req, res) => {
-      const role = req.user.role,
-        result = {
-          content: (await db.query("SELECT * FROM content")).rows,
-          feedback: (
-            await db.query(
-              "SELECT * FROM feedback ORDER BY created_at DESC LIMIT 200",
-            )
-          ).rows,
-        };
-      if (role !== "moderator") {
-        Object.assign(result, {
-          users: (
-            await db.query(
-              "SELECT id,email,name,role,active,balance,created_at FROM users ORDER BY created_at DESC",
-            )
-          ).rows,
-          bookings: (
-            await db.query(
-              "SELECT b.*,u.name AS user_name,r.name AS resource_name FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id ORDER BY b.starts_at DESC LIMIT 500",
-            )
-          ).rows,
-          blocks: (
-            await db.query("SELECT * FROM blocks ORDER BY starts_at DESC")
-          ).rows,
-          catalog: (await db.query("SELECT * FROM catalog ORDER BY name")).rows,
-          payments: (
-            await db.query(
-              "SELECT * FROM payments ORDER BY created_at DESC LIMIT 500",
-            )
-          ).rows,
-          resources: (await db.query("SELECT * FROM resources ORDER BY name"))
-            .rows,
-        });
-      }
-      if (role === "admin") {
-        result.audit = (
+  app.get("/api/admin", roles("admin"), async (req, res) => {
+    const role = req.user.role,
+      result = {
+        content: (await db.query("SELECT * FROM content")).rows,
+        feedback: (
           await db.query(
-            "SELECT * FROM audit ORDER BY created_at DESC LIMIT 100",
+            "SELECT * FROM feedback ORDER BY created_at DESC LIMIT 200",
           )
-        ).rows;
-        result.outbox = (
+        ).rows,
+      };
+    if (role === "admin") {
+      Object.assign(result, {
+        users: (
           await db.query(
-            "SELECT id,kind,status,attempts,last_error,created_at FROM outbox ORDER BY created_at DESC LIMIT 100",
+            "SELECT id,email,name,role,active,balance,created_at FROM users ORDER BY created_at DESC",
           )
-        ).rows;
-        result.integrations = {
-          cloudpayments: !!process.env.CLOUDPAYMENTS_API_SECRET,
-          cloudkassir: !!process.env.CLOUDKASSIR_API_SECRET,
-          calendar: !!process.env.GOOGLE_SERVICE_ACCOUNT,
-          telegram: !!process.env.TELEGRAM_BOT_TOKEN,
-          email: !!process.env.EMAIL_API_URL,
-        };
-      }
-      res.json(result);
-    },
-  );
+        ).rows,
+        bookings: (
+          await db.query(
+            "SELECT b.*,u.name AS user_name,r.name AS resource_name FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id ORDER BY b.starts_at DESC LIMIT 500",
+          )
+        ).rows,
+        blocks: (await db.query("SELECT * FROM blocks ORDER BY starts_at DESC"))
+          .rows,
+        catalog: (await db.query("SELECT * FROM catalog ORDER BY name")).rows,
+        payments: (
+          await db.query(
+            "SELECT * FROM payments ORDER BY created_at DESC LIMIT 500",
+          )
+        ).rows,
+        resources: (await db.query("SELECT * FROM resources ORDER BY name"))
+          .rows,
+      });
+    }
+    if (role === "admin") {
+      result.audit = (
+        await db.query("SELECT * FROM audit ORDER BY created_at DESC LIMIT 100")
+      ).rows;
+      result.outbox = (
+        await db.query(
+          "SELECT id,kind,status,attempts,last_error,created_at FROM outbox ORDER BY created_at DESC LIMIT 100",
+        )
+      ).rows;
+      result.integrations = {
+        cloudpayments: !!process.env.CLOUDPAYMENTS_API_SECRET,
+        cloudkassir: !!process.env.CLOUDKASSIR_API_SECRET,
+        calendar: !!process.env.GOOGLE_SERVICE_ACCOUNT,
+        telegram: !!process.env.TELEGRAM_BOT_TOKEN,
+        email: !!process.env.EMAIL_API_URL,
+      };
+    }
+    res.json(result);
+  });
   app.patch("/api/admin/settings", roles("admin"), async (req, res) => {
     await db.transaction(async (q) => {
       await lock(q);
@@ -758,10 +745,7 @@ export async function createApp(db) {
   });
   app.post("/api/admin/users", staff, async (req, res) => {
     const role = req.body.role || "guest";
-    if (
-      !["guest", "resident", "manager", "moderator", "admin"].includes(role) ||
-      (req.user.role === "manager" && role !== "guest")
-    )
+    if (!["guest", "resident", "admin"].includes(role))
       fail("Недопустимая роль", 403);
     const id = uuid();
     await db.transaction(async (q) => {
@@ -789,9 +773,7 @@ export async function createApp(db) {
       const role = req.body.role || u.role,
         active = req.body.active ?? u.active;
       if (
-        !["guest", "resident", "manager", "moderator", "admin"].includes(
-          role,
-        ) ||
+        !["guest", "resident", "admin"].includes(role) ||
         typeof active !== "boolean"
       )
         fail("Проверьте роль");
@@ -962,45 +944,37 @@ export async function createApp(db) {
       res.json({ ok: true });
     },
   );
-  app.put(
-    "/api/admin/content/:id",
-    roles("admin", "moderator"),
-    async (req, res) => {
-      if (!/^[\w-]{1,50}$/.test(req.params.id)) fail("Недопустимый ключ");
-      const data = {
-        title: String(req.body.title || "").slice(0, 150),
-        body: String(req.body.body || "").slice(0, 20000),
-        published: req.body.published === true,
-        specialty: String(req.body.specialty || "").slice(0, 150),
-        portfolio: Array.isArray(req.body.portfolio)
-          ? req.body.portfolio.filter((x) => /^tattoo-[1-8]$/.test(x))
-          : [],
-        drafts: Array.isArray(req.body.drafts)
-          ? req.body.drafts.filter((x) => /^draft-[1-7]$/.test(x))
-          : [],
-      };
-      await db.transaction(async (q) => {
-        await q.query(
-          "INSERT INTO content VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2",
-          [req.params.id, JSON.stringify(data)],
-        );
-        await audit(q, req.user.id, "content.save", { id: req.params.id });
-      });
-      res.json({ ok: true });
-    },
-  );
-  app.patch(
-    "/api/admin/feedback/:id",
-    roles("admin", "manager", "moderator"),
-    async (req, res) => {
-      if (!["new", "done"].includes(req.body.status)) fail("Статус");
-      await db.query("UPDATE feedback SET status=$1 WHERE id=$2", [
-        req.body.status,
-        req.params.id,
-      ]);
-      res.json({ ok: true });
-    },
-  );
+  app.put("/api/admin/content/:id", roles("admin"), async (req, res) => {
+    if (!/^[\w-]{1,50}$/.test(req.params.id)) fail("Недопустимый ключ");
+    const data = {
+      title: String(req.body.title || "").slice(0, 150),
+      body: String(req.body.body || "").slice(0, 20000),
+      published: req.body.published === true,
+      specialty: String(req.body.specialty || "").slice(0, 150),
+      portfolio: Array.isArray(req.body.portfolio)
+        ? req.body.portfolio.filter((x) => /^tattoo-[1-8]$/.test(x))
+        : [],
+      drafts: Array.isArray(req.body.drafts)
+        ? req.body.drafts.filter((x) => /^draft-[1-7]$/.test(x))
+        : [],
+    };
+    await db.transaction(async (q) => {
+      await q.query(
+        "INSERT INTO content VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2",
+        [req.params.id, JSON.stringify(data)],
+      );
+      await audit(q, req.user.id, "content.save", { id: req.params.id });
+    });
+    res.json({ ok: true });
+  });
+  app.patch("/api/admin/feedback/:id", roles("admin"), async (req, res) => {
+    if (!["new", "done"].includes(req.body.status)) fail("Статус");
+    await db.query("UPDATE feedback SET status=$1 WHERE id=$2", [
+      req.body.status,
+      req.params.id,
+    ]);
+    res.json({ ok: true });
+  });
   const settle = async (q, id, provider) => {
     await lock(q);
     await expire(q);
@@ -1168,13 +1142,11 @@ export async function createApp(db) {
     if (e.code === "22P02")
       return res.status(400).json({ error: "Некорректный идентификатор" });
     if (!e.status) console.error(e.message);
-    res
-      .status(e.status || 500)
-      .json({
-        error: e.status
-          ? e.message
-          : "Не удалось выполнить действие. Повторите позже.",
-      });
+    res.status(e.status || 500).json({
+      error: e.status
+        ? e.message
+        : "Не удалось выполнить действие. Повторите позже.",
+    });
   });
   return app;
 }

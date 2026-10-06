@@ -165,7 +165,7 @@ export async function workerTick(db) {
       } else if (labels[job.kind] && b) {
         const recipients = (
           await db.query(
-            "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND (id=$1 OR role IN ('admin','manager'))",
+            "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND (id=$1 OR role='admin')",
             [b.user_id],
           )
         ).rows;

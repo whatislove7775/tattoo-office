@@ -1,66 +1,102 @@
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Tattoo Office — студия и коворкинг</title>
-    <meta
-      name="description"
-      content="Тату-студия и коворкинг для мастеров. Найдите своего мастера или забронируйте рабочее место."
-    />
-    <link rel="icon" href="assets/favicon.svg" />
-    <link rel="stylesheet" href="css/office.css" />
-  </head>
-  <body>
-    <a class="skip" href="#main">К содержимому</a>
-    <header class="about">
-      <span>ABOUT:</span>
-      <div>
-        Место для тех, кто оставляет след.
-        <i>Tattoo Office — the private club.</i>
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tattoo Office</title>
+<meta name="description" content="Tattoo Office — тату-студия и коворкинг для мастеров. The Tattoo Office Private Club.">
+<meta name="theme-color" content="#e8e8e6">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/office.css">
+<link rel="stylesheet" href="css/refinements.css">
+</head>
+<body>
+
+<!-- ========== шапка: цельная плашка ABOUT + логотип одним корпусом ========== -->
+<div class="header" id="siteHeader">
+  <svg class="header__shape" aria-hidden="true" focusable="false">
+    <path id="headerShapePath"></path>
+  </svg>
+
+  <header class="fringe">
+    <div class="fringe__label">ABOUT:</div>
+    <div class="marquee" id="marquee">
+      <div class="marquee__track" id="marqueeTrack"></div>
+    </div>
+  </header>
+
+  <div class="brand">
+    <a class="brand__logo" href="#/masters" aria-label="Tattoo Office" data-sfx="nav">
+      <img src="assets/logo.svg" alt="Tattoo Office">
+    </a>
+
+    <div class="brand__controls">
+      <div class="lang">
+        <button class="lang__btn" data-lang="ru" data-sfx="toggle">ru</button><span class="lang__sep">/</span><button class="lang__btn" data-lang="en" data-sfx="toggle">en</button>
       </div>
-      <button id="sound" title="Звуки интерфейса" aria-pressed="false">
-        звук: выкл.
+      <button class="theme" id="themeToggle" title="" data-sfx="toggle">
+        <span class="theme__icon" aria-hidden="true">☀</span><span class="theme__state" id="themeState">on</span>
       </button>
-    </header>
-    <a class="brand" href="#/masters" aria-label="Tattoo Office — главная"
-      ><img src="assets/logo.svg" alt="Tattoo Office" /><span
-        >THE TATTOO OFFICE<br />PRIVATE CLUB © 2026</span
-      ></a
-    >
-    <aside class="rail">
-      <nav class="menu" aria-label="Основное меню">
-        <span class="menu-label">Menu:</span>
-        <div id="nav"></div>
-      </nav>
-      <a class="chrome rent" href="#/booking"
-        >Забронировать место <span>↗</span></a
-      >
-      <section id="account" class="account"></section>
-      <div class="rail-note">
-        <span class="status-dot"></span>
-        <span id="office-hours">Офис открыт для ваших идей</span>
-        <p>Татуировки остаются.<br />Хорошие места — тоже.</p>
-      </div>
-      <footer>
-        <div>
-          <a href="#/legal/privacy">Конфиденциальность</a> /
-          <a href="#/legal/offer">Оферта</a> /
-          <a href="#/legal/info">Реквизиты</a>
-        </div>
-        <b>Tattoo Office / Private Club</b><img src="assets/mark.svg" alt="" />
-      </footer>
-    </aside>
-    <main id="main" tabindex="-1">
-      <div class="loading">Открываем офис…</div>
-    </main>
-    <div id="notice" role="status" aria-live="polite" hidden></div>
-    <dialog id="dialog">
-      <form method="dialog">
-        <button class="close" aria-label="Закрыть">×</button>
-      </form>
-      <div id="dialog-content"></div>
-    </dialog>
-    <script type="module" src="js/office.js"></script>
-  </body>
+    </div>
+  </div>
+</div>
+
+<!-- ============ основная сцена ============ -->
+<main class="stage panel" id="stage" tabindex="-1">
+  <div class="stage__inner" id="view"><!-- сюда рендерятся страницы --></div>
+</main>
+
+<!-- ============ правая колонка ============ -->
+<aside class="rail">
+  <nav class="menu" id="menu">
+    <svg class="menu__shape" aria-hidden="true" focusable="false">
+      <path id="menuShapePath"></path>
+    </svg>
+    <div class="menu__title" data-i18n="menu.title">Menu:</div>
+    <ul class="menu__list" id="menuList"></ul>
+  </nav>
+
+  <a class="rent-place" href="#/booking">Rent a place</a>
+  <div class="panel login" id="loginPanel"></div>
+
+  <footer class="panel foot">
+    <div class="foot__links" id="footLinks"></div>
+    <div class="foot__copy">
+      <a href="#/about">Tattoo Office</a> / <a href="#/about">The Tattoo Office Private Club</a> <span>2026 ©</span>
+    </div>
+    <img class="foot__mark" src="assets/mark.svg" alt="">
+  </footer>
+</aside>
+
+<!-- декоративный скролл-бар в стиле 2010-х -->
+<div class="deco-scroll" aria-hidden="true"><div class="deco-scroll__thumb" id="decoThumb"></div></div>
+
+<!-- всплывающие окошки -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__window panel" role="dialog" aria-modal="true">
+    <div class="modal__bar">
+      <span class="modal__title" id="modalTitle"></span>
+      <button class="modal__x" data-close aria-label="close">✕</button>
+    </div>
+    <div class="modal__body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div id="notice" role="status" aria-live="polite" hidden></div>
+<dialog id="dialog"><form method="dialog"><button class="close" aria-label="Закрыть">×</button></form><div id="dialog-content"></div></dialog>
+
+<script src="js/sound.js"></script>
+<script src="js/placeholder.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/data.js"></script>
+
+<script src="js/drift.js"></script>
+<script src="js/pages.js"></script>
+
+<script src="js/app.js"></script>
+<script type="module" src="js/office.js"></script>
+</body>
 </html>

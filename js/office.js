@@ -37,9 +37,7 @@ const addDate = (d, n) =>
 const roleName = {
   resident: "Резидент",
   guest: "Гостевой мастер",
-  admin: "Администратор",
-  manager: "Менеджер",
-  moderator: "Модератор",
+  admin: "Управление сайтом",
 };
 const statusName = {
   pending: "Ожидает предоплаты",
@@ -83,35 +81,6 @@ const storage = {
     } catch {}
   },
 };
-let sound = storage.get("sound", false),
-  audio;
-function tick() {
-  if (!sound) return;
-  try {
-    audio ??= new AudioContext();
-    const o = audio.createOscillator(),
-      g = audio.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(830, audio.currentTime);
-    o.frequency.exponentialRampToValueAtTime(350, audio.currentTime + 0.045);
-    g.gain.setValueAtTime(0.025, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.06);
-    o.connect(g).connect(audio.destination);
-    o.start();
-    o.stop(audio.currentTime + 0.065);
-  } catch {}
-}
-$("#sound").textContent = "звук: " + (sound ? "вкл." : "выкл.");
-$("#sound").setAttribute("aria-pressed", sound);
-$("#sound").onclick = () => {
-  sound = !sound;
-  storage.set("sound", sound);
-  $("#sound").textContent = "звук: " + (sound ? "вкл." : "выкл.");
-  $("#sound").setAttribute("aria-pressed", sound);
-};
-document.addEventListener("click", (e) => {
-  if (e.target.closest("button,a")) tick();
-});
 let noticeTimer;
 function notify(s) {
   $("#notice").textContent = s;
@@ -131,8 +100,10 @@ async function api(path, method = "GET", body) {
   return data;
 }
 function go(path) {
-  if (location.hash === "#/" + path) render();
-  else location.hash = "#/" + path;
+  if (location.hash === "#/" + path) {
+    if ($("#office-view")) render();
+    else window.TO?.go(location.hash);
+  } else location.hash = "#/" + path;
 }
 function head(title, back = "") {
   return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${esc(title)}</h1>${back ? `<a class="back" href="#/${back}">← назад</a>` : ""}</div>`;
@@ -182,7 +153,7 @@ function onForm(id, fn) {
   };
 }
 function modal(html) {
-  $("#dialog-content").innerHTML = html;
+  $("#dialog-content").innerHTML = `<div class="office-feature">${html}</div>`;
   $("#dialog").showModal();
 }
 $("#dialog").addEventListener("click", (e) => {
@@ -194,37 +165,37 @@ async function refresh() {
   paintShell();
 }
 function paintShell() {
-  const route = location.hash.split("/")[1] || "masters";
-  $("#nav").innerHTML = [
-    ["masters", "Masters"],
-    ["interior", "Interior"],
-    ["find", "How to find"],
-    ["safety", "Safety"],
-    ["archive", "Event Archive"],
-    ["feedback", "Feedback"],
-  ]
-    .map(
-      ([key, name]) =>
-        `<a href="#/${key}" ${route === key ? 'aria-current="page"' : ""}><img src="assets/${route === key ? "pin-active" : "pin"}.png" alt="">${name}</a>`,
-    )
-    .join("");
-  $("#account").innerHTML = me
-    ? `<div class="account-row"><span class="avatar">${esc(me.name.slice(0, 1))}</span><div><a href="#/cabinet">${esc(me.name)}</a><small>${roleName[me.role]} ${["admin", "manager", "moderator"].includes(me.role) ? '· <a href="#/admin">Админка</a>' : ""}</small></div></div>`
-    : '<a href="#/login">Войти в офис →</a><small>Личный кабинет мастера</small>';
-  if (pub)
-    $("#office-hours").textContent =
-      `${pub.settings.openHour}:00—${pub.settings.closeHour}:00 · время Москвы`;
+  const el = document.getElementById("loginPanel");
+  if (!el) return;
+  const en = window.I18N?.get() === "en";
+  el.classList.toggle("login--user", !!me);
+  el.innerHTML = me
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span><a class="who__name" href="#/cabinet">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
+    : `<div class="login__row"><span class="login__label">Log in:</span><span class="login__links"><a href="#/login/customer">as customer</a><a href="#/login/master">as tattoo master</a></span></div>`;
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,
-  name: `Мастер ${String(i + 1).padStart(2, "0")}`,
+  name: window.I18N.pick(window.DATA.masters[i].name),
   filename: `tattooartist_${String(i + 1).padStart(2, "0")}.png`,
   photo: `assets/masters/master-${i + 1}.png`,
 }));
 function syncMasters() {
   for (const m of masters) {
     const c = pub?.content.find((c) => c.id === "master-" + m.id)?.data;
-    m.name = c?.title || `Мастер ${String(m.id).padStart(2, "0")}`;
+    m.name = c?.title || window.I18N.pick(window.DATA.masters[m.id - 1].name);
+    const original = window.DATA.masters[m.id - 1];
+    if (c?.title) original.name = { ru: c.title, en: c.title };
+    if (c?.body) original.bio = { ru: c.body, en: c.body };
+    if (c?.portfolio?.length)
+      original.portfolio = c.portfolio.map((f) => ({
+        src: `assets/works/${f}.png`,
+        cap: { ru: f, en: f },
+      }));
+    if (c?.drafts?.length)
+      original.drafts = c.drafts.map((f) => ({
+        src: `assets/works/${f}.png`,
+        cap: { ru: f, en: f },
+      }));
     m.bio = c?.body || "";
     m.specialty = c?.specialty || "";
     m.portfolio = c?.portfolio || [];
@@ -479,7 +450,7 @@ function bookingPage() {
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<hr><p>Сейчас: ${money(s.deposit)}<br><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение менеджера" : "удержание согласно регламенту"}.</p>${!me ? '<p><a href="#/login" id="booking-login">Войдите, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<hr><p>Сейчас: ${money(s.deposit)}<br><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p><a href="#/login" id="booking-login">Войдите, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
@@ -738,34 +709,18 @@ const table = (heads, rows) =>
   `<div class="table-wrap"><table><thead><tr>${heads.map((x) => `<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>${!rows.length ? '<div class="empty">Пока пусто.</div>' : ""}`;
 async function adminPage() {
   if (!me) return authPage(false);
-  if (!["admin", "manager", "moderator"].includes(me.role))
+  if (me.role !== "admin")
     return win("Служебный вход", "У вас нет доступа к этому разделу.");
   adminData = await api("/admin");
   const a = adminData,
     s = pub.settings,
-    tabs =
-      me.role === "moderator"
-        ? [
-            ["masters", "Мастера"],
-            ["content", "Публикации"],
-            ["feedback", "Обращения"],
-          ]
-        : [
-            ["schedule", "Расписание"],
-            ["bookings", "Записи"],
-            ["users", "Люди"],
-            ["catalog", "Склад и услуги"],
-            ["finance", "Финансы"],
-            ["feedback", "Обращения"],
-            ...(me.role === "admin"
-              ? [
-                  ["masters", "Мастера"],
-                  ["content", "Публикации"],
-                  ["settings", "Настройки"],
-                  ["audit", "Журнал"],
-                ]
-              : []),
-          ];
+    tabs = [
+      ["schedule", "Расписание"], ["bookings", "Записи"],
+      ["users", "Люди"], ["catalog", "Склад и услуги"],
+      ["finance", "Финансы"], ["feedback", "Обращения"],
+      ["masters", "Мастера"], ["content", "Публикации"],
+      ["settings", "Настройки"], ["audit", "Журнал"],
+    ];
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   let body = "";
   if (adminTab === "schedule") {
@@ -822,7 +777,7 @@ async function adminPage() {
       ),
     );
   if (adminTab === "users")
-    body = `<div class="admin-tools"><button class="chrome" id="add-user">+ ${me.role === "manager" ? "Гостевой мастер" : "Пользователь"}</button></div>${table(
+    body = `<div class="admin-tools"><button class="chrome" id="add-user">+ Пользователь</button></div>${table(
       ["Имя", "Почта", "Роль", "Баланс", "Доступ"],
       a.users.map(
         (u) =>
@@ -876,7 +831,7 @@ async function adminPage() {
       "lateCancellation",
       "Поздняя отмена",
       [
-        ["review", "На рассмотрение менеджера"],
+        ["review", "На рассмотрение администратора"],
         ["retain", "Удержать предоплату по регламенту"],
       ],
       s.lateCancellation,
@@ -1200,6 +1155,7 @@ function legalPage(key) {
   );
 }
 async function render() {
+  if (!$("#office-view")) return;
   const version = ++routeVersion;
   const path = (location.hash || "#/masters").replace(/^#\//, "").split("/");
   paintShell();
@@ -1316,7 +1272,7 @@ async function render() {
       case "safety":
         html = win(
           "Safety / правила студии",
-          `${testNote()}<h2>Забота — часть работы.</h2><div class="prose">${esc(pub.settings.rules)}</div><div class="note-paper">Предоплата ${money(pub.settings.deposit)}. При отмене за ${pub.settings.cancelHours} ч и раньше — возврат на внутренний баланс.<br>Поздняя отмена: ${pub.settings.lateCancellation === "review" ? "рассматривается менеджером" : "удержание по регламенту студии"}.</div><span class="small muted">Версия: ${esc(pub.settings.rulesVersion)}</span>`,
+          `${testNote()}<h2>Забота — часть работы.</h2><div class="prose">${esc(pub.settings.rules)}</div><div class="note-paper">Предоплата ${money(pub.settings.deposit)}. При отмене за ${pub.settings.cancelHours} ч и раньше — возврат на внутренний баланс.<br>Поздняя отмена: ${pub.settings.lateCancellation === "review" ? "рассматривается администратором" : "удержание по регламенту студии"}.</div><span class="small muted">Версия: ${esc(pub.settings.rulesVersion)}</span>`,
         );
         break;
       case "archive": {
@@ -1336,17 +1292,27 @@ async function render() {
         );
         break;
       }
+      case "book":
       case "feedback":
         html = win(
           "Feedback",
           `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<p class="small muted">Если нужен ответ, оставьте удобный способ связи. Не указывайте медицинские или платёжные данные.</p><button class="chrome" type="submit">Отправить записку →</button></form>`,
         );
-        mount = () =>
+        mount = () => {
+          if (path[0] === "book") {
+            const master = window.DATA.masterById(path[1]);
+            const name = master?.name?.ru || master?.name || "мастеру";
+            $('#feedback-form [name="message"]').value = `Хочу записаться к ${name}.\nМоя идея: \nСвязаться со мной: `;
+          }
           onForm("#feedback-form", async (d, f) => {
             await api("/feedback", "POST", d);
             f.reset();
             notify("Записка передана команде студии");
           });
+        };
+        break;
+      case "about":
+        html = win("Tattoo Office", '<p>Тату-студия и коворкинг для мастеров.</p><a href="#/feedback">Связаться со студией</a>');
         break;
       case "legal":
         html = legalPage(path[1]);
@@ -1357,33 +1323,33 @@ async function render() {
           '<p>В этой папке пусто.</p><a href="#/masters">Вернуться в офис →</a>',
         );
     }
-    if (version !== routeVersion) return;
-    $("#main").innerHTML = html;
+    if (version !== routeVersion || !$("#office-view")) return;
+    $("#office-view").innerHTML = html;
     await mount();
     document.title =
       (path[0] === "masters"
         ? "Tattoo Office — наши люди"
         : $("#main h1")?.textContent || "Tattoo Office") + " / Tattoo Office";
   } catch (e) {
-    if (version !== routeVersion) return;
-    $("#main").innerHTML = win(
+    if (version !== routeVersion || !$("#office-view")) return;
+    $("#office-view").innerHTML = win(
       "Не удалось открыть страницу",
       `<p class="form-error">${esc(e.message)}</p><button class="chrome" id="retry">Попробовать снова</button>`,
     );
     $("#retry").onclick = render;
   }
 }
-window.addEventListener("hashchange", () => {
-  render();
-  window.scrollTo(0, 0);
-});
+window.Office = { render, paintAccount: paintShell, current: () => me };
+window.Store = {
+  current: () => me,
+  logout: async () => {
+    await api("/auth/logout", "POST");
+    await refresh();
+  },
+};
 try {
   await refresh();
-  await render();
 } catch (e) {
-  $("#main").innerHTML = win(
-    "Офис временно недоступен",
-    `<p>Не удалось подключиться к серверу.</p><p class="small muted">${esc(e.message)}</p><button class="chrome" id="reload">Повторить</button>`,
-  );
-  $("#reload").onclick = () => location.reload();
+  notify("API недоступен: " + e.message);
 }
+window.dispatchEvent(new Event("office-ready"));

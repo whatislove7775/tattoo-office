@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS settings(id integer PRIMARY KEY DEFAULT 1, data jsonb NOT NULL);
-CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY, email text UNIQUE NOT NULL, password text NOT NULL, name text NOT NULL, role text NOT NULL CHECK(role IN ('resident','guest','admin','manager','moderator')), active boolean NOT NULL DEFAULT true, balance integer NOT NULL DEFAULT 0 CHECK(balance>=0), sequence integer NOT NULL DEFAULT 0, profile jsonb NOT NULL DEFAULT '{}', telegram_id text UNIQUE, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY, email text UNIQUE NOT NULL, password text NOT NULL, name text NOT NULL, role text NOT NULL CHECK(role IN ('resident','guest','admin')), active boolean NOT NULL DEFAULT true, balance integer NOT NULL DEFAULT 0 CHECK(balance>=0), sequence integer NOT NULL DEFAULT 0, profile jsonb NOT NULL DEFAULT '{}', telegram_id text UNIQUE, created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS sessions(token text PRIMARY KEY, user_id uuid REFERENCES users(id), expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS consents(id uuid PRIMARY KEY,user_id uuid REFERENCES users(id), kind text NOT NULL, version text NOT NULL, created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS resources(id uuid PRIMARY KEY, name text NOT NULL, active boolean DEFAULT true, calendar_id text);
@@ -20,3 +20,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id text;
 CREATE TABLE IF NOT EXISTS receipts(id uuid PRIMARY KEY,payment_id uuid UNIQUE REFERENCES payments(id),payload jsonb NOT NULL,status text NOT NULL DEFAULT 'prepared',provider_id text,created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS notifications(id uuid PRIMARY KEY,user_id uuid REFERENCES users(id),message text NOT NULL,created_at timestamptz DEFAULT now(),read_at timestamptz);
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS policy jsonb NOT NULL DEFAULT '{}';
+
+-- The owner requested one full-access site operator instead of staff tiers.
+UPDATE users SET role='admin' WHERE role IN ('manager','moderator');
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN ('resident','guest','admin'));
