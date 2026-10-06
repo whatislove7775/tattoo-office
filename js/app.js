@@ -68,6 +68,9 @@
   }
 
   function render() {
+    document.body.classList.remove("mobile-menu-open");
+    var toggle = document.getElementById("mobileMenuToggle");
+    toggle.setAttribute("aria-expanded", "false");
     var hash = location.hash || "#/masters";
     var found = resolve(hash);
 
@@ -212,6 +215,11 @@
       return;
     }
 
+    if (global.innerWidth <= 900) {
+      var width = header.clientWidth, split = width * .49, bottom = width * .225, top = 44, rad = 17;
+      path.setAttribute("d", `M0,0 H${width} V${bottom-rad} Q${width},${bottom} ${width-rad},${bottom} H${split+rad} Q${split},${bottom} ${split},${bottom-rad} V${top+rad} Q${split},${top} ${split-rad},${top} H${rad} Q0,${top} 0,${top-rad} Z`);
+      return;
+    }
     var w = header.clientWidth;
     var h = brand.offsetHeight;
     var a = fringe.offsetHeight;
@@ -419,6 +427,15 @@
 
   /* -------------------------------- запуск -------------------------------- */
   function boot() {
+    var mobileToggle = document.getElementById("mobileMenuToggle");
+    function closeMobile() { document.body.classList.remove("mobile-menu-open"); mobileToggle.setAttribute("aria-expanded", "false"); }
+    mobileToggle.addEventListener("click", function () {
+      var open = document.body.classList.toggle("mobile-menu-open");
+      mobileToggle.setAttribute("aria-expanded", String(open));
+      mobileToggle.setAttribute("aria-label", open ? "Закрыть меню" : "Открыть меню");
+    });
+    document.addEventListener("keydown", function(e) { if(e.key === "Escape") {closeMobile();mobileToggle.focus();} });
+    document.addEventListener("click", function(e) { if(!e.target.closest(".menu, #loginPanel, #mobileMenuToggle")) closeMobile(); });
     applyTheme(localStorage.getItem("to.theme") || "light");
     var refillMarquee = startMarquee();
     paintLogin();

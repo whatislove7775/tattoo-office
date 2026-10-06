@@ -80,7 +80,7 @@
     /* Карточки раскладываются парами: внутри пары вторая заходит на первую
        на четверть корпуса, а сами пары разнесены по всему полю — иначе
        при сплошном шаге «минус четверть» всё сбивается в кучу в центре. */
-    this.fits = this.w >= cw * 2 && this.h >= ch + PAD * 2;
+    this.fits = global.innerWidth > 900 && this.w >= cw * 2 && this.h >= ch + PAD * 2;
     if (!this.fits) { this.el.classList.add('drift--static'); return; }
 
     var groups = Math.ceil(n / 2);

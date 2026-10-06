@@ -160,6 +160,11 @@ $("#dialog").addEventListener("click", (e) => {
   if (e.target === $("#dialog")) $("#dialog").close();
 });
 async function refresh() {
+  if (window.OFFICE_PUBLIC_ONLY) {
+    const response = await fetch("public-data.json");
+    if (!response.ok) throw new Error("Не удалось загрузить данные сайта");
+    pub = await response.json(); me = null; paintShell(); return;
+  }
   [pub, { user: me }] = await Promise.all([api("/public"), api("/me")]);
   syncMasters();
   paintShell();
@@ -1162,6 +1167,10 @@ async function render() {
   try {
     let html,
       mount = () => {};
+    if (window.OFFICE_PUBLIC_ONLY && ["login", "signup", "cabinet", "admin", "booking", "payment", "feedback", "book"].includes(path[0])) {
+      $("#office-view").innerHTML = win("Онлайн-сервис", '<div class="auth-form"><h2>Скоро в офисе.</h2><p>Онлайн-запись и личные кабинеты ещё не открыты. Мы готовим сервис к запуску.</p><p>Сейчас можно познакомиться с мастерами и посмотреть пространство студии.</p><a class="chrome" href="#/masters">Посмотреть мастеров</a><p><a href="#/interior">Интерьер студии</a></p></div>');
+      return;
+    }
     switch (path[0]) {
       case "masters":
       case "":
@@ -1266,7 +1275,7 @@ async function render() {
       case "find":
         html = win(
           "How to find",
-          `<h2>Увидимся в офисе.</h2><div class="note-paper">${esc(pub.settings.address || "Адрес студии скоро появится здесь.")}</div><p>Часы работы: ${pub.settings.openHour}:00—${pub.settings.closeHour}:00, Москва.</p>${pub.settings.phone ? `<p>${esc(pub.settings.phone)}</p>` : ""}${pub.settings.email ? `<p><a href="mailto:${esc(pub.settings.email)}">${esc(pub.settings.email)}</a></p>` : ""}<a href="#/feedback" class="chrome">Связаться со студией →</a>`,
+          `<h2>Увидимся в офисе.</h2><div class="note-paper">${esc(pub.settings.address || "Адрес студии скоро появится здесь.")}</div><p>${window.OFFICE_PUBLIC_ONLY ? "Часы работы уточняются." : `Часы работы: ${pub.settings.openHour}:00—${pub.settings.closeHour}:00, Москва.`}</p>${pub.settings.phone ? `<p>${esc(pub.settings.phone)}</p>` : ""}${pub.settings.email ? `<p><a href="mailto:${esc(pub.settings.email)}">${esc(pub.settings.email)}</a></p>` : ""}<a href="#/feedback" class="chrome">Связаться со студией →</a>`,
         );
         break;
       case "safety":

@@ -8,7 +8,8 @@
     "dev": "node --env-file-if-exists=.env --watch server/index.js",
     "test": "node --test tests/*.test.js",
     "check": "node --check server/index.js && node --check js/office.js",
-    "format": "prettier --write index.html css/office.css js/office.js server/*.js tests/*.{js,mjs}"
+    "format": "prettier --write index.html css/office.css js/office.js server/*.js tests/*.{js,mjs}",
+    "build": "node scripts/build-public.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
