@@ -471,3 +471,16 @@ body {
   background-image: url("../assets/pattern-dark.svg");
   background-size: 300px 300px;
 }
+
+/* Show the scroll track only when its content actually overflows. */
+.deco-scroll[hidden] { display: none; }
+.rail .who { min-width: 0; gap: 10px; }
+.rail .who__text { flex: 1; min-width: 0; }
+.rail .who__name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail .who small { line-height: 1.35; overflow-wrap: anywhere; }

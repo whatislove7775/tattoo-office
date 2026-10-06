@@ -345,7 +345,9 @@
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
-    var ratio = max > 0 ? stageInner.scrollTop / max : 0;
+    track.hidden = max <= 1;
+    if (track.hidden) return;
+    var ratio = stageInner.scrollTop / max;
     var room = track.clientHeight - thumb.offsetHeight - 4;
     thumb.style.top = 2 + ratio * Math.max(room, 0) + "px";
   }
@@ -461,6 +463,11 @@
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
     global.addEventListener("resize", updateThumb);
+    var scrollObserver = new ResizeObserver(updateThumb);
+    scrollObserver.observe(stageInner);
+    scrollObserver.observe(view);
+    new MutationObserver(updateThumb).observe(view, { childList: true, subtree: true, characterData: true });
+    view.addEventListener("load", updateThumb, true);
     global.addEventListener("resize", paintHeaderShape);
     global.addEventListener("resize", paintMenuShape);
     global.addEventListener("hashchange", render);
