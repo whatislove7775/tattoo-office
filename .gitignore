@@ -1,7 +1,7 @@
-.DS_Store
-Thumbs.db
 node_modules/
-.vercel
-*.log
-.idea/
-.vscode/
+work/
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
