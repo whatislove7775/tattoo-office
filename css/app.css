@@ -559,7 +559,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   height: auto;
   min-height: 0;
 }
-.drift--static .polaroid { position: static; width: auto; transform: none !important; }
+.drift--static .polaroid { position: static; width: auto; transform: none; }
 
 /* ============================ профиль мастера ============================= */
 .master {

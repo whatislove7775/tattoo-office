@@ -34,7 +34,7 @@
   /* =========================== 1. КАТАЛОГ МАСТЕРОВ ======================== */
   var Masters = {
     html: function () {
-      var cards = global.DATA.masters.map(function (m) {
+      var cards = global.DATA.masters.filter(function (m) { return m.featured !== false; }).map(function (m) {
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
@@ -50,7 +50,8 @@
       var box = root.querySelector('#driftBox');
       var narrow = global.matchMedia('(max-width: 900px)').matches;
 
-      /* На узких экранах и в «бережном» режиме — обычная сетка. */
+      /* На телефоне композиция из макета остаётся свободной и плавно движется.
+         Жест прокрутки страницы сохраняется. */
       if (narrow || global.Drift.reduced) {
         box.classList.add('drift--static');
       } else {

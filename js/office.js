@@ -188,7 +188,9 @@ function syncMasters() {
   for (const m of masters) {
     const c = pub?.content.find((c) => c.id === "master-" + m.id)?.data;
     m.name = c?.title || window.I18N.pick(window.DATA.masters[m.id - 1].name);
+    m.featured = c?.featured !== false;
     const original = window.DATA.masters[m.id - 1];
+    original.featured = m.featured;
     if (c?.title) original.name = { ru: c.title, en: c.title };
     if (c?.body) original.bio = { ru: c.body, en: c.body };
     if (c?.portfolio?.length)
@@ -815,12 +817,12 @@ async function adminPage() {
     );
   if (adminTab === "masters")
     body = `<p class="small muted">Укажите реальные имена и распределите загруженные работы по авторам.</p>${table(
-      ["Фото", "Мастер", "Стиль", ""],
+      ["Фото", "Мастер", "На главной", ""],
       masters.map(
         (m) =>
-          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td>${esc(m.specialty || "не задан")}</td><td><button data-edit-master="${m.id}">Личное дело</button></td></tr>`,
+          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button></td></tr>`,
       ),
-    )}`;
+    )}<p class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
     body = `<p class="small muted">Публикации отображаются в Event Archive. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
       ["Заголовок", "Статус", ""],
@@ -1078,17 +1080,38 @@ function mountAdmin() {
         }
       }),
   );
+  $$("[data-featured-master]").forEach((input) => {
+    input.onchange = async () => {
+      const m = masters.find((x) => x.id === +input.dataset.featuredMaster);
+      input.disabled = true;
+      try {
+        await api("/admin/content/master-" + m.id, "PUT", {
+          title: m.name, body: m.bio, specialty: m.specialty,
+          portfolio: m.portfolio, drafts: m.drafts,
+          published: true, featured: input.checked,
+        });
+        await refresh();
+        await render();
+        notify("Главная страница обновлена");
+      } catch (error) {
+        input.checked = !input.checked;
+        input.disabled = false;
+        notify(error.message);
+      }
+    };
+  });
   $$("[data-edit-master]").forEach(
     (b) =>
       (b.onclick = () => {
         const m = masters.find((x) => x.id === +b.dataset.editMaster);
         dialogForm(
           "Личное дело мастера",
-          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<p class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
+          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<label class="check"><input name="featured" type="checkbox" ${m.featured ? "checked" : ""}><span>Показывать на главной</span></label><p class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
           (d) =>
             api("/admin/content/master-" + m.id, "PUT", {
               ...d,
               published: true,
+              featured: d.featured === "on",
               portfolio: d.portfolio
                 .split(",")
                 .map((x) => x.trim())

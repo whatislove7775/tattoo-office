@@ -598,7 +598,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .stage--bare { margin-top: 22.5vw; min-height: 0; }
   .stage--bare .stage__inner { padding: 0; }
   .drift, .drift.drift--static { display: block; position: relative; height: 350vw; min-height: 0; }
-  .drift .polaroid, .drift--static .polaroid { position: absolute; width: 33%; transform: none !important; touch-action: pan-y; }
+  .drift .polaroid, .drift--static .polaroid { position: absolute; width: 33%; touch-action: pan-y; }
   .polaroid__img { aspect-ratio: 3/3.7; }
   .polaroid__cap { font-size: 11px; }
   .polaroid:nth-child(1) { left: 11%; top: 22vw; }
@@ -650,4 +650,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .office-feature .stamp { min-width: 0; width: 100%; height: auto; padding: 0; font-size: 16px; transform: none; }
   .office-feature .summary-cards { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .office-feature .row { flex-wrap: wrap; }
+}
+/* Portraits keep the mobile collage while gently drifting in place. */
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .drift--static .polaroid { will-change: transform; animation: mobile-card-drift 10s ease-in-out infinite alternate; }
+  .drift--static .polaroid:nth-child(3n + 1) { animation-duration: 8.5s; animation-delay: -3s; }
+  .drift--static .polaroid:nth-child(3n + 2) { animation-duration: 11.5s; animation-delay: -7s; animation-direction: alternate-reverse; }
+  .drift--static .polaroid:nth-child(3n) { animation-duration: 9.5s; animation-delay: -5s; }
+  .drift--static .polaroid:hover, .drift--static .polaroid:focus-visible { animation-play-state: paused; }
+  @keyframes mobile-card-drift {
+    0% { transform: translate3d(-8px, -6px, 0) rotate(-1.2deg); }
+    50% { transform: translate3d(6px, 8px, 0) rotate(.6deg); }
+    100% { transform: translate3d(9px, -5px, 0) rotate(1.1deg); }
+  }
 }

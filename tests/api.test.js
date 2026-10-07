@@ -491,3 +491,16 @@ test("invoice upgrade uses captured tariff and is restricted to booking owner", 
     400,
   );
 });
+
+test("admin chooses which existing masters appear on the public home", async () => {
+  const initial = await request("/public");
+  assert.equal(initial.data.content.some((x) => x.id === "master-1"), false);
+  const payload = { title: "Зинаида Петровна", body: "", published: true, featured: false };
+  assert.equal((await request("/admin/content/master-1", "PUT", payload, resident)).status, 403);
+  assert.equal((await request("/admin/content/master-1", "PUT", payload, admin)).status, 200);
+  const hidden = (await request("/public")).data.content.find((x) => x.id === "master-1");
+  assert.equal(hidden.data.featured, false);
+  assert.equal((await request("/admin/content/master-1", "PUT", { ...payload, featured: true }, admin)).status, 200);
+  const visible = (await request("/public")).data.content.find((x) => x.id === "master-1");
+  assert.equal(visible.data.featured, true);
+});

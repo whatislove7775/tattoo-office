@@ -950,6 +950,7 @@ export async function createApp(db) {
       title: String(req.body.title || "").slice(0, 150),
       body: String(req.body.body || "").slice(0, 20000),
       published: req.body.published === true,
+      featured: /^master-/.test(req.params.id) ? req.body.featured !== false : undefined,
       specialty: String(req.body.specialty || "").slice(0, 150),
       portfolio: Array.isArray(req.body.portfolio)
         ? req.body.portfolio.filter((x) => /^tattoo-[1-8]$/.test(x))
