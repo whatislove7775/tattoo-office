@@ -664,3 +664,54 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
     100% { transform: translate3d(9px, -5px, 0) rotate(1.1deg); }
   }
 }
+/* Keep a master profile's title, portfolio controls and return link separate. */
+.work { margin: 0; min-width: 0; }
+@media (max-width: 900px) {
+  .section-head:has(.crumbs) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "crumbs crumbs" "tabs back";
+    gap: 8px 12px;
+    width: 100%;
+    min-height: 0;
+    margin-bottom: 28px;
+    align-items: end;
+  }
+  .section-head:has(.crumbs) .crumbs {
+    grid-area: crumbs;
+    max-width: 46%;
+    min-height: calc(22.5vw - 20px);
+    font-size: clamp(16px, 4.5vw, 22px);
+    line-height: 1.24;
+    overflow-wrap: anywhere;
+  }
+  .section-head:has(.crumbs) .tabs {
+    grid-area: tabs;
+    position: static;
+    inset: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+  }
+  .section-head:has(.crumbs) .tab { font-size: clamp(14px, 4vw, 18px); gap: 4px; }
+  .section-head:has(.crumbs) .pin { width: 16px; height: 16px; }
+  .section-head:has(.crumbs) .spacer { display: none; }
+  .section-head:has(.crumbs) > a[href="#/masters"] {
+    grid-area: back;
+    justify-self: end;
+    align-self: end;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+  .section-head:has(.crumbs) + .master { margin-top: 0; }
+  .works { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
+  .work { margin: 0; }
+  .work__img { display: block; width: 100%; height: auto; }
+  .mobile-menu-toggle { appearance: none; box-shadow: none; }
+}
+@media (max-width: 900px) and (pointer: coarse) {
+  .mobile-menu-toggle:focus-visible { outline: none; }
+}
