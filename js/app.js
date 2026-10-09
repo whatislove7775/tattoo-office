@@ -194,9 +194,6 @@
     var toggle = document.getElementById("themeToggle");
     toggle.setAttribute("aria-pressed", String(theme === "dark"));
     toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
-    document.getElementById("themeState").textContent = t(
-      theme === "dark" ? "theme.off" : "theme.on",
-    );
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta)
       meta.setAttribute("content", theme === "dark" ? "#17171a" : "#e8e8e6");
