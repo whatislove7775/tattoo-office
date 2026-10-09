@@ -338,3 +338,16 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
   .site-bottom .foot .foot__copy { font-size:10px;gap:5px 10px; }
   .site-bottom .foot .foot__copy span { margin-left:0; }
 }
+
+/* Content starts at the top; primary actions finish the card. */
+.office-feature .interior-dossier { display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:16px; }
+.office-feature .interior-dossier h3 { margin:0; }
+.office-feature .interior-dossier p { margin:0 0 8px; }
+.office-feature .interior-dossier .chrome { margin:auto 0 0;align-self:stretch;width:100%; }
+.office-feature .brand-story__copy,.office-feature .club-page>div,.office-feature .find-card { justify-content:flex-start; }
+.office-feature .brand-story__actions { margin-top:auto;padding-top:20px; }
+.office-feature .find-card a { margin-top:auto;padding-top:16px; }
+.office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"] { border-color:#333;background:var(--action-fill);box-shadow:inset 0 1px #ffffff40,0 3px 8px #0002;color:#fff;text-shadow:0 1px #0005; }
+.office-feature .interior-dossier .chrome { display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left; }
+@media(max-width:900px) { .office-feature .interior-dossier { min-height:330px; } }
+.office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"],.office-feature .rules-booking .chrome { background-clip:border-box;border-color:#292929;box-shadow:0 3px 8px #0002; }
