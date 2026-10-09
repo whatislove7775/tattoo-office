@@ -33,7 +33,7 @@
   .theme__sun,.theme__moon{top:8px;width:15px;height:15px}
   .theme__sun{left:8px}.theme__moon{right:7px}
   :root[data-theme="dark"] .theme__knob{transform:translateX(27px)}
-  .rail .rent-slider{width:min(78vw,300px);height:53px}
+  .rail .rent-slider{align-self:center;width:min(88vw,480px);height:53px;margin-inline:auto}
   .rent-slider__thumb{height:43px}
   .rent-slider__label{font-size:15px}
 }
