@@ -273,3 +273,38 @@ body[data-page="admin"] .site-bottom .rent-slider { display:none; }
   .rules-row p { font-size:14px;line-height:1.6; }
   .rules-booking { padding:22px;border-radius:20px; }
 }
+
+/* Let actions finish the panel instead of leaving a blank tail below them. */
+.brand__controls .theme,.theme__track { width:60px; }
+:root[data-theme="dark"] .theme__knob { transform:translateX(32px); }
+body[data-page="feedback"] .office-feature .window { display:flex;flex-direction:column;min-height:calc(100svh - 150px); }
+.office-feature #feedback-form { display:flex;flex-direction:column;flex:1;width:min(100%,440px);max-width:440px;margin:20px auto 0; }
+.office-feature #feedback-form button[type="submit"] { margin-top:auto;flex:none; }
+.office-feature #feedback-form>.field { margin-top:10px; }
+.office-feature #feedback-form>p:last-of-type { margin-bottom:28px; }
+.office-feature .auth-form { margin-bottom:0; }
+.interior-dossier { display:flex;flex-direction:column; }
+.interior-dossier .chrome { margin-top:auto; }
+@media(max-width:900px) {
+  .brand__controls .theme,.theme__track { width:52px; }
+  :root[data-theme="dark"] .theme__knob { transform:translateX(26px); }
+  body[data-page="feedback"] .office-feature .window { min-height:calc(100svh - 115px); }
+  .office-feature #feedback-form { width:100%;margin:24px auto 0; }
+  .office-feature .auth-form { margin-bottom:0; }
+}
+
+.site-bottom .foot { position:relative;padding:20px 66px 20px 24px; }
+.foot__links { display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12px;line-height:1.4; }
+.foot__links a { display:block; }
+.foot__copy { display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:16px;font-size:11px;font-weight:400;line-height:1.4; }
+.foot__copy span { margin-left:auto; }
+.foot__mark { top:18px;right:18px;transform:none;width:28px;height:28px; }
+@media(max-width:900px) {
+  .site-bottom .foot { padding:18px 54px 18px 18px; }
+  .foot__links { display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:10px 12px;font-size:11px; }
+  .foot__copy { gap:5px 12px;margin-top:16px;font-size:10px; }
+  .foot__copy span { margin-left:0; }
+  .foot__mark { top:17px;right:15px;width:26px;height:26px; }
+}
+.office-feature #feedback-form>.field { flex:1;margin-bottom:18px; }
+.office-feature #feedback-form textarea { flex:1;min-height:150px; }

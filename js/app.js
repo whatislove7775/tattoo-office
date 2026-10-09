@@ -141,19 +141,10 @@
 
   /* ------------------------------- подвал --------------------------------- */
   function paintFooter() {
-    document.getElementById("footLinks").innerHTML =
-      '<a href="#/legal/privacy">' +
-      esc(t("foot.privacy")) +
-      "</a> / " +
-      '<a href="#/legal/offer">' +
-      esc(t("foot.offer")) +
-      "</a> / " +
-      '<a href="#/legal/info">' +
-      esc(t("foot.info")) +
-      "</a> / " +
-      '<a href="#/legal/data">' +
-      esc(t("foot.data")) +
-      "</a>";
+    document.getElementById("footLinks").innerHTML = [
+      ["privacy", "Конфиденциальность"], ["offer", "Оферта"],
+      ["info", "Информация"], ["data", "Персональные данные"]
+    ].map(function (item) { return '<a href="#/legal/' + item[0] + '">' + item[1] + '</a>'; }).join("");
   }
 
   /* ---------------------------- бегущая строка ---------------------------- */
