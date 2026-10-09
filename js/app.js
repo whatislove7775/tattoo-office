@@ -285,6 +285,14 @@
   function paintMenuShape() {
     var menu = document.getElementById("menu");
     var path = document.getElementById("menuShapePath");
+    if (global.innerWidth <= 900) {
+      if (!menu.offsetWidth || !menu.offsetHeight) return;
+      var joined = document.body.dataset.page !== "admin";
+      path.setAttribute("d", mobilePanelPath(menu, joined, false));
+      document.getElementById("loginPanel").style.top = (menu.getBoundingClientRect().bottom - 1) + "px";
+      return;
+    }
+    document.getElementById("loginPanel").style.removeProperty("top");
     if (getComputedStyle(menu).position === "static") {
       path.removeAttribute("d");
       return;
@@ -350,6 +358,23 @@
         r +
         ",0 Z",
     );
+  }
+
+  function mobilePanelPath(element, joined, inDocument) {
+    var rect = element.getBoundingClientRect();
+    var w = element.offsetWidth, h = element.offsetHeight, r = 17;
+    var top = rect.top + (inDocument ? global.scrollY : 0);
+    var notch = Math.min(w - r * 2, global.innerWidth * .49 - rect.left - 12);
+    var depth = Math.max(r * 2, document.getElementById("siteHeader").clientHeight + 12 - top);
+    var bottom = joined ? `V${h} H0 V${r}` : `V${h-r} Q${w},${h} ${w-r},${h} H${r} Q0,${h} 0,${h-r} V${r}`;
+    return `M${r},0 H${notch-r} Q${notch},0 ${notch},${r} V${depth-r} Q${notch},${depth} ${notch+r},${depth} H${w-r} Q${w},${depth} ${w},${depth+r} ${bottom} Q0,0 ${r},0 Z`;
+  }
+
+  function paintStageShape() {
+    var stage = document.getElementById("stage");
+    var path = document.getElementById("stageShapePath");
+    if (global.innerWidth > 900 || stage.classList.contains("stage--bare")) { path.removeAttribute("d"); return; }
+    path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
   /* ------------------------- декоративный скролл -------------------------- */
@@ -436,6 +461,7 @@
     function closeMobile() { document.body.classList.remove("mobile-menu-open"); mobileToggle.setAttribute("aria-expanded", "false"); }
     mobileToggle.addEventListener("click", function () {
       var open = document.body.classList.toggle("mobile-menu-open");
+      paintMenuShape();
       mobileToggle.setAttribute("aria-expanded", String(open));
       mobileToggle.setAttribute("aria-label", open ? "Закрыть меню" : "Открыть меню");
     });
@@ -492,6 +518,10 @@
     view.addEventListener("load", updateThumb, true);
     global.addEventListener("resize", paintHeaderShape);
     global.addEventListener("resize", paintMenuShape);
+    global.addEventListener("resize", paintStageShape);
+    var panelObserver = new ResizeObserver(function () { paintStageShape(); paintMenuShape(); });
+    panelObserver.observe(document.getElementById("stage"));
+    panelObserver.observe(document.getElementById("menu"));
     global.addEventListener("hashchange", render);
   }
 
