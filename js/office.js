@@ -174,7 +174,7 @@ function paintShell() {
   el.classList.toggle("login--user", !!me);
   el.innerHTML = me
     ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/cabinet">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
-    : `<div class="login__row"><span class="login__label">Log in:</span><span class="login__links"><a href="#/login/customer">as customer</a><a href="#/login/master">as tattoo master</a></span></div>`;
+    : `<div class="login__row"><span class="login__label">login:</span><span class="login__links"><a href="#/login/customer">CUSTOMER</a><span aria-hidden="true">/</span><a href="#/login/master">TATTOO MASTER</a></span></div>`;
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,

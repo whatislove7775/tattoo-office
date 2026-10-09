@@ -357,3 +357,18 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { width:calc(var(--rail-width) * .68); }
   .site-bottom .rent-slider__label { inset-inline-start:62px;inset-inline-end:7px;font-size:clamp(13px,1.1vw,16px); }
 }
+
+.work__img { padding:0;border:0;border-radius:14px;background:none;box-shadow:none;display:block; }
+.work:hover .work__img { box-shadow:0 4px 12px #00000015; }
+.master__city { margin:8px 0 10px;font-size:14px;line-height:1.4;color:var(--ink-2); }
+
+.rail .login__row { display:flex;flex-direction:column;align-items:flex-start;gap:10px; }
+.rail .login__label { position:static;font-size:16px;line-height:1.2; }
+.rail .login__links { display:flex;flex-direction:row;align-items:center;gap:6px;margin:0;white-space:nowrap;color:var(--ink-2);font-weight:700; }
+.rail .login__links a { font-size:clamp(10px,.8vw,12px);font-weight:700;color:var(--ink-2); }
+.rail .login__links>span { font-size:11px; }
+@media(max-width:900px) { .rail .login__links a { font-size:12px; } }
+
+.polaroid__photo { display:block;position:relative; }
+.desktop-shortcut { position:absolute;left:0;bottom:0;display:grid;place-items:center;width:21px;height:21px;border:1px solid #a8a8a8;border-radius:3px;background:linear-gradient(#fff,#ededed);box-shadow:0 1px 3px #0003;color:#202020;pointer-events:none; }
+.desktop-shortcut .ui-icon { width:14px;height:14px;stroke-width:2; }

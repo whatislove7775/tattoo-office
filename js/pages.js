@@ -38,7 +38,7 @@
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
-                 img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') +
+                 '<span class="polaroid__photo">' + img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') + '<span class="desktop-shortcut" aria-hidden="true"><svg class="ui-icon"><use href="#ui-arrow-up-right"></use></svg></span></span>' +
                  '<div class="polaroid__cap">' + esc(name) + '</div>' +
                '</button>';
       }).join('');
@@ -102,6 +102,7 @@
                '<div>' +
                  img(m.photo, m.id, name, 'master__photo') +
                  '<div class="master__name">' + esc(name) + '</div>' +
+                 '<div class="master__city">' + esc(pick(m.city)) + '</div>' +
                  '<div class="master__meta">' +
                    '<span>' + m.age + ' ' + esc(t('master.age')) + '</span>' +
                    '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
