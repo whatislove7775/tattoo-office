@@ -351,3 +351,9 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .office-feature .interior-dossier .chrome { display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left; }
 @media(max-width:900px) { .office-feature .interior-dossier { min-height:330px; } }
 .office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"],.office-feature .rules-booking .chrome { background-clip:border-box;border-color:#292929;box-shadow:0 3px 8px #0002; }
+
+.rules-full summary,.rules-full summary>span { font-weight:700; }
+@media(min-width:901px) {
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { width:calc(var(--rail-width) * .68); }
+  .site-bottom .rent-slider__label { inset-inline-start:62px;inset-inline-end:7px;font-size:clamp(13px,1.1vw,16px); }
+}
