@@ -235,3 +235,41 @@ button:has(>.ui-icon),a.chrome:has(>.ui-icon),.chrome:has(>.ui-icon),.back-btn:h
 .office-feature .steps li { font-size:11px; }
 
 body[data-page="admin"] .site-bottom .rent-slider { display:none; }
+
+/* Studio rules: a readable desk sheet, without stacked decorative cards. */
+.rules-intro { margin:12px 0 36px;max-width:720px; }
+.office-feature .rules-intro h2 { font-size:clamp(32px,3.6vw,54px);line-height:1.05;letter-spacing:-.045em;font-weight:400;margin:0 0 18px; }
+.rules-intro p { color:var(--ink-2);font-size:16px;line-height:1.5; }
+.rules-layout { display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr);gap:40px;align-items:start; }
+.rules-row { display:flex;align-items:flex-start;gap:18px;padding:25px 0;border-top:1px solid var(--panel-edge); }
+.rules-symbol { display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:50%;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink-2); }
+.rules-symbol .ui-icon { width:20px;height:20px; }
+.office-feature .rules-row h3,.office-feature .rules-booking h3 { margin:5px 0 10px;font-size:22px;font-weight:500;line-height:1.2; }
+.rules-row p { margin:0;max-width:520px;font-size:15px;line-height:1.65;color:var(--ink-2); }
+.rules-booking { padding:24px;border:1px solid var(--panel-edge);border-radius:24px;background:linear-gradient(var(--panel),var(--panel-2));box-shadow:0 5px 18px #0000000a; }
+.rules-booking h3 { margin-top:18px!important; }
+.rules-booking dl { margin:22px 0; }
+.rules-booking dl>div { display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid var(--panel-edge); }
+.rules-booking dt { font-size:13px;color:var(--ink-2);max-width:160px; }
+.rules-booking dd { margin:0;white-space:nowrap;font-size:19px; }
+.rules-booking p { color:var(--ink-2);font-size:13px;line-height:1.55; }
+.rules-booking .chrome { display:flex;width:100%;margin-top:22px;background:var(--action-fill);color:#fff;border-color:#333; }
+.rules-full { border-top:1px solid var(--panel-edge);margin-top:32px;padding:20px 0; }
+.rules-full summary { list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:16px; }
+.rules-full summary::-webkit-details-marker { display:none; }
+.rules-full summary>span { font-size:25px;font-weight:300; }
+.rules-full[open] summary>span { transform:rotate(45deg); }
+.rules-full__text { white-space:pre-wrap;line-height:1.7;font-size:15px;color:var(--ink-2);max-width:780px;margin:22px 0 16px; }
+.rules-full small { color:var(--ink-3);font-size:11px; }
+@media(max-width:900px) {
+  body[data-page="safety"] .office-feature .window>.window-head { width:46%;gap:8px; }
+  body[data-page="safety"] .window-head h1 { font-size:16px;line-height:1.2; }
+  .rules-intro { margin:10px 0 26px; }
+  .office-feature .rules-intro h2 { font-size:34px; }
+  .rules-intro p { font-size:14px;max-width:280px; }
+  .rules-layout { grid-template-columns:1fr;gap:20px; }
+  .rules-row { gap:14px;padding:22px 0; }
+  .office-feature .rules-row h3,.office-feature .rules-booking h3 { font-size:20px; }
+  .rules-row p { font-size:14px;line-height:1.6; }
+  .rules-booking { padding:22px;border-radius:20px; }
+}

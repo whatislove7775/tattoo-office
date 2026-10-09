@@ -468,46 +468,13 @@
     document.addEventListener("keydown", function(e) { if(e.key === "Escape") {closeMobile();mobileToggle.focus();} });
     document.addEventListener("click", function(e) { if(!e.target.closest(".menu, #loginPanel, #mobileMenuToggle")) closeMobile(); });
     applyTheme(localStorage.getItem("to.theme") || "light");
+    global.I18N.set("ru");
     var refillMarquee = startMarquee();
     paintLogin();
     paintFooter();
     render();
     paintHeaderShape();
     paintMenuShape();
-
-    /* переключение языка */
-    var languageToggle = document.getElementById("languageToggle");
-    var languageMenu = document.getElementById("languageMenu");
-    languageToggle.addEventListener("click", function () {
-      if (languageMenu.matches(":popover-open")) { languageMenu.hidePopover(); return; }
-      languageMenu.showPopover();
-      var rect = languageToggle.getBoundingClientRect();
-      languageMenu.style.left = Math.max(12, Math.min(rect.right - 150, innerWidth - 162)) + "px";
-      languageMenu.style.top = (rect.bottom + 8) + "px";
-    });
-    languageMenu.addEventListener("toggle", function () { languageToggle.setAttribute("aria-expanded", String(languageMenu.matches(":popover-open"))); });
-    document.querySelectorAll(".lang__btn").forEach(function (btn) {
-      btn.setAttribute(
-        "aria-current",
-        String(btn.dataset.lang === global.I18N.get()),
-      );
-      btn.addEventListener("click", function () {
-        languageMenu.hidePopover();
-        if (!global.I18N.set(btn.dataset.lang))
-          return; /* звук уже дал data-sfx */
-        document.querySelectorAll(".lang__btn").forEach(function (b) {
-          b.setAttribute(
-            "aria-current",
-            String(b.dataset.lang === global.I18N.get()),
-          );
-        });
-        refillMarquee();
-        applyTheme(document.documentElement.getAttribute("data-theme"));
-        paintLogin();
-        paintFooter();
-        render();
-      });
-    });
 
     /* тема */
     var themeBtn = document.getElementById("themeToggle");
