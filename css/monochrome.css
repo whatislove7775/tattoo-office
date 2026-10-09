@@ -314,3 +314,6 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
   body[data-page="masters"] .site-bottom .rent-slider { transform:translate(-50%,calc(-1 * var(--rent-lift,0px))); }
   body[data-page="masters"] .site-bottom { padding-bottom:env(safe-area-inset-bottom);padding-top:70px; }
 }
+
+/* Keep the first panel's top margin inside the page background. */
+@media(max-width:900px) { body { display:flow-root; } }
