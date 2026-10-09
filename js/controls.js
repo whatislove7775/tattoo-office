@@ -9,8 +9,8 @@
     // Keep the popup in its dialog's top layer when a modal form is open.
     (button.closest('dialog')||document.body).append(popup);build(popup);
     popup.showPopover();button.setAttribute('aria-expanded','true');active={popup,button};
-    const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,button.closest('.space-picker')?210:240),innerWidth-24);
-    popup.style.width=width+'px';popup.style.left=Math.max(12,Math.min(r.left,innerWidth-width-12))+'px';
+    const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,button.classList.contains('date-open')?300:button.closest('.space-picker')?210:240),innerWidth-24);
+    popup.style.boxSizing='border-box';popup.style.width=width+'px';popup.style.left=Math.max(12,Math.min(r.left,innerWidth-width-12))+'px';
     const height=Math.min(popup.scrollHeight,320,innerHeight-24);
     popup.style.maxHeight=height+'px';popup.style.top=Math.max(12,r.bottom+height+8<innerHeight?r.bottom+6:r.top-height-6)+'px';
     popup.querySelector('[aria-selected="true"],button:not(:disabled)')?.focus({preventScroll:true});
@@ -27,10 +27,10 @@
       select.form?.addEventListener('reset',()=>setTimeout(sync));
     });
     root.querySelectorAll('input[type="date"]:not([data-styled])').forEach(input=>{
-      input.dataset.styled='true';const button=document.createElement('button');button.type='button';button.className='date-open';button.textContent='▦';button.setAttribute('aria-label','Открыть календарь');input.after(button);
+      input.dataset.styled='true';const button=document.createElement('button');button.type='button';button.className='date-open';button.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg>';button.setAttribute('aria-label','Открыть календарь');input.after(button);
       button.onclick=()=>open(button,popup=>{let month=new Date((input.value||new Date().toISOString().slice(0,10))+'T12:00:00');
         const draw=()=>{popup.replaceChildren();const bar=document.createElement('div');bar.className='picker-month';
-          const prev=document.createElement('button'),next=document.createElement('button'),title=document.createElement('span');prev.type=next.type='button';prev.textContent='‹';next.textContent='›';prev.setAttribute('aria-label','Предыдущий месяц');next.setAttribute('aria-label','Следующий месяц');title.textContent=month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});bar.append(prev,title,next);popup.append(bar);
+          const prev=document.createElement('button'),next=document.createElement('button'),title=document.createElement('span');prev.type=next.type='button';prev.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>';next.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg>';prev.setAttribute('aria-label','Предыдущий месяц');next.setAttribute('aria-label','Следующий месяц');title.textContent=month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});bar.append(prev,title,next);popup.append(bar);
           prev.onclick=()=>{month.setMonth(month.getMonth()-1,1);draw();};next.onclick=()=>{month.setMonth(month.getMonth()+1,1);draw();};
           const grid=document.createElement('div');grid.className='picker-days';['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(x=>{const e=document.createElement('small');e.textContent=x;grid.append(e);});
           const y=month.getFullYear(),m=month.getMonth();for(let i=0;i<(new Date(y,m,1).getDay()+6)%7;i++)grid.append(document.createElement('span'));
