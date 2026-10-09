@@ -233,3 +233,5 @@ button:has(>.ui-icon),a.chrome:has(>.ui-icon),.chrome:has(>.ui-icon),.back-btn:h
 .office-picker--space button[aria-selected="true"] { position:relative;padding-right:26px; }
 .office-picker--space button[aria-selected="true"]::after { content:'✓';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:13px; }
 .office-feature .steps li { font-size:11px; }
+
+body[data-page="admin"] .site-bottom .rent-slider { display:none; }
