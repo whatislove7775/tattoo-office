@@ -325,3 +325,16 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
   .section-head:has(.crumbs) .tab { padding:8px 9px;font-size:14px;gap:5px; }
   .section-head:has(.crumbs)>a.master-back[href="#/masters"] { grid-area:back;align-self:center;padding:8px 10px;font-size:13px; }
 }
+
+/* Restore link affordance in the sign-in panel and contain the space control. */
+.login__links a { text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px; }
+.space-picker .office-select { display:flex;align-items:center;justify-content:space-between;gap:18px;width:250px;max-width:100%;min-height:42px;padding:10px 14px;border:1px solid var(--panel-edge);border-radius:14px;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);font-size:14px;line-height:1.3; }
+.space-picker .office-select::after { content:"";position:static;width:7px;height:7px;flex:none;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg); }
+:root[data-theme="dark"] .space-picker .office-select { background:var(--control-fill);border:1px solid var(--panel-edge);box-shadow:var(--control-shadow);color:var(--ink); }
+@media(min-width:901px) {
+  .site-bottom .foot,body[data-page="masters"] .site-bottom .foot { position:fixed;right:24px;bottom:24px;width:var(--rail-width);z-index:35;display:block;padding:18px 48px 18px 18px; }
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { position:fixed;right:24px;bottom:calc(42px + var(--desktop-foot-height,125px));width:var(--rail-width);z-index:35;transform:none; }
+  .site-bottom .foot .foot__links { display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:9px 10px;font-size:11px; }
+  .site-bottom .foot .foot__copy { font-size:10px;gap:5px 10px; }
+  .site-bottom .foot .foot__copy span { margin-left:0; }
+}

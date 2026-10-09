@@ -64,7 +64,8 @@
   let dockFrame = 0;
   function dock() {
     dockFrame = 0;
-    if (document.body.dataset.page !== 'masters' || !footer) {
+    if (footer) track.style.setProperty('--desktop-foot-height', footer.offsetHeight + 'px');
+    if (innerWidth > 900 || document.body.dataset.page !== 'masters' || !footer) {
       track.style.removeProperty('--rent-lift');
       return;
     }
@@ -77,5 +78,6 @@
   window.addEventListener('resize', scheduleDock);
   window.addEventListener('hashchange', scheduleDock);
   new ResizeObserver(scheduleDock).observe(document.body);
+  if (footer) new ResizeObserver(scheduleDock).observe(footer);
   scheduleDock();
 })();
