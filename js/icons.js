@@ -11,7 +11,7 @@
       for (const node of nodes) {
         const value = node.nodeValue;
         const symbols = control.closest(".model-controls") ? /([←→↗‹›↺⟲+−])(?=\s*$)/ : /([←→↗‹›↺⟲])(?=\s*$)/;
-        const match = value.match(symbols) || value.match(/^\s*([←→↗‹›↺⟲])(?=\s)/);
+        const match = value.match(symbols) || value.match(/([←→↗‹›↺⟲])/);
         if (!match) continue;
         const glyph = match[1];
         const at = match.index + match[0].lastIndexOf(glyph);
