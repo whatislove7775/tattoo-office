@@ -297,7 +297,7 @@ export async function createApp(db) {
     const u = await db.transaction(async (q) => {
       const id = uuid();
       await q.query(
-        "INSERT INTO users(id,email,password,name,role) VALUES($1,$2,$3,$4,'resident')",
+        "INSERT INTO users(id,email,password,name,role) VALUES($1,$2,$3,$4,'guest')",
         [id, email, hashPassword(password), name.trim()],
       );
       for (const kind of ["rules", "personal_data"])

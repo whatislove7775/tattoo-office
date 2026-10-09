@@ -35,8 +35,8 @@ const addDate = (d, n) =>
     .toISOString()
     .slice(0, 10);
 const roleName = {
-  resident: "Резидент",
-  guest: "Гостевой мастер",
+  resident: "Участник клуба",
+  guest: "Мастер",
   admin: "Управление сайтом",
 };
 const statusName = {
@@ -328,7 +328,7 @@ function masterPage(id) {
   if (!m) return win("Личное дело", "Мастер не найден", "masters");
   return win(
     "Masters / " + m.name,
-    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2><span class="tag">The Tattoo Office Private Club</span>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br><a href="#/feedback">Написать в студию ↗</a></div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
+    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br><a href="#/feedback">Написать в студию ↗</a></div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
     "masters",
   );
 }
@@ -382,7 +382,7 @@ function interiorPage() {
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
   return win(
     "Interior",
-    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker">Пространство <select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option><option value="private">Private Club</option></select></label></div>
+    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker">Пространство <select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option></select></label></div>
     <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><span>Вращайте модель и меняйте масштаб</span><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
     <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1]}</span></button>`).join("")}</div></div>`,
@@ -410,15 +410,17 @@ function safetyPage() {
 }
 function aboutPage() {
   const body=pub.content.find(c=>c.id==="about")?.data?.body||"Tattoo Office — тату-студия и рабочее пространство для мастеров. У каждого здесь своё дело, а у пространства — общий ритм, порядок и место для новых идей.";
-  return win("Tattoo Office",`<div class="brand-story"><div class="brand-story__copy"><h2>Tattoo Office</h2><p>${esc(body)}</p><div class="brand-story__actions"><a class="chrome" href="#/masters">Познакомиться с мастерами →</a><a class="chrome" href="#/interior">Посмотреть пространство →</a></div></div><img src="assets/interior/3.jpg" alt="Рабочее пространство Tattoo Office"></div><a class="club-teaser" href="#/club"><span><b>The Tattoo Office Private Club</b><small>Отдельное пространство для постоянных и особенных клиентов.</small></span><span aria-hidden="true">›</span></a>`);
+  return win("Tattoo Office",`<div class="brand-story"><div class="brand-story__copy"><h2>Tattoo Office</h2><p>${esc(body)}</p><div class="brand-story__actions"><a class="chrome" href="#/masters">Познакомиться с мастерами →</a><a class="chrome" href="#/interior">Посмотреть пространство →</a></div></div><img src="assets/interior/3.jpg" alt="Рабочее пространство Tattoo Office"></div><a class="club-teaser" href="#/club"><span><b>The Tattoo Office Private Club</b><small>Клуб постоянных мастеров с особыми условиями аренды.</small></span><span aria-hidden="true">›</span></a>`);
 }
 function clubPage() {
-  return win("The Tattoo Office Private Club",`<div class="club-page"><div><h2>Ближе к своему кругу.</h2><p>Private Club — отдельное направление Tattoo Office для постоянных и особенных клиентов. Здесь можно встретиться со знакомым мастером в более личном формате, обсудить долгий проект и вернуться туда, где вас уже знают.</p><p>Участие и детали встреч команда обсуждает лично. Клуб не заменяет обычную запись в Tattoo Office.</p><a class="chrome" href="#/feedback">Написать команде →</a></div><img src="assets/interior/1.jpg" alt="Пространство Tattoo Office"></div>`);
+  const rates = pub.settings.rates;
+  const priceRows = [3, 6, 12].map((hours) => `<div><span>${hours === 12 ? "от 6 до 12 часов" : `до ${hours} часов`}</span><b>${money(rates.guest[hours])}</b><b>${money(rates.resident[hours])}</b></div>`).join("");
+  return win("Private Club",`<div class="club-page"><div><h2>Свои в офисе.</h2><p>Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.</p><p>Как попасть? Работать в Tattoo Office. Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><a class="chrome" href="#/signup">Начать работать в офисе →</a></div><img src="assets/interior/1.jpg" alt="Рабочее пространство Tattoo Office"></div><div class="club-rates"><h3>Аренда рабочего места</h3><div class="club-rates__table"><div><span>Время</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div></div>`);
 }
 function authPage(signup) {
   return win(
     signup ? "Новое личное дело" : "Войти в офис",
-    `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом">' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p class="muted small">${signup ? "Самостоятельная регистрация — для резидентов. Гостевого мастера приглашает администратор." : "Почта, пароль — и вы снова в офисе."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Стать резидентом"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
+    `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом">' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p class="muted small">${signup ? "Создайте аккаунт мастера. Условия Private Club команда студии подключит после знакомства." : "Почта, пароль — и вы снова в офисе."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Создать аккаунт"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
   );
 }
 function mountAuth(signup) {
@@ -440,7 +442,7 @@ function mountAuth(signup) {
 }
 function receipt() {
   const s = pub.settings,
-    rate = s.rates[me?.role === "guest" ? "guest" : "resident"][draft.duration],
+    rate = s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
     extras = draft.extras.reduce(
       (a, x) =>
         a + (pub.catalog.find((c) => c.id === x.id)?.price || 0) * x.qty,
@@ -467,7 +469,7 @@ function bookingPage() {
     steps = ["Дата и тариф", "Время и место", "Всё для сеанса", "Проверка"];
   let body = "";
   if (draft.step === 0)
-    body = `<h2>Когда встретимся?</h2><p class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(s.rates[me?.role === "guest" ? "guest" : "resident"][h])}</em></button>`).join("")}</div>`;
+    body = `<h2>Когда встретимся?</h2><p class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(s.rates[me?.role === "resident" ? "resident" : "guest"][h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
     body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span></button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div><div class="choices">${pub.resources
@@ -482,7 +484,7 @@ function bookingPage() {
     body = `<h2>Всё под рукой.</h2><p class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span>${esc(x.name)}<br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
     const rate =
-        s.rates[me?.role === "guest" ? "guest" : "resident"][draft.duration],
+        s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
       extra = draft.extras.reduce(
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
@@ -1208,7 +1210,7 @@ function legalPage(key) {
     };
   let text =
     key === "info"
-      ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — отдельное направление для постоянных и особенных клиентов.\n\nВопросы о записи, работе пространства и документах можно направить через раздел «Feedback».\n\n${s.legalName ? "Оператор: " + s.legalName + "\n" : ""}${s.inn ? "ИНН: " + s.inn + "\n" : ""}${s.legalAddress ? "Юридический адрес: " + s.legalAddress + "\n" : ""}${s.email ? "Электронная почта: " + s.email + "\n" : ""}Реквизиты владельца студии и контакт для официальных обращений будут внесены перед открытием регистрации и оплаты.`
+      ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.\n\nВопросы о записи, работе пространства и документах можно направить через раздел «Feedback».\n\n${s.legalName ? "Оператор: " + s.legalName + "\n" : ""}${s.inn ? "ИНН: " + s.inn + "\n" : ""}${s.legalAddress ? "Юридический адрес: " + s.legalAddress + "\n" : ""}${s.email ? "Электронная почта: " + s.email + "\n" : ""}Реквизиты владельца студии и контакт для официальных обращений будут внесены перед открытием регистрации и оплаты.`
       : s[key === "data" ? "consent" : key];
   return win(
     titles[key] || "Документы",
@@ -1242,7 +1244,6 @@ async function render() {
         mount = () => {
           window.StudioModel?.mount($("#studio-model"));
           $$("[data-interior]").forEach((b) => b.onclick = () => window.PhotoViewer.open([1,2,3,4].map((i) => ({ src: `assets/interior/${i}.jpg`, caption: ["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1] })), Number(b.dataset.interior)));
-          $("#space-picker").onchange = (event) => { if (event.target.value === "private") go("club"); };
         };
         break;
       case "booking":

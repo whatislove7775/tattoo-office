@@ -49,6 +49,13 @@
 .club-teaser small { display:block;margin-top:5px;font-size:14px;color:var(--ink-2); }
 .club-teaser>span:last-child { font-size:34px;color:var(--ink-2); }
 .club-page .chrome { margin-top:6px; }
+.club-rates { margin-top:18px;padding:24px;border:1px solid var(--ios-edge);border-radius:14px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom)); }
+.club-rates h3 { margin:0 0 18px;font-size:clamp(22px,2vw,30px);font-weight:500; }
+.club-rates__table { overflow:hidden;border:1px solid var(--ios-edge);border-radius:12px; }
+.club-rates__table>div { display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--ios-rule); }
+.club-rates__table>div:first-child { background:linear-gradient(var(--ios-bar-top),var(--ios-bar-bottom));font-size:13px; }
+.club-rates__table>div:last-child { border-bottom:0; }
+.club-rates__table b { font-weight:600; }
 .section-head .tabs { border-color:#adb1b3;background:linear-gradient(#eee,#cfd1d1); }
 .section-head .tab { background:linear-gradient(#fff,#e3e3e2);color:var(--ink);text-shadow:none; }
 .section-head .tab[aria-selected="true"] { background:linear-gradient(#b9c1c8,#e2e4e6);color:#171b1f;text-shadow:0 1px #fff9;box-shadow:inset 0 2px 4px #0003; }
@@ -83,4 +90,17 @@
   .service-pending { padding:10px 8px 22px; }
   .service-pending>div { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
   .service-pending .chrome { width:100%;padding:8px 7px;text-align:center;font-size:13px; }
+  .club-rates { padding:18px 12px; }
+  .club-rates__table>div { grid-template-columns:1.15fr 1fr 1fr;gap:5px;padding:12px 8px;font-size:12px; }
+  .club-rates__table>div:first-child { font-size:11px; }
+}
+@media(max-width:900px) {
+  .header { position:fixed; }
+  .stage { margin-bottom:180px; }
+  .rail { position:fixed;inset:auto 0 0;width:100%;height:auto;margin:0;padding:7px 3.5vw max(9px,env(safe-area-inset-bottom));gap:9px;z-index:35;pointer-events:none; }
+  .rail .rent-slider { align-self:center;width:min(88vw,480px);margin:0 auto;pointer-events:auto; }
+  .rail .foot { width:100%;margin:0;pointer-events:auto; }
+  .mobile-menu-open .rail .menu { position:fixed;top:53px;left:2.5vw; }
+  .mobile-menu-open .rail .login { position:fixed;top:273px;left:2.5vw; }
+  .mobile-menu-open .rail .rent-slider,.mobile-menu-open .rail .foot { visibility:hidden;pointer-events:none; }
 }

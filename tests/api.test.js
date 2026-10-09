@@ -60,6 +60,7 @@ before(async () => {
     })
   ).cookie;
   resident = await register("resident@test.invalid");
+  await db.query("UPDATE users SET role='resident' WHERE email='resident@test.invalid'");
   other = await register("other@test.invalid");
   pub = (await request("/public")).data;
 });
@@ -434,7 +435,7 @@ test("one site operator has full access and legacy staff roles cannot be created
     rules: true,
     consent: true,
   });
-  assert.equal(reg.data.user.role, "resident");
+  assert.equal(reg.data.user.role, "guest");
 });
 test("invoice upgrade uses captured tariff and is restricted to booking owner", async () => {
   const user = (await request("/me", "GET", null, other)).data.user;
@@ -484,7 +485,7 @@ test("invoice upgrade uses captured tariff and is restricted to booking owner", 
   );
   const b = (await db.query("SELECT * FROM bookings WHERE id=$1", [id]))
     .rows[0];
-  assert.equal(b.rate, defaults.rates.resident[6]);
+  assert.equal(b.rate, defaults.rates.guest[6]);
   assert.equal(
     (
       await request(
