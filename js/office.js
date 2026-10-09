@@ -112,9 +112,7 @@ function win(title, body, back = "") {
   return `<section class="window">${head(title, back)}${body}</section>`;
 }
 function testNote() {
-  return pub?.settings.mode === "test"
-    ? '<div class="test-note">Тестовый офис · тарифы и сведения предварительные · реальные деньги не списываются</div>'
-    : "";
+  return "";
 }
 function field(name, label, value = "", type = "text", extra = "") {
   return `<label class="field"><span>${label}</span><input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
@@ -360,13 +358,13 @@ function mountMaster(id) {
           `<button data-photo="assets/works/${file}.png"><img src="assets/works/${file}.png" alt="${kind === "tattoo" ? "Работа" : "Эскиз"} ${i + 1}" loading="lazy"><span>${file}.png</span></button>`,
       )
       .join("");
-    $$("[data-photo]").forEach(
-      (b) =>
-        (b.onclick = () =>
-          modal(
-            `<img src="${b.dataset.photo}" alt="Работа из архива студии">`,
-          )),
-    );
+    const photos = $$("[data-photo]").map((b) => ({
+      src: b.dataset.photo,
+      caption: b.querySelector("span")?.textContent || "Работа",
+    }));
+    $$("[data-photo]").forEach((b, i) => {
+      b.onclick = () => window.PhotoViewer.open(photos, i);
+    });
   }
   $$("[data-gallery]").forEach(
     (b) =>
@@ -384,14 +382,14 @@ function interiorPage() {
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
   return win(
     "Interior",
-    `<div class="showcase-head"><div><span class="eyebrow">WORK / MEET / REPEAT</span><h2>Комната для больших идей.</h2><p>${esc(description)}</p></div><div class="showcase-stamp">TATTOO OFFICE<br>SPACE FILE / 001</div></div>
-    <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная демонстрационная 3D-модель студии"><div class="model-toolbar"><span><i class="status-dot"></i>3D / SPACE VIEW</span><span class="demo-tag">демо-модель · планировка условная</span></div><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><span>↔ вращать · колесо — масштаб</span><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
-    <aside class="interior-dossier"><div class="dossier-label">ЛИЧНОЕ ДЕЛО ПРОСТРАНСТВА <span>№ 001</span></div><h3>Место, где удобно работать.</h3><p>Высокие потолки, паркет, дневной свет и рабочие зоны без суеты. На фотографии — реальное пространство Tattoo Office.</p><div class="dossier-rule"><span>01</span><div>Рабочее место<small>Подготовка, сеанс, уборка</small></div></div><div class="dossier-rule"><span>02</span><div>Общая зона<small>Встреча и разговор с клиентом</small></div></div><div class="dossier-rule"><span>03</span><div>Расходники<small>Добавляются при бронировании</small></div></div><a class="chrome" href="#/booking">Забронировать место ↗</a></aside></div>
-    <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3><span>ОТКРОЙТЕ КАРТОЧКУ ДЛЯ ПРОСМОТРА</span></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>0${i} / ${["общая зона","рабочий кабинет","студия в работе","ещё один ракурс"][i-1]}</span></button>`).join("")}</div></div>`,
+    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker">Пространство <select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option><option value="private">Private Club</option></select></label></div>
+    <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><span>Вращайте модель и меняйте масштаб</span><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
+    <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
+    <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1]}</span></button>`).join("")}</div></div>`,
   );
 }
 const demoArchive = [
-  {id:"demo-flash",data:{title:"Flash day / лист № 01",body:"Один день, готовые эскизы и свободный разговор о том, как идея становится татуировкой. В архиве остаются заметки мастеров и несколько кадров из офиса.",published:true,photo:3,date:"08.2026"}},
+  {id:"demo-flash",data:{title:"Flash day",body:"Один день, готовые эскизы и свободный разговор о том, как идея становится татуировкой. В архиве остаются заметки мастеров и несколько кадров из офиса.",published:true,photo:3,date:"08.2026"}},
   {id:"demo-guest",data:{title:"Гость за рабочим столом",body:"Приглашённый мастер показывает эскизы, рассказывает о своей практике и проводит сеансы в кабинете Tattoo Office.",published:true,photo:2,date:"07.2026"}},
   {id:"demo-open",data:{title:"Открытый вечер в офисе",body:"Встреча без записи: знакомство с пространством, портфолио резидентов и короткие разговоры о будущих проектах.",published:true,photo:1,date:"06.2026"}},
 ];
@@ -399,20 +397,23 @@ function findPage() {
   const s=pub.settings, hasAddress=Boolean(s.address), address=s.address||"Москва, ул. Примерная, 12 · вход со двора";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><span class="eyebrow">VISITOR FILE / 002</span><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><div class="demo-tag">${hasAddress?"ИНФОРМАЦИЯ СТУДИИ":"ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ · АДРЕС БУДЕТ ЗАМЕНЁН"}</div></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span><span class="route-map__caption">СХЕМА / НЕ ДЛЯ НАВИГАЦИИ</span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">01 / АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Пример того, как здесь будет выглядеть адрес и подсказка о входе."}</p></article><article class="find-card"><span class="find-card__number">02 / ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи · время студии: Москва</p></article><article class="find-card"><span class="find-card__number">03 / СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии появятся после заполнения администратором."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span><span class="route-map__caption">СХЕМА / НЕ ДЛЯ НАВИГАЦИИ</span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Пример того, как здесь будет выглядеть адрес и подсказка о входе."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи · время студии: Москва</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии появятся после заполнения администратором."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
   const posts=actual.length?actual:demoArchive;
-  return win("Event Archive",`<div class="archive-intro"><div><span class="eyebrow">OFFICE MEMORY / 2026</span><h2>События остаются в деле.</h2><p>Встречи, гостевые смены и дни, которые хочется сохранить.</p></div>${actual.length?"":'<span class="demo-tag">ДЕМО-АРХИВ · ПРИМЕРЫ ПУБЛИКАЦИЙ</span>'}</div><div class="archive-grid">${posts.map((c,i)=>`<article class="archive-card"><div class="archive-card__photo"><img src="assets/interior/${c.data.photo||((i%4)+1)}.jpg" alt="Пространство Tattoo Office" loading="lazy"><span>${esc(c.data.date||"OFFICE NOTE")}</span></div><div class="archive-card__body"><span class="eyebrow">ЗАПИСЬ № ${String(i+1).padStart(2,"0")}</span><h3>${esc(c.data.title)}</h3><p>${esc(c.data.body)}</p></div></article>`).join("")}</div><div class="archive-footer"><span>Архив пополняет команда студии.</span><a href="#/masters">Познакомиться с мастерами →</a></div>`);
+  return win("Event Archive",`<div class="archive-intro"><div><h2>События остаются в деле.</h2><p>Встречи, гостевые смены и дни, которые хочется сохранить.</p></div>${actual.length?"":''}</div><div class="archive-grid">${posts.map((c,i)=>`<article class="archive-card"><div class="archive-card__photo"><img src="assets/interior/${c.data.photo||((i%4)+1)}.jpg" alt="Пространство Tattoo Office" loading="lazy"><span>${esc(c.data.date||"OFFICE NOTE")}</span></div><div class="archive-card__body"><h3>${esc(c.data.title)}</h3><p>${esc(c.data.body)}</p></div></article>`).join("")}</div><div class="archive-footer"><span>Архив пополняет команда студии.</span><a href="#/masters">Познакомиться с мастерами →</a></div>`);
 }
 function safetyPage() {
   const s=pub.settings;
-  return win("Safety / правила студии",`<div class="archive-intro"><div><span class="eyebrow">CARE MANUAL / 003</span><h2>Забота — часть работы.</h2><p>Правила существуют, чтобы мастерам и гостям было спокойно за каждым столом.</p></div><span class="demo-tag">${s.rulesVersion?.startsWith("draft")?"ЧЕРНОВИК · АДМИНИСТРАТОР ОБНОВИТ ПРАВИЛА":"ПРАВИЛА СТУДИИ"}</span></div><div class="safety-grid"><article class="safety-card"><span>01 / ПОДГОТОВКА</span><h3>Чистое начало.</h3><p>Рабочее место готовят перед каждым сеансом. Одноразовые расходники открывают при клиенте, поверхности обрабатывают по регламенту студии.</p></article><article class="safety-card"><span>02 / ПРОЦЕСС</span><h3>Спокойный ритм.</h3><p>Уважайте время сеанса, соседние кабинеты и личные границы людей рядом. Если планы меняются, предупредите команду заранее.</p></article><article class="safety-card"><span>03 / ЗАВЕРШЕНИЕ</span><h3>После работы.</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Передайте администратору информацию для итогового счёта.</p></article></div><div class="safety-bottom"><div><span class="eyebrow">АКТУАЛЬНЫЙ ТЕКСТ ПРАВИЛ</span><p>${esc(s.rules)}</p><small>Версия: ${esc(s.rulesVersion)}</small></div><div class="note-paper"><b>Бронирование</b><p>Предоплата ${money(s.deposit)}. При отмене за ${s.cancelHours} ч и раньше сумма возвращается на внутренний баланс.</p><p>Поздняя отмена: ${s.lateCancellation==="review"?"решение администратора":"по регламенту студии"}.</p></div></div>`);
+  return win("Safety / правила студии",`<div class="archive-intro"><div><h2>Забота — часть работы.</h2><p>Правила существуют, чтобы мастерам и гостям было спокойно за каждым столом.</p></div></div><div class="safety-grid"><article class="safety-card"><span>ПОДГОТОВКА</span><h3>Чистое начало.</h3><p>Рабочее место готовят перед каждым сеансом. Одноразовые расходники открывают при клиенте, поверхности обрабатывают по регламенту студии.</p></article><article class="safety-card"><span>ПРОЦЕСС</span><h3>Спокойный ритм.</h3><p>Уважайте время сеанса, соседние кабинеты и личные границы людей рядом. Если планы меняются, предупредите команду заранее.</p></article><article class="safety-card"><span>ЗАВЕРШЕНИЕ</span><h3>После работы.</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Передайте администратору информацию для итогового счёта.</p></article></div><div class="safety-bottom"><div><span class="eyebrow">АКТУАЛЬНЫЙ ТЕКСТ ПРАВИЛ</span><p>${esc(s.rules)}</p><small>Версия: ${esc(s.rulesVersion)}</small></div><div class="note-paper"><b>Бронирование</b><p>Предоплата ${money(s.deposit)}. При отмене за ${s.cancelHours} ч и раньше сумма возвращается на внутренний баланс.</p><p>Поздняя отмена: ${s.lateCancellation==="review"?"решение администратора":"по регламенту студии"}.</p></div></div>`);
 }
 function aboutPage() {
   const body=pub.content.find(c=>c.id==="about")?.data?.body||"Tattoo Office — тату-студия и рабочее пространство для мастеров. У каждого здесь своё дело, а у пространства — общий ритм, порядок и место для новых идей.";
-  return win("Tattoo Office",`<div class="find-lead"><div><span class="eyebrow">THE TATTOO OFFICE PRIVATE CLUB</span><h2>Офис для тех, кто делает.</h2><p>${esc(body)}</p></div><span class="demo-tag">ПРЕЗЕНТАЦИЯ ПРОСТРАНСТВА</span></div><div class="about-grid"><img src="assets/interior/3.jpg" alt="Рабочая зона Tattoo Office"><div><article class="find-card"><span class="find-card__number">01 / ЛЮДИ</span><h3>Мастера со своим почерком.</h3><p>Откройте личное дело, посмотрите работы и найдите человека, которому доверите свою идею.</p><a href="#/masters">Смотреть мастеров →</a></article><article class="find-card"><span class="find-card__number">02 / МЕСТО</span><h3>Пространство для сеанса.</h3><p>Рабочие места, общая зона и всё необходимое для спокойной работы.</p><a href="#/interior">Смотреть интерьер →</a></article></div></div>`);
+  return win("Tattoo Office",`<div class="brand-story"><div class="brand-story__copy"><h2>Tattoo Office</h2><p>${esc(body)}</p><div class="brand-story__actions"><a class="chrome" href="#/masters">Познакомиться с мастерами →</a><a class="chrome" href="#/interior">Посмотреть пространство →</a></div></div><img src="assets/interior/3.jpg" alt="Рабочее пространство Tattoo Office"></div><a class="club-teaser" href="#/club"><span><b>The Tattoo Office Private Club</b><small>Отдельное пространство для постоянных и особенных клиентов.</small></span><span aria-hidden="true">›</span></a>`);
+}
+function clubPage() {
+  return win("The Tattoo Office Private Club",`<div class="club-page"><div><h2>Ближе к своему кругу.</h2><p>Private Club — отдельное направление Tattoo Office для постоянных и особенных клиентов. Здесь можно встретиться со знакомым мастером в более личном формате, обсудить долгий проект и вернуться туда, где вас уже знают.</p><p>Участие и детали встреч команда обсуждает лично. Клуб не заменяет обычную запись в Tattoo Office.</p><a class="chrome" href="#/feedback">Написать команде →</a></div><img src="assets/interior/1.jpg" alt="Пространство Tattoo Office"></div>`);
 }
 function authPage(signup) {
   return win(
@@ -1207,7 +1208,7 @@ function legalPage(key) {
     };
   let text =
     key === "info"
-      ? `${s.legalName || "Владелец пока не указан"}\nИНН: ${s.inn || "не заполнен"}\n${s.legalAddress || "Юридический адрес не заполнен"}\n${s.email || ""}`
+      ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — отдельное направление для постоянных и особенных клиентов.\n\nВопросы о записи, работе пространства и документах можно направить через раздел «Feedback».\n\n${s.legalName ? "Оператор: " + s.legalName + "\n" : ""}${s.inn ? "ИНН: " + s.inn + "\n" : ""}${s.legalAddress ? "Юридический адрес: " + s.legalAddress + "\n" : ""}${s.email ? "Электронная почта: " + s.email + "\n" : ""}Реквизиты владельца студии и контакт для официальных обращений будут внесены перед открытием регистрации и оплаты.`
       : s[key === "data" ? "consent" : key];
   return win(
     titles[key] || "Документы",
@@ -1223,7 +1224,7 @@ async function render() {
     let html,
       mount = () => {};
     if (window.OFFICE_PUBLIC_ONLY && ["login", "signup", "cabinet", "admin", "booking", "payment", "feedback", "book"].includes(path[0])) {
-      $("#office-view").innerHTML = win("Онлайн-сервис", '<div class="find-lead"><div><span class="eyebrow">SERVICE DESK / PREVIEW</span><h2>Личное дело почти готово.</h2><p>Запись, кабинет мастера и управление студией откроются после подключения серверной части. Сейчас можно изучить будущий офис.</p></div><span class="demo-tag">ДЕМОНСТРАЦИОННЫЙ РЕЖИМ</span></div><div class="safety-grid"><article class="safety-card"><span>01 / ВЫБОР</span><h3>Дата и место.</h3><p>Мастер выбирает свободное время, тариф на 3, 6 или 12 часов и рабочий кабинет.</p></article><article class="safety-card"><span>02 / СЕАНС</span><h3>Всё под рукой.</h3><p>Подготовка места и расходники добавляются в бронь. История встреч хранится в личном деле.</p></article><article class="safety-card"><span>03 / ОФИС</span><h3>Единый стол.</h3><p>Администратор управляет расписанием, тарифами, материалами и публикациями.</p></article></div><div class="find-bottom"><a class="chrome" href="#/masters">Смотреть мастеров ↗</a><a href="#/interior">Посмотреть пространство →</a></div>');
+      $("#office-view").innerHTML = win("Личный кабинет", '<div class="service-pending"><h2>Запись и личный кабинет скоро откроются.</h2><p>Команда подключает защищённое хранение аккаунтов и расписание. Пока можно познакомиться с мастерами и пространством.</p><div><a class="chrome" href="#/masters">Мастера →</a><a class="chrome" href="#/interior">Пространство →</a></div></div>');
       return;
     }
     switch (path[0]) {
@@ -1240,7 +1241,8 @@ async function render() {
         html = interiorPage();
         mount = () => {
           window.StudioModel?.mount($("#studio-model"));
-          $$("[data-interior]").forEach((b) => b.onclick = () => modal(`<img src="assets/interior/${b.dataset.interior}.jpg" alt="Фотография интерьера студии">`));
+          $$("[data-interior]").forEach((b) => b.onclick = () => window.PhotoViewer.open([1,2,3,4].map((i) => ({ src: `assets/interior/${i}.jpg`, caption: ["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1] })), Number(b.dataset.interior)));
+          $("#space-picker").onchange = (event) => { if (event.target.value === "private") go("club"); };
         };
         break;
       case "booking":
@@ -1355,6 +1357,9 @@ async function render() {
         break;
       case "about":
         html = aboutPage();
+        break;
+      case "club":
+        html = clubPage();
         break;
       case "legal":
         html = legalPage(path[1]);

@@ -48,11 +48,7 @@
 
     mount: function (root) {
       var box = root.querySelector('#driftBox');
-      var narrow = global.matchMedia('(max-width: 900px)').matches;
-
-      /* На телефоне композиция из макета остаётся свободной и плавно движется.
-         Жест прокрутки страницы сохраняется. */
-      if (narrow || global.Drift.reduced) {
+      if (global.Drift.reduced) {
         box.classList.add('drift--static');
       } else {
         var drift = new global.Drift(box);
@@ -155,7 +151,11 @@
         var fig = e.target.closest('.work');
         if (!fig) return;
         var im = fig.querySelector('img');
-        global.TO.modal(fig.dataset.cap, '<img src="' + esc(im.currentSrc || im.src) + '" alt="">');
+        var figures = Array.prototype.slice.call(pane.querySelectorAll('.work'));
+        global.PhotoViewer.open(figures.map(function (item) {
+          var picture = item.querySelector('img');
+          return { src: picture.currentSrc || picture.src, caption: item.dataset.cap };
+        }), figures.indexOf(fig));
       });
       pane.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
