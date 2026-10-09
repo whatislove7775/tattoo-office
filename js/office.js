@@ -106,7 +106,7 @@ function go(path) {
   } else location.hash = "#/" + path;
 }
 function head(title, back = "") {
-  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${esc(title)}</h1>${back ? `<a class="back" href="#/${back}">← назад</a>` : ""}</div>`;
+  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${esc(title)}</h1>${back ? `<a class="back" href="#/${back}">← Назад</a>` : ""}</div>`;
 }
 function win(title, body, back = "") {
   return `<section class="window">${head(title, back)}${body}</section>`;
@@ -383,7 +383,7 @@ function interiorPage() {
   return win(
     "Interior",
     `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option></select></label></div>
-    <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><span>Вращайте модель и меняйте масштаб</span><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
+    <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
     <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
   );
@@ -503,7 +503,7 @@ function bookingPage() {
   }
   return win(
     "Rent a workspace",
-    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← назад" : "← в офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить запись" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${receipt()}</div>`,
+    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить запись" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${receipt()}</div>`,
   );
 }
 async function mountBooking() {

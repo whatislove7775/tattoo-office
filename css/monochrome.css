@@ -380,3 +380,9 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 @media(max-width:900px) {
   .brand__controls { position:fixed;left:calc(3vw + 46px);right:auto;top:8px; }
 }
+
+.office-picker--space { padding:6px; }
+.office-picker--space>button { margin:0;width:100%;box-sizing:border-box; }
+.model-controls { justify-content:center; }
+.rent-slider__thumb .ui-icon { pointer-events:none; }
+@media(min-width:901px) { .site-bottom .rent-slider { cursor:pointer; } }

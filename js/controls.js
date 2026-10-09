@@ -11,7 +11,7 @@
     popup.showPopover();button.setAttribute('aria-expanded','true');active={popup,button};
     const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,button.classList.contains('date-open')?300:button.closest('.space-picker')?210:240),innerWidth-24);
     popup.style.boxSizing='border-box';popup.style.width=width+'px';popup.style.left=Math.max(12,Math.min(r.left,innerWidth-width-12))+'px';
-    const height=Math.min(popup.scrollHeight,320,innerHeight-24);
+    const height=Math.min(popup.getBoundingClientRect().height,320,innerHeight-24);
     popup.style.maxHeight=height+'px';popup.style.top=Math.max(12,r.bottom+height+8<innerHeight?r.bottom+6:r.top-height-6)+'px';
     popup.querySelector('[aria-selected="true"],button:not(:disabled)')?.focus({preventScroll:true});
   }

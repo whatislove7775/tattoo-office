@@ -7,6 +7,7 @@
   let origin = 0;
   let starting = 0;
   let complete = false;
+  let suppressClickUntil = 0;
   const travel = () => Math.max(1, track.clientWidth - thumb.offsetWidth - 8);
   function setProgress(value) {
     progress = Math.max(0, Math.min(1, value));
@@ -44,6 +45,7 @@
   thumb.addEventListener("pointerup", event => {
     if (pointer !== event.pointerId) return;
     pointer = null;
+    if (progress > .05) suppressClickUntil = Date.now() + 500;
     finish();
   });
   thumb.addEventListener("pointercancel", () => { pointer = null; reset(); });
@@ -51,8 +53,13 @@
     if (pointer !== null) { pointer = null; reset(); }
   });
   thumb.addEventListener("click", event => event.preventDefault());
+  // A mouse click is an equivalent desktop action; dragging remains available.
+  track.addEventListener("click", () => {
+    if (innerWidth > 900 && Date.now() > suppressClickUntil && !complete) window.location.hash = "#/booking";
+  });
   thumb.addEventListener("keydown", event => {
-    if (event.key === "ArrowRight") { event.preventDefault(); setProgress(progress + .2); if (progress >= 1) finish(); }
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setProgress(1); finish(); }
+    else if (event.key === "ArrowRight") { event.preventDefault(); setProgress(progress + .2); if (progress >= 1) finish(); }
     else if (event.key === "ArrowLeft") { event.preventDefault(); setProgress(progress - .2); }
     else if (event.key === "Home") { event.preventDefault(); reset(); }
     else if (event.key === "End") { event.preventDefault(); setProgress(1); finish(); }
