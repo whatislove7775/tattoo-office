@@ -372,3 +372,11 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .polaroid__photo { display:block;position:relative; }
 .desktop-shortcut { position:absolute;left:0;bottom:0;display:grid;place-items:center;width:21px;height:21px;border:1px solid #a8a8a8;border-radius:3px;background:linear-gradient(#fff,#ededed);box-shadow:0 1px 3px #0003;color:#202020;pointer-events:none; }
 .desktop-shortcut .ui-icon { width:14px;height:14px;stroke-width:2; }
+
+/* Desktop shortcuts use the familiar curved arrow overlay. */
+.desktop-shortcut { width:23px;height:23px;bottom:-1px;border-radius:2px;background:linear-gradient(#fff,#eee);color:#555; }
+.desktop-shortcut svg { display:block;width:19px;height:19px;fill:currentColor; }
+.polaroid,.polaroid *,.polaroid.is-dragging,.drift--static .polaroid { cursor:pointer!important; }
+@media(max-width:900px) {
+  .brand__controls { position:fixed;left:calc(3vw + 46px);right:auto;top:8px; }
+}
