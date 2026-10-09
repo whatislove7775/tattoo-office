@@ -351,6 +351,12 @@ test("settings store prices; live mode locked; public never exposes unpublished 
     admin,
   );
   assert.equal((await request("/public")).data.content.length, 0);
+  assert.equal((await request("/admin/content/event-1", "PUT", {
+    title: "Встреча", body: "Описание", date: "10.2026", photo: 3, published: true,
+  }, admin)).status, 200);
+  const event = (await request("/public")).data.content.find((x) => x.id === "event-1");
+  assert.equal(event.data.date, "10.2026");
+  assert.equal(event.data.photo, 3);
   assert.equal(verifyHmac(Buffer.from("fake"), "fake", "secret"), false);
   assert.equal(
     (await request("/webhooks/cloudpayments/pay", "POST", {})).status,

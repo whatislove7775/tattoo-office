@@ -853,7 +853,7 @@ async function adminPage() {
       ),
     )}<p class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
-    body = `<p class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
+    body = `<p class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
       ["Заголовок", "Статус", ""],
       a.content
         .filter((c) => !/^master-/.test(c.id))
@@ -1170,6 +1170,9 @@ function mountAdmin() {
         f.elements.id.value = c.id;
         f.elements.title.value = c.data.title;
         f.elements.body.value = c.data.body;
+        f.elements.date.value = c.data.date || "";
+        f.elements.photo.value = String(c.data.photo || 1);
+        f.elements.photo.dispatchEvent(new Event("change", { bubbles: true }));
         f.elements.published.checked = c.data.published;
         f.scrollIntoView({ block: "center" });
       }),

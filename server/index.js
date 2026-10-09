@@ -949,6 +949,8 @@ export async function createApp(db) {
     const data = {
       title: String(req.body.title || "").slice(0, 150),
       body: String(req.body.body || "").slice(0, 20000),
+      date: String(req.body.date || "").slice(0, 40),
+      photo: [1, 2, 3, 4].includes(Number(req.body.photo)) ? Number(req.body.photo) : 1,
       published: req.body.published === true,
       featured: /^master-/.test(req.params.id) ? req.body.featured !== false : undefined,
       specialty: String(req.body.specialty || "").slice(0, 150),
