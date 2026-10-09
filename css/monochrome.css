@@ -308,3 +308,9 @@ body[data-page="feedback"] .office-feature .window { display:flex;flex-direction
 }
 .office-feature #feedback-form>.field { flex:1;margin-bottom:18px; }
 .office-feature #feedback-form textarea { flex:1;min-height:150px; }
+
+body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(-1 * var(--rent-lift,0px))); }
+@media(max-width:900px) {
+  body[data-page="masters"] .site-bottom .rent-slider { transform:translate(-50%,calc(-1 * var(--rent-lift,0px))); }
+  body[data-page="masters"] .site-bottom { padding-bottom:env(safe-area-inset-bottom);padding-top:70px; }
+}

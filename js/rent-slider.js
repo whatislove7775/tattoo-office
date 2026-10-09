@@ -60,4 +60,22 @@
   window.addEventListener("resize", () => setProgress(progress));
   window.addEventListener("hashchange", reset);
   reset();
+  const footer = document.querySelector('.site-bottom .foot');
+  let dockFrame = 0;
+  function dock() {
+    dockFrame = 0;
+    if (document.body.dataset.page !== 'masters' || !footer) {
+      track.style.removeProperty('--rent-lift');
+      return;
+    }
+    const bottom = parseFloat(getComputedStyle(track).bottom) || 0;
+    const lift = Math.max(0, innerHeight - bottom - footer.getBoundingClientRect().top + 18);
+    track.style.setProperty('--rent-lift', lift + 'px');
+  }
+  function scheduleDock() { if (!dockFrame) dockFrame = requestAnimationFrame(dock); }
+  window.addEventListener('scroll', scheduleDock, {passive:true});
+  window.addEventListener('resize', scheduleDock);
+  window.addEventListener('hashchange', scheduleDock);
+  new ResizeObserver(scheduleDock).observe(document.body);
+  scheduleDock();
 })();
