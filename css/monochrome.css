@@ -317,3 +317,11 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 
 /* Keep the first panel's top margin inside the page background. */
 @media(max-width:900px) { body { display:flow-root; } }
+
+.section-head:has(.crumbs)>a.master-back[href="#/masters"] { display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap; }
+@media(max-width:900px) {
+  .section-head:has(.crumbs) { grid-template-areas:"crumbs crumbs" "tabs back";grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 8px; }
+  .section-head:has(.crumbs) .tabs { width:auto;max-width:100%;gap:2px; }
+  .section-head:has(.crumbs) .tab { padding:8px 9px;font-size:14px;gap:5px; }
+  .section-head:has(.crumbs)>a.master-back[href="#/masters"] { grid-area:back;align-self:center;padding:8px 10px;font-size:13px; }
+}

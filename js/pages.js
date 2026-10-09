@@ -95,7 +95,7 @@
                '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a> / ' + esc(name) + '</span>' +
                tabs +
                '<span class="spacer"></span>' +
-               '<a href="#/masters" data-sfx="nav">←' + esc(t('master.back')) + '</a>' +
+               '<a class="master-back" href="#/masters" aria-label="Назад к мастерам" data-sfx="nav">← Назад</a>' +
              '</div>' +
 
              '<div class="master">' +
