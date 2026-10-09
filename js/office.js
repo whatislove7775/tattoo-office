@@ -35,7 +35,7 @@ const addDate = (d, n) =>
     .toISOString()
     .slice(0, 10);
 const roleName = {
-  resident: "Участник клуба",
+  resident: "Резидент Private Club",
   guest: "Мастер",
   admin: "Управление сайтом",
 };
@@ -54,7 +54,7 @@ const statusName = {
 let me = null,
   pub = null,
   routeVersion = 0,
-  adminTab = "schedule",
+  adminTab = "home",
   cabTab = "bookings";
 let draft = {
   step: 0,
@@ -382,10 +382,10 @@ function interiorPage() {
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
   return win(
     "Interior",
-    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker">Пространство <select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option></select></label></div>
+    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option></select></label></div>
     <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><span>Вращайте модель и меняйте масштаб</span><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
-    <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1]}</span></button>`).join("")}</div></div>`,
+    <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
   );
 }
 const demoArchive = [
@@ -397,7 +397,7 @@ function findPage() {
   const s=pub.settings, hasAddress=Boolean(s.address), address=s.address||"Москва, ул. Примерная, 12 · вход со двора";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span><span class="route-map__caption">СХЕМА / НЕ ДЛЯ НАВИГАЦИИ</span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Пример того, как здесь будет выглядеть адрес и подсказка о входе."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи · время студии: Москва</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии появятся после заполнения администратором."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Пример того, как здесь будет выглядеть адрес и подсказка о входе."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи · время студии: Москва</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии появятся после заполнения администратором."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -754,6 +754,7 @@ async function adminPage() {
   const a = adminData,
     s = pub.settings,
     tabs = [
+      ["home", "Главная"],
       ["schedule", "Расписание"], ["bookings", "Записи"],
       ["users", "Люди"], ["catalog", "Склад и услуги"],
       ["finance", "Финансы"], ["feedback", "Обращения"],
@@ -761,7 +762,14 @@ async function adminPage() {
       ["settings", "Настройки"], ["audit", "Журнал"],
     ];
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
+  const menu = $("#menuList");
+  menu.innerHTML = tabs.map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
+  requestAnimationFrame(() => window.TO?.refreshLayout());
   let body = "";
+  if (adminTab === "home") {
+    const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
+    body = `<div class="admin-home"><h2>Главная</h2><div class="admin-shortcuts"><button class="chrome" id="manual-booking">${icon("plus")}Новая запись</button><button class="chrome" id="add-user">${icon("user")}Новый пользователь</button><button class="chrome" data-admintab="settings">${icon("edit")}Тарифы и условия</button><button class="chrome" data-admintab="schedule">${icon("calendar")}Календарь</button><button class="chrome" data-admintab="bookings">${icon("history")}История записей</button></div></div>`;
+  }
   if (adminTab === "schedule") {
     const resources = a.resources.filter((r) => r.active),
       bookings = a.bookings.filter(
@@ -896,8 +904,8 @@ async function adminPage() {
       ),
     )}`;
   return win(
-    "Office management",
-    `${testNote()}<div class="row between"><div><span class="eyebrow">СЛУЖЕБНЫЙ РАЗДЕЛ</span><h2 style="margin-top:9px">Всё на своих местах.</h2></div><span class="tag">${roleName[me.role]}</span></div><div class="tabs">${tabs.map(([v, l]) => `<button data-admintab="${v}" aria-selected="${v === adminTab}">${l}</button>`).join("")}</div>${body}`,
+    "Admin panel",
+    `${adminTab !== "home" ? `<h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2>` : ""}<div class="admin-content">${body}</div>`,
   );
 }
 function dialogForm(title, html, submit) {
@@ -923,6 +931,8 @@ function mountAdmin() {
     (b) =>
       (b.onclick = () => {
         adminTab = b.dataset.admintab;
+        document.body.classList.remove("mobile-menu-open");
+        $("#mobileMenuToggle").setAttribute("aria-expanded", "false");
         render();
       }),
   );

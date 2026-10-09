@@ -1,30 +1,30 @@
 /* Classic iOS 3–5 interaction language, adapted to Tattoo Office's paper,
-   pin and monochrome identity. Blue appears only for selected actions. */
+   pin and monochrome identity. Selected actions use the glossy black studio finish. */
 :root{
-  --ios-bar-top:#f8f9fa;
-  --ios-bar-mid:#d5d9de;
-  --ios-bar-bottom:#b9c0c8;
+  --ios-bar-top:#f9f9f9;
+  --ios-bar-mid:#d9d9d9;
+  --ios-bar-bottom:#bfbfbf;
   --ios-cell:#fff;
-  --ios-cell-bottom:#f5f5f4;
-  --ios-edge:#a9adb2;
-  --ios-rule:#c9cbce;
-  --ios-label:#52677f;
-  --ios-blue-top:#8bc1f1;
-  --ios-blue-mid:#2183d8;
-  --ios-blue-bottom:#0058b9;
+  --ios-cell-bottom:#f5f5f5;
+  --ios-edge:#adadad;
+  --ios-rule:#cbcbcb;
+  --ios-label:#646464;
+  --ios-action-top:#4a4a4a;
+  --ios-action-mid:#171717;
+  --ios-action-bottom:#303030;
 }
 :root[data-theme="dark"]{
-  --ios-bar-top:#54565c;
-  --ios-bar-mid:#393a40;
-  --ios-bar-bottom:#25262b;
-  --ios-cell:#303137;
-  --ios-cell-bottom:#25262b;
-  --ios-edge:#777981;
-  --ios-rule:#56575e;
-  --ios-label:#b8cde5;
-  --ios-blue-top:#4d91d7;
-  --ios-blue-mid:#1566b1;
-  --ios-blue-bottom:#06417b;
+  --ios-bar-top:#565656;
+  --ios-bar-mid:#3a3a3a;
+  --ios-bar-bottom:#262626;
+  --ios-cell:#313131;
+  --ios-cell-bottom:#262626;
+  --ios-edge:#797979;
+  --ios-rule:#575757;
+  --ios-label:#cacaca;
+  --ios-action-top:#4a4a4a;
+  --ios-action-mid:#171717;
+  --ios-action-bottom:#303030;
 }
 
 /* Navigation chrome: bevel, hairline and an inset highlight. */
@@ -49,15 +49,15 @@
   gap:2px;
   min-height:29px;
   padding:4px 10px 4px 5px;
-  border:1px solid #6f7984;
+  border:1px solid #787878;
   border-radius:6px;
-  background:linear-gradient(#aeb9c8,#7b8da3 50%,#5c708b);
+  background:linear-gradient(#b8b8b8,#8b8b8b 50%,#6e6e6e);
   box-shadow:inset 0 1px #fff7,0 1px 2px #0003;
   color:#fff;
   font-size:12px;
   font-weight:600;
   text-decoration:none;
-  text-shadow:0 -1px #263d5e;
+  text-shadow:0 -1px #3a3a3a;
 }
 .office-feature .window-head .back{display:inline-flex}
 .office-feature .window-head .back .ui-icon{font-size:16px}
@@ -71,11 +71,11 @@
 .office-feature .calendar-head button,
 .office-feature .model-controls button,
 .office-select,.office-picker button,.date-open{
-  border:1px solid #9399a0;
+  border:1px solid #989898;
   border-radius:10px;
-  background:linear-gradient(#fff 0%,#f6f7f8 42%,#d3d8de 52%,#b6bec8 100%);
-  box-shadow:inset 0 1px #fff,inset 0 -1px #74808b55,0 2px 5px #0003;
-  color:#222831;
+  background:linear-gradient(#fff 0%,#f7f7f7 42%,#d7d7d7 52%,#bdbdbd 100%);
+  box-shadow:inset 0 1px #fff,inset 0 -1px #7e7e7e55,0 2px 5px #0003;
+  color:#272727;
   font-weight:600;
   text-shadow:0 1px #fff9;
   text-decoration:none;
@@ -86,17 +86,17 @@
 .office-feature .chrome:active,
 .office-feature .form-actions .back-btn:active,
 .office-feature .calendar-head button:active,
-.office-feature .model-controls button:active{background:linear-gradient(#b1bac5,#e6e8ea);box-shadow:inset 0 2px 5px #0004}
+.office-feature .model-controls button:active{background:linear-gradient(#b9b9b9,#e8e8e8);box-shadow:inset 0 2px 5px #0004}
 .office-feature .auth-form button[type="submit"],
 .office-feature .form-actions #booking-next,
 .office-feature #content-form button[type="submit"],
 .office-feature #settings-form button[type="submit"],
 #dialog button[type="submit"]{
-  border-color:#2465a4;
-  background:linear-gradient(var(--ios-blue-top),var(--ios-blue-mid) 51%,var(--ios-blue-bottom));
-  box-shadow:inset 0 1px #d5eeff,0 2px 5px #0003;
+  border-color:#5c5c5c;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
+  box-shadow:inset 0 1px #eaeaea,0 2px 5px #0003;
   color:white;
-  text-shadow:0 -1px #064579;
+  text-shadow:0 -1px #3b3b3b;
 }
 :root[data-theme="dark"] .office-feature .chrome,
 :root[data-theme="dark"] .office-feature .form-actions .back-btn,
@@ -104,8 +104,8 @@
 :root[data-theme="dark"] .office-feature .model-controls button,
 :root[data-theme="dark"] .office-select{
   color:var(--ink);
-  border-color:#666970;
-  background:linear-gradient(#5c5e64,#41434a 50%,#33353b);
+  border-color:#696969;
+  background:linear-gradient(#5e5e5e,#434343 50%,#353535);
   box-shadow:inset 0 1px #fff3,0 2px 6px #0006;
   text-shadow:0 -1px #0009;
 }
@@ -117,9 +117,9 @@
   max-width:100%;
   gap:0;
   padding:2px;
-  border:1px solid #7f8994;
+  border:1px solid #888888;
   border-radius:10px;
-  background:linear-gradient(#929da9,#dfe2e5);
+  background:linear-gradient(#9c9c9c,#e2e2e2);
   box-shadow:inset 0 1px 2px #0005,0 1px #fff9;
   overflow-x:auto;
 }
@@ -129,11 +129,11 @@
   margin:0;
   padding:7px 16px;
   border:0;
-  border-right:1px solid #8e98a4;
+  border-right:1px solid #979797;
   border-radius:0;
-  background:linear-gradient(#fff,#e9edf0 50%,#c6ced6);
+  background:linear-gradient(#fff,#ececec 50%,#cdcdcd);
   box-shadow:inset 0 1px #fff;
-  color:#30353b;
+  color:#343434;
   font-size:13px;
   font-weight:600;
   text-decoration:none;
@@ -142,14 +142,14 @@
 .office-feature .tabs :first-child{border-radius:7px 0 0 7px}
 .office-feature .tabs :last-child{border-right:0;border-radius:0 7px 7px 0}
 .office-feature .tabs [aria-selected="true"],.office-feature .tabs .active{
-  border-color:#1e5fa6;
-  background:linear-gradient(var(--ios-blue-top),var(--ios-blue-mid) 50%,var(--ios-blue-bottom));
-  box-shadow:inset 0 1px #d0eaff,inset 0 -1px #003d7e;
+  border-color:#565656;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 50%,var(--ios-action-bottom));
+  box-shadow:inset 0 1px #e6e6e6,inset 0 -1px #353535;
   color:#fff;
-  text-shadow:0 -1px #075092;
+  text-shadow:0 -1px #454545;
 }
 :root[data-theme="dark"] .office-feature .tabs button:not([aria-selected="true"]):not(.active){
-  color:#eee;background:linear-gradient(#60636b,#393c44);text-shadow:0 -1px #0008
+  color:#eee;background:linear-gradient(#636363,#3c3c3c);text-shadow:0 -1px #0008
 }
 
 /* iOS grouped table: one casing, aligned rows, hairline separators. */
@@ -192,24 +192,24 @@
   box-shadow:inset 0 1px #fff8,0 2px 5px #0002;
 }
 .office-feature .choice.selected,.office-feature .time.selected,.office-feature .calendar button.selected{
-  border-color:#1e5fa6;
-  background:linear-gradient(var(--ios-blue-top),var(--ios-blue-mid) 51%,var(--ios-blue-bottom));
+  border-color:#565656;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
   color:#fff;
-  text-shadow:0 -1px #075092;
-  box-shadow:inset 0 1px #d0eaff,0 2px 6px #0003;
+  text-shadow:0 -1px #454545;
+  box-shadow:inset 0 1px #e6e6e6,0 2px 6px #0003;
 }
-.office-feature .choice.selected small{color:#eef6ff}
+.office-feature .choice.selected small{color:#f5f5f5}
 .office-feature .calendar button,.office-feature .time{border:1px solid var(--ios-edge);border-radius:8px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));box-shadow:inset 0 1px #fff,0 1px 3px #0002}
-.office-feature .steps b{border:1px solid var(--ios-edge);background:linear-gradient(#fff,#bfc6ce);box-shadow:inset 0 1px #fff,0 2px 4px #0002}
-.office-feature .steps li.active b{border-color:#145caa;background:linear-gradient(var(--ios-blue-top),var(--ios-blue-bottom));color:#fff}
+.office-feature .steps b{border:1px solid var(--ios-edge);background:linear-gradient(#fff,#c5c5c5);box-shadow:inset 0 1px #fff,0 2px 4px #0002}
+.office-feature .steps li.active b{border-color:#525252;background:linear-gradient(var(--ios-action-top),var(--ios-action-bottom));color:#fff}
 
 /* Inset fields, aligned labels, and list-style management surfaces. */
 .office-feature .field input,.office-feature .field textarea,
 .office-feature .admin-tools input,.office-feature .office-select,
 #dialog input,#dialog textarea,#dialog select{
-  border:1px solid #adb3b9;
+  border:1px solid #b2b2b2;
   border-radius:11px;
-  background:linear-gradient(#e6e8e9,#fafafa 11%,#fff);
+  background:linear-gradient(#e8e8e8,#fafafa 11%,#fff);
   box-shadow:inset 0 2px 4px #0002,0 1px #fff;
   color:var(--ink);
 }
@@ -217,98 +217,98 @@
 .office-feature .field input:focus,.office-feature .field textarea:focus,
 .office-feature .admin-tools input:focus,#dialog input:focus,#dialog textarea:focus{
   border-radius:11px;
-  border-color:#3b83cd;
+  border-color:#797979;
   outline:none;
-  box-shadow:inset 0 2px 4px #0002,0 0 0 3px #328fe544;
+  box-shadow:inset 0 2px 4px #0002,0 0 0 3px #81818144;
 }
 :root[data-theme="dark"] .office-feature .field input,
 :root[data-theme="dark"] .office-feature .field textarea,
 :root[data-theme="dark"] .office-feature .admin-tools input,
 :root[data-theme="dark"] #dialog input{
-  background:linear-gradient(#16171a,#2a2b30 16%,#303137);border-color:#666970;color:var(--ink)
+  background:linear-gradient(#171717,#2b2b2b 16%,#313131);border-color:#696969;color:var(--ink)
 }
 .office-feature .table-wrap{border:1px solid var(--ios-edge);border-radius:12px;background:var(--ios-cell);box-shadow:0 2px 5px #0002}
 .office-feature table{border:0;border-radius:0;border-collapse:collapse;background:transparent}
 .office-feature th{padding:11px 12px;background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid));border-bottom:1px solid var(--ios-edge);font-weight:600;color:var(--ink-2)}
 .office-feature td{padding:12px;border-bottom:1px solid var(--ios-rule);background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom))}
 .office-feature tbody tr:last-child td{border-bottom:0}
-.office-feature td button{border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#c8cfd7);box-shadow:inset 0 1px #fff;color:#25364a;text-decoration:none}
+.office-feature td button{border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#cecece);box-shadow:inset 0 1px #fff;color:#343434;text-decoration:none}
 .office-feature .admin-tools{gap:0;overflow-x:auto;border:1px solid var(--ios-edge);border-radius:10px;background:linear-gradient(var(--ios-bar-top),var(--ios-bar-bottom));padding:4px;box-shadow:inset 0 1px #fff9,0 2px 5px #0002}
 .office-feature .admin-tools .chrome{border-radius:7px;box-shadow:inset 0 1px #fff,0 1px 2px #0002}
 
 /* Paper sheets and alerts rise above the interface without losing context. */
 .modal__window,#dialog{
-  border:1px solid #8d9299;
+  border:1px solid #919191;
   border-radius:15px;
-  background:repeating-linear-gradient(180deg,transparent 0,transparent 36px,#8ea2b91a 37px),linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  background:repeating-linear-gradient(180deg,transparent 0,transparent 36px,#9f9f9f1a 37px),linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
   box-shadow:0 20px 60px #0007,inset 0 1px #fff;
   overflow:hidden;
 }
 .modal__bar{
   min-height:46px;
   padding:8px 14px;
-  border-bottom:1px solid #8e969f;
+  border-bottom:1px solid #959595;
   background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid) 51%,var(--ios-bar-bottom));
   box-shadow:inset 0 1px #fff9;
   text-shadow:0 1px #fff9;
 }
 .modal__title{font-size:16px}
-.modal__x,#dialog .close{min-width:29px;min-height:29px;border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#c2cad2);box-shadow:inset 0 1px #fff;color:#273442}
-.toast,#notice{border:1px solid #737d88;border-radius:12px;background:linear-gradient(#f9fafb,#cdd4dc);box-shadow:inset 0 1px #fff,0 10px 30px #0004;color:#26313e;text-shadow:0 1px #fff8}
+.modal__x,#dialog .close{min-width:29px;min-height:29px;border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#c9c9c9);box-shadow:inset 0 1px #fff;color:#323232}
+.toast,#notice{border:1px solid #7c7c7c;border-radius:12px;background:linear-gradient(#fafafa,#d3d3d3);box-shadow:inset 0 1px #fff,0 10px 30px #0004;color:#303030;text-shadow:0 1px #fff8}
 
 /* The older public master dossiers use the same tactile controls. */
 .section-head .tabs{
   display:inline-flex;
   gap:0;
   padding:2px;
-  border:1px solid #8b95a1;
+  border:1px solid #949494;
   border-radius:10px;
-  background:linear-gradient(#a3adb8,#d9dfe4);
+  background:linear-gradient(#acacac,#dedede);
   box-shadow:inset 0 1px 2px #0004,0 1px #fff8;
 }
 .section-head .tab{
   min-height:35px;
   padding:5px 13px;
   gap:6px;
-  border-right:1px solid #8c96a1;
-  background:linear-gradient(#fff,#e6ebef 51%,#bec8d1);
+  border-right:1px solid #959595;
+  background:linear-gradient(#fff,#eaeaea 51%,#c7c7c7);
   box-shadow:inset 0 1px #fff;
-  color:#293039;
+  color:#2f2f2f;
   font-size:14px;
   text-shadow:0 1px #fff;
 }
 .section-head .tab:first-child{border-radius:7px 0 0 7px}
 .section-head .tab:last-child{border-right:0;border-radius:0 7px 7px 0}
 .section-head .tab[aria-selected="true"]{
-  background:linear-gradient(var(--ios-blue-top),var(--ios-blue-mid) 51%,var(--ios-blue-bottom));
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
   color:#fff;
-  text-shadow:0 -1px #075092;
+  text-shadow:0 -1px #454545;
 }
 .section-head .tab[aria-selected="true"] .tab__label{font-style:normal}
 .section-head .tab__label{text-decoration:none}
 .section-head>a[href="#/masters"]{
   display:inline-flex;align-items:center;gap:2px;min-height:30px;padding:4px 10px 4px 6px;
-  border:1px solid #63758b;border-radius:7px;
-  background:linear-gradient(#aebbd0,#758ba9 51%,#566d8d);
+  border:1px solid #737373;border-radius:7px;
+  background:linear-gradient(#bababa,#888888 51%,#6a6a6a);
   box-shadow:inset 0 1px #fff8,0 2px 4px #0002;
-  color:#fff;font-size:12px;font-weight:600;text-decoration:none;text-shadow:0 -1px #334966;
+  color:#fff;font-size:12px;font-weight:600;text-decoration:none;text-shadow:0 -1px #464646;
 }
 .section-head>a[href="#/masters"]:hover{filter:brightness(1.08)}
-.master__photo,.work__img{padding:3px;border:1px solid var(--ios-edge);background:linear-gradient(#fff,#d2d8df);box-shadow:inset 0 1px #fff,0 4px 9px #0002}
+.master__photo,.work__img{padding:3px;border:1px solid var(--ios-edge);background:linear-gradient(#fff,#d7d7d7);box-shadow:inset 0 1px #fff,0 4px 9px #0002}
 .btn{
-  border:1px solid #8b939c;
+  border:1px solid #929292;
   border-radius:10px;
-  background:linear-gradient(#fff,#eef0f3 45%,#c0cad4);
+  background:linear-gradient(#fff,#f0f0f0 45%,#c9c9c9);
   box-shadow:inset 0 1px #fff,0 2px 6px #0003;
-  color:#273240;
+  color:#313131;
   font-weight:600;
   text-decoration:none;
   text-shadow:0 1px #fff;
 }
-.btn--primary{border-color:#2465a4;background:linear-gradient(var(--ios-blue-top),var(--ios-blue-mid) 51%,var(--ios-blue-bottom));color:#fff;text-shadow:0 -1px #075092}
-.btn:active{background:linear-gradient(#b8c2cd,#e7eaed);box-shadow:inset 0 2px 5px #0004}
+.btn--primary{border-color:#5c5c5c;background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));color:#fff;text-shadow:0 -1px #454545}
+.btn:active{background:linear-gradient(#c1c1c1,#eaeaea);box-shadow:inset 0 2px 5px #0004}
 :root[data-theme="dark"] .section-head .tab:not([aria-selected="true"]),:root[data-theme="dark"] .btn:not(.btn--primary){
-  border-color:#737780;background:linear-gradient(#686b73,#3f4249);color:#eee;text-shadow:0 -1px #0008
+  border-color:#777777;background:linear-gradient(#6b6b6b,#424242);color:#eee;text-shadow:0 -1px #0008
 }
 .rail .login{border:1px solid var(--ios-edge);background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));box-shadow:inset 0 1px #fff9,0 8px 17px #0002}
 .rail .foot{border:1px solid var(--ios-edge);background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid) 45%,var(--ios-bar-bottom));box-shadow:inset 0 1px #fff9,0 5px 13px #0002}

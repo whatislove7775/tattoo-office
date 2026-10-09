@@ -4,7 +4,7 @@
   var dialog = document.createElement("dialog");
   dialog.className = "photo-viewer";
   dialog.setAttribute("aria-label", "Просмотр фотографий");
-  dialog.innerHTML = '<div class="photo-viewer__bar"><span class="photo-viewer__caption"></span><button type="button" class="photo-viewer__close" aria-label="Закрыть">×</button></div><div class="photo-viewer__stage"><button type="button" class="photo-viewer__prev" aria-label="Предыдущая фотография">‹</button><img alt=""><button type="button" class="photo-viewer__next" aria-label="Следующая фотография">›</button></div><div class="photo-viewer__foot"><span class="photo-viewer__count"></span><div class="photo-viewer__dots"></div></div>';
+  dialog.innerHTML = '<div class="photo-viewer__bar"><span class="photo-viewer__caption"></span><button type="button" class="photo-viewer__close" aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="#ui-close"></use></svg></button></div><div class="photo-viewer__stage"><button type="button" class="photo-viewer__prev" aria-label="Предыдущая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><img alt=""><button type="button" class="photo-viewer__next" aria-label="Следующая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></div><div class="photo-viewer__foot"><span class="photo-viewer__count"></span><div class="photo-viewer__dots"></div></div>';
   document.body.append(dialog);
   var image = dialog.querySelector("img");
   function show(next) {
@@ -12,6 +12,9 @@
     var photo = photos[index];
     image.src = photo.src;
     image.alt = photo.caption || "Фотография";
+    dialog.querySelector(".photo-viewer__prev").hidden = photos.length < 2;
+    dialog.querySelector(".photo-viewer__next").hidden = photos.length < 2;
+    dialog.querySelector(".photo-viewer__foot").hidden = photos.length < 2;
     dialog.querySelector(".photo-viewer__caption").textContent = photo.caption || "";
     dialog.querySelector(".photo-viewer__count").textContent = (index + 1) + " / " + photos.length;
     var dots = dialog.querySelector(".photo-viewer__dots");

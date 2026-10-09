@@ -5,16 +5,16 @@
 
 /* A small enamel and chrome desk switch, without a status caption. */
 .brand__controls .theme{display:inline-flex;width:74px;height:38px;padding:0;border:0;border-radius:25px;background:none;text-decoration:none;cursor:url("../assets/cursors/link.png") 10 10,pointer}
-.theme__track{position:relative;display:block;box-sizing:border-box;width:74px;height:38px;padding:0;border:1px solid #9c9b96;border-radius:25px;background:linear-gradient(180deg,#d0cfcb 0%,#f9f9f8 19%,#e5e5e2 68%,#c5c4c0 100%);box-shadow:inset 1px 2px 4px #0004,inset 0 -1px 1px #fff,0 2px 5px #0003;color:#222}
+.theme__track{position:relative;display:block;box-sizing:border-box;width:74px;height:38px;padding:0;border:1px solid #9b9b9b;border-radius:25px;background:linear-gradient(180deg,#cfcfcf 0%,#f9f9f9 19%,#e5e5e5 68%,#c4c4c4 100%);box-shadow:inset 1px 2px 4px #0004,inset 0 -1px 1px #fff,0 2px 5px #0003;color:#222}
 .theme__track::after{content:"";position:absolute;inset:3px;border-radius:20px;border:1px solid #fff8;pointer-events:none}
-.theme__knob{position:absolute;z-index:1;left:3px;top:3px;width:30px;height:30px;box-sizing:border-box;border:1px solid #999892;border-radius:50%;background:linear-gradient(150deg,#fff 5%,#efefeb 45%,#b8b7b2 100%);box-shadow:inset 0 1px 1px #fff,0 2px 5px #0005;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.theme__knob{position:absolute;z-index:1;left:3px;top:3px;width:30px;height:30px;box-sizing:border-box;border:1px solid #989898;border-radius:50%;background:linear-gradient(150deg,#fff 5%,#efefef 45%,#b7b7b7 100%);box-shadow:inset 0 1px 1px #fff,0 2px 5px #0005;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
 .theme__sun,.theme__moon{position:absolute;z-index:2;top:9px;width:18px;height:18px;transition:opacity .2s,color .2s;pointer-events:none}
-.theme__sun{left:9px;color:#1b1b1a}
-.theme__moon{right:8px;color:#63635f;opacity:.8}
-:root[data-theme="dark"] .theme__knob{transform:translateX(36px);background:linear-gradient(150deg,#fff,#d8d8d3 65%,#9d9c97)}
+.theme__sun{left:9px;color:#1b1b1b}
+.theme__moon{right:8px;color:#636363;opacity:.8}
+:root[data-theme="dark"] .theme__knob{transform:translateX(36px);background:linear-gradient(150deg,#fff,#d8d8d8 65%,#9c9c9c)}
 :root[data-theme="dark"] .theme__sun{opacity:.55}
-:root[data-theme="dark"] .theme__moon{color:#171716;opacity:1}
-.theme:focus-visible .theme__track{box-shadow:inset 1px 2px 4px #0004,0 0 0 3px #817b6b88}
+:root[data-theme="dark"] .theme__moon{color:#171717;opacity:1}
+.theme:focus-visible .theme__track{box-shadow:inset 1px 2px 4px #0004,0 0 0 3px #7b7b7b88}
 
 /* The rail action borrows the exact old phone unlock language: black
    glossy channel, silver rectangular thumb, and a physical travel distance. */

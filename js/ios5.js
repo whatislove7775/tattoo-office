@@ -3,15 +3,7 @@
   const labels = {
     admin: ["cabinet", "Личный кабинет"],
     cabinet: ["masters", "Мастера"],
-    master: ["masters", "Мастера"],
-    interior: ["masters", "Мастера"],
-    find: ["masters", "Мастера"],
-    safety: ["masters", "Мастера"],
-    archive: ["masters", "Мастера"],
-    feedback: ["masters", "Мастера"],
-    booking: ["interior", "Интерьер"],
-    login: ["masters", "Мастера"],
-    signup: ["masters", "Мастера"]
+    master: ["masters", "Мастера"]
   };
   let pending = false;
   function enhance() {

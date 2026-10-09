@@ -5,11 +5,11 @@
   function open(button, build) {
     if(active?.button===button){close();return;}
     close();
-    const popup=document.createElement('div');popup.className='office-picker';popup.setAttribute('popover','manual');
+    const popup=document.createElement('div');popup.className='office-picker'+(button.closest('.space-picker')?' office-picker--space':'');popup.setAttribute('popover','manual');
     // Keep the popup in its dialog's top layer when a modal form is open.
     (button.closest('dialog')||document.body).append(popup);build(popup);
     popup.showPopover();button.setAttribute('aria-expanded','true');active={popup,button};
-    const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,260),innerWidth-24);
+    const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,button.closest('.space-picker')?210:240),innerWidth-24);
     popup.style.width=width+'px';popup.style.left=Math.max(12,Math.min(r.left,innerWidth-width-12))+'px';
     const height=Math.min(popup.scrollHeight,320,innerHeight-24);
     popup.style.maxHeight=height+'px';popup.style.top=Math.max(12,r.bottom+height+8<innerHeight?r.bottom+6:r.top-height-6)+'px';
@@ -19,7 +19,7 @@
     root.querySelectorAll('select:not([data-styled])').forEach(select=>{
       select.dataset.styled='true';select.classList.add('native-select');select.tabIndex=-1;select.setAttribute('aria-hidden','true');
       const button=document.createElement('button');button.type='button';button.className='office-select';button.setAttribute('aria-haspopup','listbox');button.setAttribute('aria-expanded','false');
-      const label=select.closest('label')?.querySelector('span')?.textContent||select.name;
+      const label=select.closest('label')?.querySelector('span')?.textContent||select.getAttribute('aria-label')||select.name||'Выбрать';
       const sync=()=>{button.textContent=select.selectedOptions[0]?.textContent||'Выбрать';button.setAttribute('aria-label',label+': '+button.textContent);button.disabled=select.disabled;};sync();select.after(button);select.addEventListener('change',sync);
       button.addEventListener('click',()=>open(button,popup=>{popup.setAttribute('role','listbox');popup.setAttribute('aria-label',label);
         [...select.options].forEach(option=>{const item=document.createElement('button');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(option.selected));item.textContent=option.textContent;item.disabled=option.disabled;popup.append(item);item.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));close();button.focus();};});

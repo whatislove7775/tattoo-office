@@ -11,7 +11,7 @@
 .rent-slider__label { font-size:clamp(14px,1vw,17px); }
 @media(max-width:700px) { .rent-slider__label { font-size:clamp(16px,4vw,19px); } }
 .brand__controls .theme,.theme__track { width:62px;height:32px; }
-.theme__track { border-color:#aaa; background:linear-gradient(#eee,#c9c9c7); box-shadow:inset 0 1px 2px #0003,0 1px #fff8; }
+.theme__track { border-color:#aaa; background:linear-gradient(#eee,#c9c9c9); box-shadow:inset 0 1px 2px #0003,0 1px #fff8; }
 .theme__track::after { inset:2px; }
 .theme__knob { width:24px;height:24px; }
 .theme__sun,.theme__moon { width:15px;height:15px;top:8px; }
@@ -56,20 +56,20 @@
 .club-rates__table>div:first-child { background:linear-gradient(var(--ios-bar-top),var(--ios-bar-bottom));font-size:13px; }
 .club-rates__table>div:last-child { border-bottom:0; }
 .club-rates__table b { font-weight:600; }
-.section-head .tabs { border-color:#adb1b3;background:linear-gradient(#eee,#cfd1d1); }
-.section-head .tab { background:linear-gradient(#fff,#e3e3e2);color:var(--ink);text-shadow:none; }
-.section-head .tab[aria-selected="true"] { background:linear-gradient(#b9c1c8,#e2e4e6);color:#171b1f;text-shadow:0 1px #fff9;box-shadow:inset 0 2px 4px #0003; }
-.photo-viewer { width:min(94vw,1100px);max-width:none;max-height:94vh;padding:0;border:1px solid #8c9299;border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:0 25px 70px #0008;color:var(--ink); }
-.photo-viewer::backdrop { background:#15191cc4;backdrop-filter:blur(7px); }
+.section-head .tabs { border-color:#b0b0b0;background:linear-gradient(#eee,#d1d1d1); }
+.section-head .tab { background:linear-gradient(#fff,#e3e3e3);color:var(--ink);text-shadow:none; }
+.section-head .tab[aria-selected="true"] { background:linear-gradient(#c0c0c0,#e4e4e4);color:#1a1a1a;text-shadow:0 1px #fff9;box-shadow:inset 0 2px 4px #0003; }
+.photo-viewer { width:min(94vw,1100px);max-width:none;max-height:94vh;padding:0;border:1px solid #919191;border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:0 25px 70px #0008;color:var(--ink); }
+.photo-viewer::backdrop { background:#181818c4;backdrop-filter:blur(7px); }
 .photo-viewer__bar { display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:46px;padding:6px 12px 6px 18px;border-bottom:1px solid var(--ios-edge);background:linear-gradient(var(--ios-bar-top),var(--ios-bar-bottom));font-size:16px;font-weight:600; }
-.photo-viewer__bar button,.photo-viewer__stage button { display:grid;place-items:center;flex:none;width:38px;height:34px;padding:0;border:1px solid var(--ios-edge);border-radius:8px;background:linear-gradient(#fff,#c9d0d6);color:#26303a;font-size:27px;line-height:1;box-shadow:inset 0 1px #fff,0 1px 3px #0003;cursor:pointer; }
+.photo-viewer__bar button,.photo-viewer__stage button { display:grid;place-items:center;flex:none;width:38px;height:34px;padding:0;border:1px solid var(--ios-edge);border-radius:8px;background:linear-gradient(#fff,#cfcfcf);color:#2f2f2f;font-size:27px;line-height:1;box-shadow:inset 0 1px #fff,0 1px 3px #0003;cursor:pointer; }
 .photo-viewer__stage { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--panel); }
 .photo-viewer__stage img { display:block;min-width:0;max-width:calc(100% - 96px);max-height:calc(94vh - 128px);margin:auto;object-fit:contain; }
 .photo-viewer__stage button { width:42px;height:58px;font-size:38px; }
 .photo-viewer__foot { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 17px;border-top:1px solid var(--ios-edge);font-size:12px;color:var(--ink-2); }
 .photo-viewer__dots { display:flex;gap:8px; }
-.photo-viewer__dots button { width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#9ea4aa;cursor:pointer; }
-.photo-viewer__dots button[aria-current="true"] { background:#25313e;box-shadow:0 0 0 2px #a8b1ba; }
+.photo-viewer__dots button { width:8px;height:8px;padding:0;border:0;border-radius:50%;background:#a3a3a3;cursor:pointer; }
+.photo-viewer__dots button[aria-current="true"] { background:#2f2f2f;box-shadow:0 0 0 2px #b0b0b0; }
 .stage:has(.service-pending) { min-height:0; }
 .service-pending { max-width:680px;padding:clamp(18px,3vw,42px); }
 .service-pending h2 { margin:0 0 15px;font-size:clamp(25px,2.5vw,38px);line-height:1.1;font-weight:500; }

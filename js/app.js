@@ -72,8 +72,10 @@
     document.body.classList.remove("mobile-menu-open");
     var toggle = document.getElementById("mobileMenuToggle");
     toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Открыть меню");
     var hash = location.hash || "#/masters";
     var found = resolve(hash);
+    document.body.dataset.page = hash.split("/")[1] || "masters";
 
     /* закрытая зона */
     if (found && found.route.auth && !global.Store.current()) {
@@ -198,7 +200,7 @@
     toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta)
-      meta.setAttribute("content", theme === "dark" ? "#17171a" : "#e8e8e6");
+      meta.setAttribute("content", theme === "dark" ? "#171717" : "#ffffff");
   }
 
   /* ---------------------------- форма шапки -------------------------------- */
@@ -424,6 +426,7 @@
     refreshChrome: function () {
       paintLogin();
     },
+    refreshLayout: function () { paintMenuShape(); },
   };
   global.TO = TO;
 
