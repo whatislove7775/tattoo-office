@@ -131,7 +131,7 @@
         }
         pane.innerHTML = '<div class="works">' + list.map(function (w, i) {
           var cap = pick(w.cap);
-          return '<figure class="work" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
+          return '<figure class="work" role="button" tabindex="0" aria-label="Открыть: ' + esc(cap) + '" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
                  'data-seed="' + esc(m.id + i) + '" data-sfx="open">' +
                    img(w.src, m.id + '-' + tab + i, cap, 'work__img', '', 'tattoo') +
                    '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' +
@@ -156,6 +156,12 @@
         if (!fig) return;
         var im = fig.querySelector('img');
         global.TO.modal(fig.dataset.cap, '<img src="' + esc(im.currentSrc || im.src) + '" alt="">');
+      });
+      pane.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          var fig = e.target.closest('.work');
+          if (fig) { e.preventDefault(); fig.click(); }
+        }
       });
     }
   };

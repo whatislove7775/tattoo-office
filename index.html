@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/office.css">
 <link rel="stylesheet" href="css/refinements.css">
+<link rel="stylesheet" href="css/showcase.css">
 </head>
 <body>
 
@@ -36,8 +37,8 @@
       <div class="lang">
         <button class="lang__btn" data-lang="ru" data-sfx="toggle">ru</button><span class="lang__sep">/</span><button class="lang__btn" data-lang="en" data-sfx="toggle">en</button>
       </div>
-      <button class="theme" id="themeToggle" title="" data-sfx="toggle">
-        <span class="theme__icon" aria-hidden="true">☀</span><span class="theme__state" id="themeState">on</span>
+      <button class="theme" id="themeToggle" type="button" title="" aria-label="Включить тёмную тему" aria-pressed="false" data-sfx="toggle">
+        <span class="theme__track" aria-hidden="true"><span class="theme__sun">☀</span><span class="theme__moon">☾</span><span class="theme__knob"></span></span><span class="theme__state" id="themeState">on</span>
       </button>
     </div>
   </div>
@@ -99,6 +100,7 @@
 
 <script src="js/app.js"></script>
 <script src="js/controls.js"></script>
+<script src="js/studio-model.js"></script>
 <script type="module" src="js/office.js"></script>
 </body>
 </html>

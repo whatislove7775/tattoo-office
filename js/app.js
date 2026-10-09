@@ -26,7 +26,7 @@
       keys: ["id"],
     },
     { rx: /^#\/book\/([\w-]+)$/, page: "office", nav: "masters", keys: ["id"] },
-    { rx: /^#\/interior$/, page: "interior", nav: "interior" },
+    { rx: /^#\/interior$/, page: "office", nav: "interior" },
     { rx: /^#\/find$/, page: "office", nav: "find" },
     { rx: /^#\/safety$/, page: "office", nav: "safety" },
     { rx: /^#\/archive$/, page: "office", nav: "archive" },
@@ -191,6 +191,9 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("to.theme", theme);
+    var toggle = document.getElementById("themeToggle");
+    toggle.setAttribute("aria-pressed", String(theme === "dark"));
+    toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
     document.getElementById("themeState").textContent = t(
       theme === "dark" ? "theme.off" : "theme.on",
     );
