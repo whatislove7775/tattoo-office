@@ -590,3 +590,15 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
   .office-feature .find-card { padding:16px 18px; }
   .office-feature .find-card h3 { font-size:18px; }
 }
+
+.find-lead .space-picker { flex:none; }
+.office-feature .interior-dossier { padding:22px;gap:16px;border-radius:20px;box-shadow:0 3px 10px #0000000c; }
+.office-feature .interior-dossier h3 { font-size:26px;line-height:1.2;letter-spacing:-.025em; }
+.office-feature .interior-dossier p { font-size:14px;line-height:1.55;margin:0; }
+.office-feature .interior-dossier .chrome { min-height:44px;padding:12px 16px;font-size:14px;line-height:1.3; }
+@media(max-width:900px) {
+  .find-lead .space-picker { display:block;margin-top:18px; }
+  .find-lead .space-picker .office-select { width:100%;max-width:100%; }
+  .office-feature .interior-dossier { padding:20px;gap:16px; }
+  .office-feature .interior-dossier h3 { font-size:22px;line-height:1.25; }
+}
