@@ -172,9 +172,17 @@ function paintShell() {
   if (!el) return;
   const en = window.I18N?.get() === "en";
   el.classList.toggle("login--user", !!me);
+  const logoutButton = document.getElementById("menuLogout");
+  logoutButton.hidden = !me;
+  logoutButton.onclick = async () => {
+    logoutButton.disabled = true;
+    try { await api("/auth/logout", "POST"); await refresh(); document.body.classList.remove("mobile-menu-open"); document.getElementById("mobileMenuToggle").setAttribute("aria-expanded","false"); go("masters"); }
+    catch (error) { notify(error.message); }
+    finally { logoutButton.disabled = false; }
+  };
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/cabinet">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
     : `<div class="login__row"><span class="login__label">login:</span><span class="login__links"><a href="#/login/customer">CUSTOMER</a><span aria-hidden="true">/</span><a href="#/login/master">TATTOO MASTER</a></span></div>`;
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({
@@ -791,7 +799,7 @@ async function adminPage() {
       ["users", "Люди"], ["catalog", "Склад и услуги"],
       ["finance", "Финансы"], ["feedback", "Обращения"],
       ["masters", "Мастера"], ["content", "Публикации"],
-      ["settings", "Настройки"], ["audit", "Журнал"],
+      ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
     ];
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   const menu = $("#menuList");
@@ -802,6 +810,7 @@ async function adminPage() {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
     body = `<div class="admin-home"><h2>Главная</h2><div class="admin-shortcuts"><button class="chrome" id="manual-booking">${icon("plus")}Новая запись</button><button class="chrome" id="add-user">${icon("user")}Новый пользователь</button><button class="chrome" data-admintab="settings">${icon("edit")}Тарифы и условия</button><button class="chrome" data-admintab="schedule">${icon("calendar")}Календарь</button><button class="chrome" data-admintab="bookings">${icon("history")}История записей</button></div></div>`;
   }
+  if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form">${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><h3>Сменить пароль</h3><form id="admin-password-form">${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
     const resources = a.resources.filter((r) => r.active),
       bookings = a.bookings.filter(
@@ -959,6 +968,8 @@ function mountAdmin() {
   }
   if (!adminData) return;
   const a = adminData;
+  onForm("#admin-profile-form", async d => { await api("/me", "PATCH", {name:d.name}); await refresh(); notify("Профиль сохранён"); render(); });
+  onForm("#admin-password-form", async d => { await api("/me/password", "POST", d); await refresh(); go("admin/login"); notify("Пароль изменён. Войдите заново."); });
   $$("[data-admintab]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -1302,6 +1313,7 @@ async function render() {
         mount = () => mountAuth(path[0] === "signup");
         break;
       case "cabinet":
+        if (me?.role === "admin") { adminTab = "profile"; go("admin"); return; }
         html = await cabinetPage();
         mount = mountCabinet;
         break;

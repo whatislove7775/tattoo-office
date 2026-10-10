@@ -602,3 +602,13 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
   .office-feature .interior-dossier { padding:20px;gap:16px; }
   .office-feature .interior-dossier h3 { font-size:22px;line-height:1.25; }
 }
+
+.menu__title:has(.menu-logout:not([hidden])) { display:flex;align-items:center;justify-content:center;gap:8px; }
+.menu-logout { display:grid;place-items:center;flex:none;width:26px;height:30px;border:0;border-radius:8px;padding:3px;background:transparent;color:var(--ink-2);cursor:pointer; }
+.menu-logout[hidden] { display:none; }
+.menu-logout svg { display:block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;overflow:visible; }
+.menu-logout:hover,.menu-logout:focus-visible { background:var(--panel-2);color:var(--ink); }
+.menu-logout:focus-visible { outline:2px solid var(--ink-2);outline-offset:2px; }
+.admin-profile { width:min(100%,440px); }
+.admin-profile h3 { margin:30px 0 18px;font-size:20px; }
+.admin-profile form>.chrome { margin-top:6px; }

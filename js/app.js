@@ -131,7 +131,7 @@
         "</li>"
       );
     }).join("");
-    document.querySelector(".menu__title").textContent = t("menu.title");
+    document.querySelector('.menu__title [data-i18n="menu.title"]').textContent = t("menu.title");
   }
 
   /* --------------------------- панель входа ------------------------------- */
