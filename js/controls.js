@@ -16,6 +16,14 @@
     popup.querySelector('[aria-selected="true"],button:not(:disabled)')?.focus({preventScroll:true});
   }
   function enhance(root=document) {
+    root.querySelectorAll('input[type="password"]:not([data-reveal])').forEach(input=>{
+      const field=input.closest('label.field');if(field){const div=document.createElement('div');div.className=field.className;field.replaceWith(div);div.append(...field.childNodes);}
+      input.dataset.reveal='true';input.setAttribute('aria-label',input.closest('.field')?.querySelector('span')?.textContent || 'Пароль');
+      const wrapper=document.createElement('div');wrapper.className='password-control';input.before(wrapper);wrapper.append(input);
+      const toggle=document.createElement('button');toggle.type='button';toggle.className='password-toggle';toggle.setAttribute('aria-label','Показать пароль');toggle.setAttribute('aria-pressed','false');
+      toggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      wrapper.append(toggle);toggle.onclick=event=>{event.preventDefault();const show=input.type==='password';input.type=show?'text':'password';toggle.setAttribute('aria-pressed',String(show));toggle.setAttribute('aria-label',show?'Скрыть пароль':'Показать пароль');};
+    });
     root.querySelectorAll('input[type="number"]:not([data-quantity-styled])').forEach(input=>{
       input.dataset.quantityStyled='true';
       const wrapper=document.createElement('div');wrapper.className='quantity-control';

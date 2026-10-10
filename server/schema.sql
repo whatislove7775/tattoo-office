@@ -28,3 +28,9 @@ ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN ('resident','gue
 
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS checkout_id text UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deposit_waived boolean NOT NULL DEFAULT false;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type text NOT NULL DEFAULT 'master';
+UPDATE users SET account_type='admin' WHERE role='admin';
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_account ON users(email,account_type);
+CREATE TABLE IF NOT EXISTS password_resets(token text PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id),expires_at timestamptz NOT NULL);

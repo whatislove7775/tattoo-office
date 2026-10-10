@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { SignJWT, importPKCS8 } from "jose";
 const jsonFetch = async (url, options = {}) => {
   const r = await fetch(url, {
@@ -86,7 +87,17 @@ export async function sendTelegram(chatId, text) {
   );
   if (!r.ok) throw Error("Telegram отклонил сообщение");
 }
+export function emailConfigured() {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD || process.env.EMAIL_API_URL && process.env.EMAIL_API_TOKEN);
+}
 export async function sendEmail(to, subject, text, id) {
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+    const port=Number(process.env.SMTP_PORT || 465);
+    const transport=nodemailer.createTransport({host:process.env.SMTP_HOST,port,secure:port===465,requireTLS:port!==465,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASSWORD},connectionTimeout:15000,socketTimeout:15000,disableFileAccess:true,disableUrlAccess:true});
+    try { await transport.sendMail({from:{name:"Tattoo Office",address:process.env.SMTP_FROM || process.env.SMTP_USER},to,subject,text,messageId:`<${id}@tattoo-office.local>`}); }
+    finally {transport.close();}
+    return;
+  }
   if (!process.env.EMAIL_API_URL || !process.env.EMAIL_API_TOKEN)
     throw Error("Email не настроен");
   if (!process.env.EMAIL_API_URL.startsWith("https://"))

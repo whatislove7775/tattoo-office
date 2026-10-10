@@ -641,3 +641,58 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {padding-block:14px;}
 .site-bottom .foot .foot__links {grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);}
 .site-bottom .foot .foot__copy {margin-top:12px;}
+/* Consistent interaction feedback, without pointer-click focus rings. */
+:focus-visible {filter:none!important;outline:1px solid var(--ink-3);outline-offset:3px;}
+:focus:not(:focus-visible),.quantity-control:focus-within {outline:none!important;filter:none!important;}
+.quantity-control:has(:focus-visible) {outline:1px solid var(--ink-3)!important;outline-offset:3px;}
+.office-feature .field input:focus,.office-feature .field textarea:focus,#dialog input:focus,#dialog textarea:focus {outline:none;filter:none;border-color:var(--ink-3);box-shadow:0 1px 4px #00000012;}
+.office-feature button:focus:not(:focus-visible),.office-select:focus:not(:focus-visible),.office-picker button:focus:not(:focus-visible) {box-shadow:var(--control-shadow);}
+.office-feature input:focus-visible,.office-feature textarea:focus-visible {filter:none!important;}
+a,button,summary,label,[role="button"],[role="option"],.polaroid,.polaroid *,.drift--static .polaroid,.work,.work * {cursor:url('../assets/cursors/link.png') 10 10,pointer!important;}
+input,textarea,[contenteditable="true"] {cursor:url('../assets/cursors/beam.png') 15 16,text!important;}
+input[type="checkbox"],input[type="radio"],input[type="date"] {cursor:url('../assets/cursors/link.png') 10 10,pointer!important;}
+button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!important;}
+.menu__title,body.admin-session .menu__title {display:grid!important;place-items:center;}
+.who {align-items:center;gap:12px;}
+.who__text {flex:1;min-width:0;}
+.who__text small:empty {display:none;}
+.who .menu-logout {width:32px;height:32px;margin-left:auto;}
+.office-feature .resource-choice__state {display:grid;place-items:center;}
+.resource-choice__state .ui-icon {width:18px;height:18px;}
+.password-control {position:relative;width:100%;}
+.password-control input {width:100%;padding-right:52px!important;}
+.password-toggle {position:absolute;right:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:28px;height:28px;min-height:0!important;padding:4px;border:0;background:transparent;box-shadow:none;color:var(--ink-2);}
+.password-toggle svg {width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;}
+.password-toggle[aria-pressed="true"] {color:var(--ink);background:var(--panel-2);border-radius:8px;}
+.auth-switch {display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;}
+.office-feature .auth-photo .auth-image {left:-6.05%;top:-11.73%;width:112.74%;height:123.46%;}
+.rules-full {margin-top:24px;padding:16px 0 0;}
+.rules-full summary {font-weight:500;font-size:16px;line-height:1.4;}
+.rules-full summary>span {font-weight:300;font-size:24px;}
+.office-feature .form-actions #booking-next {width:auto;min-width:120px;white-space:nowrap;padding:12px 20px;}
+.site-bottom .foot,body[data-page="masters"] .site-bottom .foot {padding-block:12px;}
+.site-bottom .foot .foot__copy {margin-top:10px;}
+.foot__copy a {font-weight:600;}
+.foot__mark {opacity:1;filter:brightness(0);}
+.photo-viewer__bar {inset:14px 14px auto;overflow:visible;}
+.photo-viewer__bar button,.photo-viewer__stage button {border:0;box-shadow:inset 0 0 0 1px #ffffff40,0 2px 8px #0004;transform:translateZ(0);}
+.photo-viewer__stage button {transform:translateY(-50%) translateZ(0);}
+/* Dark surfaces keep their hierarchy; primary actions remain black. */
+:root[data-theme="dark"] {--bg:#181818;--panel:#242424;--panel-2:#2b2b2b;--panel-edge:#454545;--line:#454545;--muted:#b8b8b8;--ink:#f3f3f3;--ink-2:#c5c5c5;--ink-3:#989898;--control-fill:linear-gradient(#363636,#2c2c2c);--action-fill:linear-gradient(#282828,#0d0d0d 55%,#191919);--control-shadow:inset 0 1px #ffffff0c,0 2px 6px #0003;}
+:root[data-theme="dark"] html {background:var(--bg);}
+:root[data-theme="dark"] .office-feature .chrome,:root[data-theme="dark"] .office-feature .back-btn,:root[data-theme="dark"] .office-feature .calendar-head button,:root[data-theme="dark"] .office-feature .model-controls button,:root[data-theme="dark"] .office-select,:root[data-theme="dark"] .btn {background:var(--control-fill);border-color:var(--panel-edge);color:var(--ink);box-shadow:var(--control-shadow);text-shadow:none;}
+:root[data-theme="dark"] .office-feature .auth-form button[type="submit"],:root[data-theme="dark"] .office-feature #booking-next,:root[data-theme="dark"] .office-feature #card-pay,:root[data-theme="dark"] #dialog button[type="submit"],:root[data-theme="dark"] .btn--primary,:root[data-theme="dark"] .office-feature .choice.selected,:root[data-theme="dark"] .office-feature .time.selected,:root[data-theme="dark"] .office-feature .calendar button.selected,:root[data-theme="dark"] .office-picker button[aria-selected="true"],:root[data-theme="dark"] .office-feature .steps li.active b {background:var(--action-fill);color:#fff;border-color:#686868;box-shadow:inset 0 1px #ffffff12,0 2px 6px #0004;text-shadow:none;}
+:root[data-theme="dark"] .office-feature .choice.selected small,:root[data-theme="dark"] .office-feature .time.selected .muted {color:#d4d4d4;}
+:root[data-theme="dark"] .office-feature .field input,:root[data-theme="dark"] .office-feature .field textarea,:root[data-theme="dark"] #dialog input,:root[data-theme="dark"] #dialog textarea {background:#2e2e2e;color:var(--ink);border-color:var(--panel-edge);box-shadow:none;}
+:root[data-theme="dark"] input::placeholder,:root[data-theme="dark"] textarea::placeholder {color:#aaa;opacity:1;}
+:root[data-theme="dark"] .quantity-control input[type="number"] {background:transparent;border:0;}
+:root[data-theme="dark"] .office-feature .choice:not(.selected),:root[data-theme="dark"] .office-feature .time:not(.selected),:root[data-theme="dark"] .office-feature .calendar button:not(.selected) {background:var(--control-fill);border-color:var(--panel-edge);color:var(--ink);box-shadow:var(--control-shadow);}
+
+@media(max-width:900px) {.mobile-menu-open .menu__title,body.admin-session.mobile-menu-open .menu__title {display:none!important;}}
+.password-toggle {z-index:1;}
+.password-toggle svg {pointer-events:none;}
+:root[data-theme="dark"] {background:var(--bg);}
+:root[data-theme="dark"] .foot__mark {filter:brightness(0);opacity:1;}
+button:focus-visible,a:focus-visible,summary:focus-visible,.office-feature button:focus-visible,.office-feature a:focus-visible,.office-select:focus-visible {outline:1px solid var(--ink-3)!important;outline-offset:3px;filter:none!important;}
+input:-webkit-autofill { -webkit-text-fill-color:var(--ink);box-shadow:inset 0 0 0 1000px var(--panel)!important; }
+.password-control input:-webkit-autofill {box-shadow:inset 0 0 0 1000px var(--panel)!important;}

@@ -181,9 +181,11 @@ function paintShell() {
     finally { logoutButton.disabled = false; }
   };
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
+  document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a><small>${me.role === "admin" ? "" : roleName[me.role]}</small></span></div>`
     : `<div class="login__row"><span class="login__label">login:</span><span class="login__links"><a href="#/login/customer">CUSTOMER</a><span aria-hidden="true">/</span><a href="#/login/master">TATTOO MASTER</a></span></div>`;
+  if (me) el.querySelector(".who").append(logoutButton);
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,
@@ -440,20 +442,32 @@ function authPage(signup) {
   const role = location.hash.split('/')[2] === 'customer' ? 'customer' : 'master';
   if (!signup) {
     const caption = role === 'customer' ? 'Эх грустно как то...<br>Пойду забьюсь' : 'Кажется я обрёл дом...<br>Да что там дом - семью';
-    return win(role === 'customer' ? 'Вход / Customer' : 'Вход / Tattoo master', '<form id="auth-form" class="auth-form auth-form--role"><div class="auth-illustration"><div class="auth-photo"><img class="auth-image" src="assets/auth/' + role + '.png" alt="' + (role === 'customer' ? 'Портрет клиента' : 'Собака') + '"></div><p class="auth-caption">' + caption + '</p></div>' + field('email','Почта','','email','required autocomplete="email" placeholder="девственник@mail.ru"') + field('password','Введите пароль','','password','required autocomplete="current-password" placeholder="пароль-пароль***"') + '<div class="auth-switch"><a href="#/signup/' + role + '">No account — Sign up</a></div><div class="auth-role-actions"><button type="submit" class="chrome">Войти</button>' + (pub.telegramEnabled ? '<a href="/api/auth/telegram">Войти через Telegram</a>' : '') + '</div></form>');
+    return win(role === 'customer' ? 'Вход / Customer' : 'Вход / Tattoo master', '<form id="auth-form" class="auth-form auth-form--role"><div class="auth-illustration"><div class="auth-photo"><img class="auth-image" src="assets/auth/' + role + '.png" alt="' + (role === 'customer' ? 'Портрет клиента' : 'Собака') + '"></div><p class="auth-caption">' + caption + '</p></div>' + field('email','Почта','','email','required autocomplete="email" placeholder="девственник@mail.ru"') + field('password','Введите пароль','','password','required autocomplete="current-password" placeholder="пароль-пароль***"') + '<div class="auth-switch"><a href="#/signup/' + role + '">No account — Sign up</a><a href="#/forgot/' + role + '">Забыли пароль?</a></div><div class="auth-role-actions"><button type="submit" class="chrome">Войти</button>' + (pub.telegramEnabled ? '<a href="/api/auth/telegram">Войти через Telegram</a>' : '') + '</div></form>');
   }
   return win(
     signup ? "Новое личное дело" : "Войти в офис",
     `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<div class="auth-photo"><img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом"></div>' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p class="muted small">${role === "customer" ? "Создайте аккаунт клиента, чтобы сохранять свои записи." : "Создайте аккаунт мастера. Условия Private Club команда студии подключит после знакомства."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}/${role}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Создать аккаунт"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
   );
 }
+function recoveryPage(reset) {
+  const type = (location.hash.split('/')[2] || 'master').split('?')[0];
+  return win(reset ? 'Новый пароль' : 'Восстановление доступа', `<form id="recovery-form" class="auth-form"><h2>${reset ? 'Задайте новый пароль.' : 'Забыли пароль?'}</h2><p class="small muted">${reset ? 'Не менее 12 символов. После смены войдите заново.' : 'Отправим ссылку на почту вашего профиля.'}</p>${reset ? field('password','Новый пароль','','password','required minlength="12" maxlength="128" autocomplete="new-password"') : field('email','Почта','','email','required autocomplete="email"')}<button type="submit" class="chrome">${reset ? 'Сохранить пароль' : 'Получить ссылку'}</button><div class="auth-switch"><a href="#/${type === 'admin' ? 'admin/login' : 'login/' + type}">Назад ко входу</a></div></form>`);
+}
+function mountRecovery(reset) {
+  onForm('#recovery-form', async d => {
+    const accountType = (location.hash.split('/')[2] || 'master').split('?')[0];
+    await api('/auth/' + (reset ? 'reset-password' : 'forgot-password'), 'POST', {...d, accountType, token: new URLSearchParams(location.hash.split('?')[1]).get('token')});
+    if (reset) { await refresh(); go(accountType === 'admin' ? 'admin/login' : 'login/' + accountType); notify('Пароль изменён. Войдите заново.'); }
+    else { document.querySelector('#recovery-form').innerHTML='<h2>Проверьте почту.</h2><p>Если такой профиль существует, письмо со ссылкой будет отправлено. Ссылка действует 30 минут.</p>'; }
+  });
+}
 function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button></form>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
 }
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
-    await api('/auth/login','POST',{...d,email:'89615020777@mail.ru'});
+    await api('/auth/login','POST',{...d,email:'89615020777@mail.ru',accountType:'admin'});
     await refresh();
     if (me?.role !== 'admin') {
       await api('/auth/logout','POST');
@@ -467,6 +481,7 @@ function mountAuth(signup) {
   onForm("#auth-form", async (d) => {
     await api("/auth/" + (signup ? "register" : "login"), "POST", {
       ...d,
+      accountType: location.hash.split("/")[2] === "customer" ? "customer" : "master",
       rules: d.rules === "on",
       consent: d.consent === "on",
     });
@@ -517,7 +532,7 @@ function bookingPage() {
       .filter((x) => x.active)
       .map(
         (r) =>
-          `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="assets/interior/${[1,4,4,2][pub.resources.indexOf(r)%4]}.jpg" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span>↗</span></button>`,
+          `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="assets/interior/${[1,4,4,2][pub.resources.indexOf(r)%4]}.jpg" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span class="resource-choice__state" aria-hidden="true">${draft.resourceId === r.id ? '<svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>' : ""}</span></button>`,
       )
       .join("")}</div>`;
   }
@@ -534,7 +549,7 @@ function bookingPage() {
   }
   return win(
     "Rent a workspace",
-    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid${draft.step === 3 ? " booking-grid--review" : ""}"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← Назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить запись" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${draft.step === 3 ? "" : receipt()}</div>`,
+    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid${draft.step === 3 ? " booking-grid--review" : ""}"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← Назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${draft.step === 3 ? "" : receipt()}</div>`,
   );
 }
 async function mountBooking() {
@@ -1308,6 +1323,11 @@ async function render() {
           );
         html = bookingPage();
         mount = mountBooking;
+        break;
+      case "forgot":
+      case "reset":
+        html = recoveryPage(path[0] === "reset");
+        mount = () => mountRecovery(path[0] === "reset");
         break;
       case "login":
       case "signup":

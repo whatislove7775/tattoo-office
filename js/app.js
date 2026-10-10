@@ -16,6 +16,7 @@
   /* ------------------------------ маршруты -------------------------------- */
   var ROUTES = [
     { rx: /^#\/(booking|admin|payment)(?:\/[^/]+)?$/, page: "office" },
+    { rx: /^#\/(forgot|reset)\/(master|customer|admin)(\?.*)?$/, page: "office" },
     { rx: /^#\/(login|signup)$/, page: "office" },
     { rx: /^#?\/?$/, page: "masters", nav: "masters" },
     { rx: /^#\/masters$/, page: "masters", nav: "masters" },

@@ -151,6 +151,9 @@ export async function workerTick(db) {
             );
           }
         }
+      } else if (job.kind === "email.auth") {
+        await sendEmail(job.payload.to,job.payload.subject,job.payload.text,job.id);
+        await db.query("UPDATE outbox SET payload='{}',status='done',last_error=NULL WHERE id=$1",[job.id]);
       } else if (job.kind === "email.send") {
         if (settings.mode !== "test")
           await sendEmail(
@@ -199,7 +202,7 @@ export async function workerTick(db) {
       }
       await db.query(
         "UPDATE outbox SET status=$1,last_error=NULL WHERE id=$2",
-        [settings.mode === "test" ? "simulated" : "done", job.id],
+        [job.kind === "email.auth" || settings.mode !== "test" ? "done" : "simulated", job.id],
       );
     } catch (e) {
       const receipt = job.kind.startsWith("receipt.");

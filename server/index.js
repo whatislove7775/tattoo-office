@@ -1,3 +1,4 @@
+import { emailConfigured } from "./integrations.js";
 import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
 import express from "express";
 import { expireReservations } from "./reservations.js";
@@ -86,9 +87,9 @@ export async function createApp(db) {
       );
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
     const email = validEmail(process.env.ADMIN_EMAIL);
-    if (!(await one(db, "SELECT id FROM users WHERE email=$1", [email])))
+    if (!(await one(db, "SELECT id FROM users WHERE email=$1 AND role='admin'", [email])))
       await db.query(
-        "INSERT INTO users(id,email,password,name,role) VALUES($1,$2,$3,$4,$5)",
+        "INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,$4,$5,CASE WHEN $5='admin' THEN 'admin' ELSE 'master' END)",
         [
           uuid(),
           email,
@@ -183,6 +184,7 @@ export async function createApp(db) {
           email: u.email,
           name: u.name,
           role: u.role,
+          accountType: u.role === "admin" ? "admin" : u.account_type,
           balance: u.balance,
           depositWaived: u.role === "resident" && u.deposit_waived,
           sequence: u.sequence,
@@ -295,12 +297,17 @@ export async function createApp(db) {
     if (!name?.trim() || name.length > 100) fail("Укажите имя");
     if (rules !== true || consent !== true)
       fail("Нужно принять правила и дать отдельное согласие");
+    const accountType = req.body.accountType === "customer" ? "customer" : "master";
+    if (req.body.accountType === "admin") fail("Администратора добавляет команда студии",403);
+    const existing = (await db.query("SELECT * FROM users WHERE email=$1", [email])).rows;
+    if (existing.some(u => u.account_type === accountType)) fail("Этот профиль уже существует. Войдите или восстановите пароль",409);
+    if (existing.length && req.user?.email !== email && !existing.some(u => verifyPassword(password,u.password))) fail("Для добавления профиля войдите в существующий аккаунт на эту почту",409);
     const s = await settings();
     const u = await db.transaction(async (q) => {
       const id = uuid();
       await q.query(
-        "INSERT INTO users(id,email,password,name,role) VALUES($1,$2,$3,$4,'guest')",
-        [id, email, hashPassword(password), name.trim()],
+        "INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,$4,'guest',$5)",
+        [id, email, hashPassword(password), name.trim(), accountType],
       );
       for (const kind of ["rules", "personal_data"])
         await q.query(
@@ -329,9 +336,9 @@ export async function createApp(db) {
     res.status(201).json({ user: safe(u) });
   });
   app.post("/api/auth/login", loginLimit, async (req, res) => {
-    const u = await one(db, "SELECT * FROM users WHERE email=$1", [
-      validEmail(req.body.email),
-    ]);
+    const type = req.body.accountType;
+    if (type && !["customer","master","admin"].includes(type)) fail("Проверьте тип профиля");
+    const u = await one(db, "SELECT * FROM users WHERE email=$1 AND ($2::text IS NULL OR account_type=$2 OR ($2='admin' AND role='admin')) ORDER BY created_at LIMIT 1", [validEmail(req.body.email), type || null]);
     if (
       typeof req.body.password !== "string" ||
       req.body.password.length > 128 ||
@@ -342,6 +349,35 @@ export async function createApp(db) {
       fail("Email или пароль не совпадают", 401);
     await session(res, u);
     res.json({ user: safe(u) });
+  });
+  app.post("/api/auth/forgot-password", loginLimit, async (req,res) => {
+    const email=validEmail(req.body.email), type=req.body.accountType || "master";
+    if (!["customer","master","admin"].includes(type)) fail("Проверьте тип профиля");
+    if (!emailConfigured()) fail("Отправка писем ещё не подключена. Обратитесь к администратору",503);
+    const user=await one(db,"SELECT * FROM users WHERE email=$1 AND account_type=$2 AND active=true",[email,type]);
+    if (user) {
+      const token=randomBytes(32).toString("hex"), digest=hashToken(token);
+      await db.transaction(async q=>{
+        await q.query("DELETE FROM password_resets WHERE user_id=$1 OR expires_at<now()",[user.id]);
+        await q.query("INSERT INTO password_resets VALUES($1,$2,now()+interval '30 minutes')",[digest,user.id]);
+      });
+      const origin=process.env.APP_ORIGIN;
+      if (!origin) fail("Адрес сайта для восстановления не настроен",503);
+      await enqueue(db,"email.auth",{to:email,subject:"Восстановление пароля Tattoo Office",text:`Для смены пароля откройте ссылку: ${origin}/#/reset/${type}?token=${token}\nСсылка действует 30 минут. Если вы не запрашивали смену пароля, проигнорируйте письмо.`});
+    }
+    res.json({ok:true});
+  });
+  app.post("/api/auth/reset-password", loginLimit, async (req,res) => {
+    const password=validPassword(req.body.password), token=String(req.body.token || "");
+    if (!/^[a-f0-9]{64}$/.test(token)) fail("Ссылка недействительна или истекла",400);
+    await db.transaction(async q=>{
+      const reset=await one(q,"DELETE FROM password_resets WHERE token=$1 AND expires_at>now() RETURNING user_id",[hashToken(token)]);
+      if (!reset) fail("Ссылка недействительна или истекла",400);
+      await q.query("UPDATE users SET password=$1 WHERE id=$2",[hashPassword(password),reset.user_id]);
+      await q.query("DELETE FROM sessions WHERE user_id=$1",[reset.user_id]);
+      await q.query("DELETE FROM password_resets WHERE user_id=$1",[reset.user_id]);
+    });
+    res.json({ok:true});
   });
   app.post("/api/auth/logout", async (req, res) => {
     const token = req.headers.cookie
@@ -381,6 +417,7 @@ export async function createApp(db) {
         req.user.id,
       ]);
       await q.query("DELETE FROM sessions WHERE user_id=$1", [req.user.id]);
+      await q.query("DELETE FROM password_resets WHERE user_id=$1", [req.user.id]);
     });
     res.clearCookie("office_session", { path: "/" });
     res.json({ ok: true });
@@ -756,7 +793,7 @@ export async function createApp(db) {
     const id = uuid();
     await db.transaction(async (q) => {
       await q.query(
-        "INSERT INTO users(id,email,password,name,role) VALUES($1,$2,$3,$4,$5)",
+        "INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,$4,$5,CASE WHEN $5='admin' THEN 'admin' ELSE 'master' END)",
         [
           id,
           validEmail(req.body.email),
@@ -785,7 +822,7 @@ export async function createApp(db) {
         fail("Проверьте роль");
       if (u.id === req.user.id && (role !== "admin" || !active))
         fail("Нельзя отозвать собственный доступ администратора");
-      await q.query("UPDATE users SET email=$1,role=$2,active=$3 WHERE id=$4", [
+      await q.query("UPDATE users SET email=$1,role=$2,active=$3,account_type=CASE WHEN $2='admin' THEN 'admin' WHEN account_type='admin' THEN 'master' ELSE account_type END WHERE id=$4", [
         req.body.email ? validEmail(req.body.email) : u.email,
         role,
         active,
