@@ -564,3 +564,6 @@ body[data-page="booking"] .office-feature .window { min-height:0;padding-bottom:
 .booking-grid>div:first-child>.form-actions { margin-top:auto;padding-top:30px; }
 #booking-error:empty { display:none; }
 @media(min-width:901px) { body[data-page="booking"] .stage { min-height:0; } }
+
+.office-feature .booking-grid--review { grid-template-columns:minmax(0,1fr); }
+.booking-review__total { display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:22px;font-size:18px; }
