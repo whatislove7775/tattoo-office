@@ -17,6 +17,7 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "jose": "^6.2.12",
+    "morphicons": "^1.7.1",
     "pg": "^8.16.3"
   },
   "devDependencies": {

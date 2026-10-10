@@ -92,15 +92,15 @@
         '</div>';
 
       return '<div class="section-head">' +
-               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a> / ' + esc(name) + '</span>' +
+               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a><span class="crumbs__current"> / ' + esc(name) + '</span></span>' +
                tabs +
                '<span class="spacer"></span>' +
                '<a class="master-back" href="#/masters" aria-label="Назад к мастерам" data-sfx="nav">← Назад</a>' +
              '</div>' +
 
              '<div class="master">' +
-               '<div>' +
-                 img(m.photo, m.id, name, 'master__photo') +
+               '<div class="master-profile">' +
+                 img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
                  '<div class="master__name">' + esc(name) + '</div>' +
                  '<div class="master__city">' + esc(pick(m.city)) + '</div>' +
                  '<div class="master__meta">' +
@@ -108,8 +108,8 @@
                    '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
-                 '<p style="margin-top:26px"><a class="btn" href="#/book/' + esc(m.id) + '" data-sfx="open">' +
-                   esc(t('master.book')) + '</a></p>' +
+                 '<p class="master-profile__action"><a class="btn btn--primary" href="#/book/' + esc(m.id) + '" data-sfx="open">' +
+                   esc(t('master.book')) + '</a></p></div>' +
                '</div>' +
                '<div id="worksPane"></div>' +
              '</div>';

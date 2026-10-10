@@ -172,6 +172,7 @@ function paintShell() {
   if (!el) return;
   const en = window.I18N?.get() === "en";
   el.classList.toggle("login--user", !!me);
+  document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   el.innerHTML = me
     ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/cabinet">${esc(me.name)}</a><small>${me.role === "admin" ? '<a href="#/admin">' + (en ? "Site management" : "Управление сайтом") + "</a>" : roleName[me.role]}</small></span></div>`
     : `<div class="login__row"><span class="login__label">login:</span><span class="login__links"><a href="#/login/customer">CUSTOMER</a><span aria-hidden="true">/</span><a href="#/login/master">TATTOO MASTER</a></span></div>`;
@@ -440,11 +441,11 @@ function authPage(signup) {
 }
 function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('email','Почта администратора','','email','required autocomplete="username"') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button></form>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button></form>');
 }
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
-    await api('/auth/login','POST',d);
+    await api('/auth/login','POST',{...d,email:'89615020777@mail.ru'});
     await refresh();
     if (me?.role !== 'admin') {
       await api('/auth/logout','POST');
@@ -507,7 +508,7 @@ function bookingPage() {
       .filter((x) => x.active)
       .map(
         (r) =>
-          `<button class="choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span>↗</span></button>`,
+          `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="assets/interior/${[1,4,4,2][pub.resources.indexOf(r)%4]}.jpg" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span>↗</span></button>`,
       )
       .join("")}</div>`;
   }
@@ -520,7 +521,7 @@ function bookingPage() {
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<hr><p>Сейчас: ${money(s.deposit)}<br><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__payment"><span>Предоплата</span><strong>${money(s.deposit)}</strong></div><p class="booking-review__split"><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
