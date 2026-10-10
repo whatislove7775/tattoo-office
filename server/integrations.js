@@ -71,6 +71,18 @@ export async function syncCalendar(calendar, id, event) {
       throw Error("Google Calendar: " + created.status);
   } else if (!r.ok) throw Error("Google Calendar: " + r.status);
 }
+export async function listCalendarEvents(calendar, from, until) {
+  const token = await calendarToken(), items = [];
+  let pageToken;
+  do {
+    const params = new URLSearchParams({timeMin:from,timeMax:until,singleEvents:"true",showDeleted:"false",maxResults:"2500",fields:"items(id,status,transparency,start,end,extendedProperties/private),nextPageToken"});
+    if (pageToken) params.set("pageToken", pageToken);
+    const data = await jsonFetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar)}/events?${params}`, {headers:{Authorization:"Bearer " + token}});
+    items.push(...(data.items || []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return items;
+}
 export async function sendTelegram(chatId, text) {
   if (!process.env.TELEGRAM_BOT_TOKEN) throw Error("Telegram не настроен");
   const r = await jsonFetch(

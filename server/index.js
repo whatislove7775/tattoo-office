@@ -1,4 +1,5 @@
 import { emailConfigured } from "./integrations.js";
+import { refreshCalendarBusy } from "./calendar-sync.js";
 import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
 import express from "express";
 import { expireReservations } from "./reservations.js";
@@ -256,6 +257,7 @@ export async function createApp(db) {
       )
     )
       return false;
+    if (await one(q,"SELECT id FROM calendar_busy WHERE resource_id=$1 AND starts_at<$3 AND ends_at>$2 LIMIT 1",[resource,start,end])) return false;
     return !(await one(
       q,
       "SELECT id FROM blocks WHERE (resource_id=$1 OR resource_id IS NULL) AND starts_at<$3 AND ends_at>$2 LIMIT 1",
@@ -428,6 +430,7 @@ export async function createApp(db) {
       duration = Number(req.query.duration || 3);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || ![3, 6, 12].includes(duration))
       fail("Проверьте дату и тариф");
+    try { await refreshCalendarBusy(db); } catch { fail("Не удалось проверить календарь студии. Попробуйте немного позже",503); }
     const slots = await db.transaction(async (q) => {
       await lock(q);
       await expire(q);
@@ -459,6 +462,7 @@ export async function createApp(db) {
     res.json(slots);
   });
   app.post("/api/bookings", auth, async (req, res) => {
+    try { await refreshCalendarBusy(db,0); } catch { fail("Не удалось проверить календарь студии. Попробуйте немного позже",503); }
     const result = await db.transaction(async (q) => {
       await lock(q);
       await expire(q);
@@ -687,7 +691,7 @@ export async function createApp(db) {
             "SELECT b.*,u.name AS user_name,r.name AS resource_name FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id ORDER BY b.starts_at DESC LIMIT 500",
           )
         ).rows,
-        blocks: (await db.query("SELECT * FROM blocks ORDER BY starts_at DESC"))
+        blocks: (await db.query("SELECT id,resource_id,starts_at,ends_at,reason,false AS external FROM blocks UNION ALL SELECT id,resource_id,starts_at,ends_at,'Google Calendar' AS reason,true AS external FROM calendar_busy ORDER BY starts_at DESC"))
           .rows,
         catalog: (await db.query("SELECT * FROM catalog ORDER BY name")).rows,
         payments: (

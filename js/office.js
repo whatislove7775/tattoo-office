@@ -869,7 +869,7 @@ async function adminPage() {
       ["Период", "Причина", ""],
       a.blocks.map(
         (b) =>
-          `<tr><td>${dateLabel(b.starts_at)} ${timeLabel(b.starts_at)} — ${dateLabel(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td><button data-delete-block="${b.id}">Открыть</button></td></tr>`,
+          `<tr><td>${dateLabel(b.starts_at)} ${timeLabel(b.starts_at)} — ${dateLabel(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td>${b.external ? '<span class="muted">Изменить в Google Calendar</span>' : `<button data-delete-block="${b.id}">Открыть</button>`}</td></tr>`,
       ),
     )}`;
   }

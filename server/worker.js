@@ -1,5 +1,6 @@
 import { randomUUID as uuid } from "node:crypto";
 import { expireReservations } from "./reservations.js";
+import { refreshCalendarBusy } from "./calendar-sync.js";
 import {
   syncCalendar,
   sendTelegram,
@@ -18,6 +19,8 @@ const labels = {
   "booking.reminder": "Напоминание о сеансе",
 };
 export async function workerTick(db) {
+  try { await refreshCalendarBusy(db, 30000); }
+  catch (e) { console.error("Calendar availability:", e.message); }
   await db.transaction(async (q) => {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
     await expireReservations(q);
@@ -89,6 +92,7 @@ export async function workerTick(db) {
                     // The workspace calendar itself is private. Normal events
                     // allow the service account to edit without access to personal events.
                     visibility: "default",
+                    extendedProperties: {private:{tattooOffice:"workspace"}},
                   },
             );
           } else {
@@ -119,6 +123,7 @@ export async function workerTick(db) {
                           dateTime: new Date(block.ends_at).toISOString(),
                         },
                         visibility: "default",
+                        extendedProperties: {private:{tattooOffice:"workspace"}},
                       },
                 );
             }
