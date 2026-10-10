@@ -529,3 +529,12 @@ body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
 .auth-form--role .auth-illustration { width:100%;grid-template-columns:minmax(0,1fr);gap:8px; }
 .auth-form--role .auth-illustration .auth-photo { width:100%;justify-self:center; }
 .auth-form--role .auth-caption { justify-self:end;text-align:right;margin:0; }
+/* Sign-in forms keep the submit action beside the form rather than at viewport bottom. */
+.office-feature .auth-form--role { min-height:0; }
+.auth-form--role .auth-role-actions { margin-top:24px;padding-top:0; }
+body[data-page="login"] .office-feature .window { min-height:0;padding-bottom:32px; }
+@media(min-width:901px) { body[data-page="login"] .stage { min-height:0; } }
+@media(max-width:900px) {
+  .office-feature .auth-form--role { min-height:0; }
+  .auth-form--role .auth-caption { justify-self:start;text-align:left;font-size:11px; }
+}
