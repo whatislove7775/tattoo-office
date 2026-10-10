@@ -455,7 +455,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
 .booking-review__payment { display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--panel-edge);margin-top:20px;padding-top:18px; }
 .booking-review__payment strong { font-size:24px;font-weight:600; }
 .office-feature .booking-review__split { color:var(--ink-2); }
-.desktop-shortcut { width:20px;height:20px;left:2px;bottom:2px;border-radius:3px;border-color:#bbb;box-shadow:0 1px 2px #0002; }
+.desktop-shortcut { width:20px;height:20px;left:0;bottom:-1px;border-radius:3px;border-color:#bbb;box-shadow:0 1px 2px #0002; }
 .desktop-shortcut svg { width:15px;height:15px; }
 .mobile-menu-toggle svg { display:block;width:24px;height:24px;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;overflow:visible; }
 .mobile-menu-toggle { align-items:center;justify-content:center; }
