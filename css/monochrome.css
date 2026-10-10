@@ -763,3 +763,15 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .rail .login--admin .who .menu-logout {width:24px;height:24px;}
 }
 .master-profile__action small {display:block;margin-top:10px;font-size:12px;}
+/* Desktop chrome stays in the viewport; content scrolls inside its panel. */
+@media(min-width:901px) {
+  body {height:100dvh;min-height:100dvh;overflow:hidden;}
+  body[data-page] #stage {position:fixed;top:var(--desktop-stage-top,100px);left:clamp(24px,3vw,54px);right:calc(var(--rail-width) + 56px);bottom:24px;width:auto;height:auto;min-height:0!important;}
+  body[data-page] #stage>.stage__inner {position:absolute;inset:0;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;}
+  .rail,body.admin-session .rail {position:fixed;}
+  .rail .menu__item,body.admin-session .rail .menu__item {height:var(--desktop-menu-row-height,36px);}
+  body.admin-session .rail .menu__link {font-size:clamp(12px,calc(var(--desktop-menu-row-height,36px) * .55),16px);}
+  .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {position:fixed;top:auto;bottom:24px;}
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {position:fixed;top:auto;bottom:calc(42px + var(--desktop-foot-height,83px));}
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(100dvh - var(--desktop-stage-top,100px) - 76px);}
+}
