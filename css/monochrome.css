@@ -552,3 +552,5 @@ body[data-page] .office-feature .window:has(>.auth-form)>.window-head { flex:non
   body[data-page] .office-feature .window:has(>.auth-form) { min-height:0; }
   .office-feature .window>.auth-form { margin-top:20px;margin-bottom:0; }
 }
+.archive-footer a { display:inline-flex;align-items:center;gap:8px;max-width:100%;line-height:1.35; }
+.archive-footer a .ui-icon { display:block;flex:none;width:18px;height:18px; }
