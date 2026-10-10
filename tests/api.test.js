@@ -511,3 +511,30 @@ test("admin chooses which existing masters appear on the public home", async () 
   const visible = (await request("/public")).data.content.find((x) => x.id === "master-1");
   assert.equal(visible.data.featured, true);
 });
+
+test('resident cash exception is administrator-controlled, confirms without balance/deposit and cash settlement is idempotent', async () => {
+  const u=(await db.query("SELECT * FROM users WHERE email='other@test.invalid'")).rows[0];
+  assert.equal((await request('/admin/users/'+u.id,'PATCH',{depositWaived:true},resident)).status,403);
+  assert.equal((await request('/admin/users/'+u.id,'PATCH',{role:'resident',depositWaived:true},admin)).status,200);
+  other=(await request('/auth/login','POST',{email:u.email,password})).cookie;
+  assert.equal((await request('/me','GET',null,other)).data.user.depositWaived,true);
+  await db.query('UPDATE users SET balance=10000 WHERE id=$1',[u.id]);
+  const result=await request('/bookings','POST',booking(pub.resources[3].id,tomorrow(90)),other);
+  assert.equal(result.status,201);
+  assert.equal(result.data.paymentId,null);
+  const b=(await db.query('SELECT * FROM bookings WHERE id=$1',[result.data.bookingId])).rows[0];
+  assert.equal(b.status,'confirmed');assert.equal(b.deposit,0);assert.equal(b.balance_used,0);
+  assert.equal(b.policy.paymentMethod,'cash');
+  assert.equal((await request('/me','GET',null,other)).data.user.balance,10000);
+  await db.query("UPDATE bookings SET starts_at=now()-interval '4 hours',ends_at=now()-interval '1 hour' WHERE id=$1",[b.id]);
+  const invoice=await request('/admin/bookings/'+b.id+'/invoice','POST',{duration:3},admin);
+  assert.equal(invoice.status,200);
+  const pid=invoice.data.paymentId;
+  assert.equal((await request('/payments/'+pid,'GET',null,other)).data.provider,'cash');
+  assert.equal((await request('/admin/payments/'+pid+'/cash','POST',{},other)).status,403);
+  for(let i=0;i<2;i++) assert.equal((await request('/admin/payments/'+pid+'/cash','POST',{},admin)).status,200);
+  assert.equal((await db.query('SELECT status FROM bookings WHERE id=$1',[b.id])).rows[0].status,'completed');
+  assert.equal((await db.query('SELECT amount,provider_id FROM payments WHERE id=$1',[pid])).rows[0].amount,b.total);
+  assert.equal((await request('/admin/users/'+u.id,'PATCH',{role:'guest'},admin)).status,200);
+  assert.equal((await db.query('SELECT deposit_waived FROM users WHERE id=$1',[u.id])).rows[0].deposit_waived,false);
+});

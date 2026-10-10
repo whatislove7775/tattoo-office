@@ -17,3 +17,35 @@ logoutButton.addEventListener('pointerenter',()=>logoutMorph.morphTo(logoutActiv
 logoutButton.addEventListener('pointerleave',()=>logoutMorph.morphTo(logoutIdle,'snappy'));
 logoutButton.addEventListener('focus',()=>logoutMorph.morphTo(logoutActive,'snappy'));
 logoutButton.addEventListener('blur',()=>logoutMorph.morphTo(logoutIdle,'snappy'));
+
+// Reveal content only when it enters the viewport; never hide waiting content.
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const revealed=new WeakSet();
+const revealSelector='.find-card,.interior-dossier,.archive-card,.safety-card,.booking-resource,.booking-item,.admin-card,.note-paper,.shortcut';
+const revealObserver=new IntersectionObserver(entries=>{
+  let stagger=0;
+  for(const entry of entries) if(entry.isIntersecting){
+    revealObserver.unobserve(entry.target);
+    if(reducedMotion.matches) continue;
+    entry.target.animate([{opacity:0,translate:'0 8px'},{opacity:1,translate:'0 0'}],{
+      duration:240,delay:Math.min(stagger++*35,105),easing:'cubic-bezier(.2,.75,.25,1)',fill:'backwards'
+    });
+  }
+},{threshold:.08});
+function observeCards(root){
+  if(root.nodeType!==1) return;
+  const cards=[...(root.matches(revealSelector)?[root]:[]),...root.querySelectorAll(revealSelector)];
+  for(const card of cards) if(!revealed.has(card)){
+    revealed.add(card);
+    revealObserver.observe(card);
+  }
+}
+observeCards(document.body);
+new MutationObserver(records=>{
+  for(const record of records) for(const node of record.removedNodes)
+    if(node.nodeType===1){revealObserver.unobserve(node);node.querySelectorAll(revealSelector).forEach(card=>revealObserver.unobserve(card));}
+  for(const record of records) for(const node of record.addedNodes) observeCards(node);
+}).observe(document.body,{childList:true,subtree:true});
+reducedMotion.addEventListener('change',()=>{
+  if(reducedMotion.matches) document.getAnimations().forEach(animation=>animation.finish());
+});

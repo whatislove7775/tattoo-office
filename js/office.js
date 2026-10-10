@@ -391,7 +391,7 @@ function interiorPage() {
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
   return win(
     "Interior",
-    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Москва</option></select></label></div>
+    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div>
     <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Перетащите для поворота, прокрутите для масштаба."></canvas><div class="model-controls"><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
     <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
@@ -403,10 +403,10 @@ const demoArchive = [
   {id:"demo-open",data:{title:"Открытый вечер в офисе",body:"Встреча без записи: знакомство с пространством, портфолио резидентов и короткие разговоры о будущих проектах.",published:true,photo:1,date:"06.2026"}},
 ];
 function findPage() {
-  const s=pub.settings, hasAddress=Boolean(s.address), address=s.address||"Москва";
+  const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Москва</option></select></label></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии скоро появятся здесь."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><section class="route-map" aria-label="Декоративная схема маршрута"><div class="route-map__grid"></div><span class="route-map__street route-map__street--a"></span><span class="route-map__street route-map__street--b"></span><span class="route-map__street route-map__street--c"></span><span class="route-map__point route-map__point--start">М</span><span class="route-map__path"></span><span class="route-map__point route-map__point--end"><img src="assets/mark.svg" alt="Офис"></span></section><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии скоро появятся здесь."}</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -480,6 +480,7 @@ function mountAuth(signup) {
     storage.set("returnTo", "cabinet");
   });
 }
+const bookingDeposit = () => me?.role === "resident" && me.depositWaived ? 0 : pub.settings.deposit;
 function receipt() {
   const s = pub.settings,
     rate = s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
@@ -489,7 +490,7 @@ function receipt() {
       0,
     ),
     r = pub.resources.find((x) => x.id === draft.resourceId);
-  return `<aside class="receipt"><span class="eyebrow">TATTOO OFFICE / БЛАНК 01</span><h3 style="margin-top:18px">Ваша запись</h3><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>Тариф</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(s.deposit)}</b></div><p class="small muted" style="margin-top:15px">Из неё с баланса: ${money(Math.min(me?.balance || 0, s.deposit))}. Остаток — после сеанса.</p></aside>`;
+  return `<aside class="receipt"><span class="eyebrow">TATTOO OFFICE / БЛАНК 01</span><h3 style="margin-top:18px">Ваша запись</h3><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>Тариф</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
 }
 function calendarHTML() {
   const [y, m] = month.split("-").map(Number),
@@ -529,7 +530,7 @@ function bookingPage() {
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(s.deposit)}</strong></div><p class="booking-review__split"><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
@@ -642,10 +643,10 @@ async function mountBooking() {
   };
 }
 async function paymentPage(id) {
-  const { payment: p, mode } = await api("/payments/" + id);
+  const { payment: p, mode, provider, test } = await api("/payments/" + id);
   return win(
     "Касса / предоплата",
-    `<div class="auth-form"><span class="eyebrow">ПЛАТЁЖ № ${p.id.slice(0, 8)}</span><h2 style="margin-top:20px">${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p><p class="small muted">Статус: ${statusName[p.status] || p.status}</p>${p.status === "pending" ? `${mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
+    `<div class="auth-form"><span class="eyebrow">ПЛАТЁЖ № ${p.id.slice(0, 8)}</span><h2 style="margin-top:20px">${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p><p class="small muted">Статус: ${statusName[p.status] || p.status}</p>${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome" id="card-pay">Оплатить через ЮKassa →</button><button class="small" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
       p.kind === "final" && p.status === "pending"
         ? `<div style="margin-top:25px">${select(
             "upgrade",
@@ -820,7 +821,7 @@ async function adminPage() {
           }).format(new Date(b.starts_at)) === adminDate &&
           !["cancelled", "expired"].includes(b.status),
       );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div><p class="small muted">Москва · занято ${bookings.length} записей · ${resources.length} мест</p><div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
+    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div><p class="small muted">Санкт-Петербург · занято ${bookings.length} записей · ${resources.length} мест</p><div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
       { length: s.closeHour - s.openHour },
       (_, i) => {
         const h = s.openHour + i,
@@ -861,7 +862,7 @@ async function adminPage() {
       ["Сеанс", "Мастер / место", "Сумма", "Статус", "Действие"],
       a.bookings.map(
         (b) =>
-          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
+          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
     );
   if (adminTab === "users")
@@ -869,7 +870,7 @@ async function adminPage() {
       ["Имя", "Почта", "Роль", "Баланс", "Доступ"],
       a.users.map(
         (u) =>
-          `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${roleName[u.role]}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>` : ""}</td></tr>`,
+          `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${roleName[u.role]}${u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : ""}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>` : ""}</td></tr>`,
       ),
     )}`;
   if (adminTab === "catalog")
@@ -994,11 +995,11 @@ function mountAdmin() {
           ([r]) => me.role === "admin" || r === "guest",
         ),
         u?.role || "guest",
-      )}${u ? `<label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
+      )}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
       (d) =>
         api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
           ...d,
-          ...(u ? { active: d.active === "on" } : {}),
+          ...(u ? { active: d.active === "on", depositWaived: d.role === "resident" && d.depositWaived === "on" } : {}),
         }),
     );
   if ($("#add-user")) $("#add-user").onclick = () => userForm();
@@ -1109,6 +1110,7 @@ function mountAdmin() {
             manual: true,
           }),
       );
+  $$("[data-cash-payment]").forEach(button => button.onclick = () => dialogForm("Подтвердить наличный расчёт", '<p>Отметьте оплату только после получения наличных. Запись будет закрыта как оплаченная.</p>', () => api("/admin/payments/" + button.dataset.cashPayment + "/cash", "POST", {})));
   $$("[data-invoice]").forEach(
     (btn) =>
       (btn.onclick = () => {
@@ -1342,30 +1344,15 @@ async function render() {
           if ($("#card-pay"))
             $("#card-pay").onclick = async () => {
               try {
-                const config = await api("/payments/" + path[1] + "/checkout");
-                if (!window.cp)
-                  await new Promise((resolve, reject) => {
-                    const s = document.createElement("script");
-                    s.src =
-                      "https://widget.cloudpayments.ru/bundles/cloudpayments.js";
-                    s.onload = resolve;
-                    s.onerror = reject;
-                    document.head.append(s);
-                  });
-                new window.cp.CloudPayments().pay("charge", config, {
-                  onSuccess: () => {
-                    notify(
-                      "Проверяем подтверждение банка. Статус обновится в личном кабинете.",
-                    );
-                    go("cabinet");
-                  },
-                  onFail: () =>
-                    notify("Оплата не завершена. Можно попробовать ещё раз."),
-                });
+                $("#card-pay").disabled = true;
+                const config = await api("/payments/" + path[1] + "/checkout", "POST");
+                window.location.assign(config.confirmationUrl);
               } catch (e) {
                 notify(e.message || "Не удалось открыть кассу");
+                $("#card-pay").disabled = false;
               }
             };
+          if ($("#payment-refresh")) $("#payment-refresh").onclick = () => render();
           if ($("#test-pay"))
             $("#test-pay").onclick = async (e) => {
               e.currentTarget.disabled = true;

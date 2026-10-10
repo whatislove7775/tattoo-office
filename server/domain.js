@@ -67,7 +67,7 @@ export const legalSamples = {
 export const defaults = {
   mode: "test",
   studioName: "Tattoo Office",
-  address: "",
+  address: "Санкт-Петербург, ул. Кирочная, 24",
   phone: "",
   email: "",
   legalName: "",

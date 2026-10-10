@@ -25,3 +25,6 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS policy jsonb NOT NULL DEFAULT '{}'
 UPDATE users SET role='admin' WHERE role IN ('manager','moderator');
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN ('resident','guest','admin'));
+
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS checkout_id text UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deposit_waived boolean NOT NULL DEFAULT false;

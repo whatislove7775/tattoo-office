@@ -1,3 +1,4 @@
+import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
 import express from "express";
 import { expireReservations } from "./reservations.js";
 import { startWorker } from "./worker.js";
@@ -183,6 +184,7 @@ export async function createApp(db) {
           name: u.name,
           role: u.role,
           balance: u.balance,
+          depositWaived: u.role === "resident" && u.deposit_waived,
           sequence: u.sequence,
           profile: u.profile,
           telegramLinked: !!u.telegram_id,
@@ -281,7 +283,7 @@ export async function createApp(db) {
       telegramEnabled:
         !!process.env.TELEGRAM_CLIENT_ID &&
         !!process.env.TELEGRAM_CLIENT_SECRET,
-      paymentEnabled: !!process.env.CLOUDPAYMENTS_PUBLIC_ID,
+      paymentEnabled: yookassaEnabled(),
     });
   });
   app.get("/api/me", async (req, res) => res.json({ user: safe(req.user) }));
@@ -477,7 +479,9 @@ export async function createApp(db) {
       }
       const rate = s.rates[u.role][duration],
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
-        used = manual ? 0 : Math.min(u.balance, s.deposit),
+        cash = u.role === "resident" && u.deposit_waived,
+        deposit = cash ? 0 : s.deposit,
+        used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
         "INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,extras,total,balance_used,status,expires_at,deposit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',now()+interval '15 minutes',$11)",
@@ -492,7 +496,7 @@ export async function createApp(db) {
           JSON.stringify(extras),
           total,
           used,
-          s.deposit,
+          deposit,
         ],
       );
       if (used) await ledger(q, u.id, id, -used, "Предоплата с баланса");
@@ -503,6 +507,7 @@ export async function createApp(db) {
           lateCancellation: s.lateCancellation,
           rates: s.rates[u.role],
           rulesVersion: s.rulesVersion,
+          paymentMethod: cash ? "cash" : "online",
         }),
         id,
       ]);
@@ -511,12 +516,12 @@ export async function createApp(db) {
         await confirmed(q, b);
         await q.query("UPDATE bookings SET deposit=0 WHERE id=$1", [id]);
         await audit(q, req.user.id, "booking.manual", { id });
-      } else if (used === s.deposit) await confirmed(q, b);
+      } else if (used === deposit) await confirmed(q, b);
       else {
         payment = uuid();
         await q.query(
           "INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'deposit',$3)",
-          [payment, id, s.deposit - used],
+          [payment, id, deposit - used],
         );
       }
       return { bookingId: id, paymentId: payment };
@@ -637,7 +642,7 @@ export async function createApp(db) {
       Object.assign(result, {
         users: (
           await db.query(
-            "SELECT id,email,name,role,active,balance,created_at FROM users ORDER BY created_at DESC",
+            "SELECT id,email,name,role,active,balance,deposit_waived,created_at FROM users ORDER BY created_at DESC",
           )
         ).rows,
         bookings: (
@@ -667,7 +672,8 @@ export async function createApp(db) {
         )
       ).rows;
       result.integrations = {
-        cloudpayments: !!process.env.CLOUDPAYMENTS_API_SECRET,
+        yookassa: yookassaEnabled(),
+        yookassaTest: yookassaTest(),
         cloudkassir: !!process.env.CLOUDKASSIR_API_SECRET,
         calendar: !!process.env.GOOGLE_SERVICE_ACCOUNT,
         telegram: !!process.env.TELEGRAM_BOT_TOKEN,
@@ -785,8 +791,12 @@ export async function createApp(db) {
         active,
         u.id,
       ]);
-      await q.query("DELETE FROM sessions WHERE user_id=$1", [u.id]);
-      await audit(q, req.user.id, "user.update", { id: u.id, role, active });
+      if (req.body.depositWaived !== undefined && typeof req.body.depositWaived !== "boolean") fail("Проверьте настройку предоплаты");
+      const waived = role === "resident" && (req.body.depositWaived ?? u.deposit_waived);
+      await q.query("UPDATE users SET deposit_waived=$1 WHERE id=$2", [waived, u.id]);
+      if (role !== u.role || active !== u.active || (req.body.email && req.body.email !== u.email))
+        await q.query("DELETE FROM sessions WHERE user_id=$1", [u.id]);
+      await audit(q, req.user.id, "user.update", { id: u.id, role, active, depositWaived: waived });
     });
     res.json({ ok: true });
   });
@@ -990,6 +1000,14 @@ export async function createApp(db) {
         fail("Счёт уже оплачен другой транзакцией", 409);
       return;
     }
+    if (p.status === "expired" && p.kind === "deposit" && provider.startsWith("yookassa:")) {
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [p.booking_id]);
+      await q.query("UPDATE payments SET status='paid',provider_id=$1 WHERE id=$2", [provider, p.id]);
+      await ledger(q, b.user_id, b.id, p.amount, "Возврат поздней оплаты на баланс: резерв истёк");
+      await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), b.user_id, "Оплата поступила после окончания резерва. Сумма возвращена на внутренний баланс; выберите новое время."]);
+      await audit(q, null, "payment.late", { paymentId: p.id, amount: p.amount });
+      return;
+    }
     if (p.status !== "pending") fail("Резерв истёк, создайте новую бронь", 409);
     const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [
       p.booking_id,
@@ -1009,7 +1027,8 @@ export async function createApp(db) {
         b.id,
       ]);
     await enqueue(q, "payment.paid", { bookingId: b.id, paymentId: p.id });
-    await enqueue(q, "receipt.create", { bookingId: b.id, paymentId: p.id });
+    if (!provider.startsWith("yookassa:") && !provider.startsWith("cash:"))
+      await enqueue(q, "receipt.create", { bookingId: b.id, paymentId: p.id });
   };
 
   app.post("/api/bookings/:id/upgrade", auth, async (req, res) => {
@@ -1026,6 +1045,7 @@ export async function createApp(db) {
       if (![3, 6, 12].includes(h) || h < b.tariff)
         fail("Можно выбрать только текущий тариф или выше");
       if (h === b.tariff) return;
+      if (await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='final' AND status='pending' AND checkout_id IS NOT NULL", [b.id])) fail("Счёт уже передан в кассу. Обратитесь к администратору для изменения", 409);
       const s = await settings(q),
         rates = b.policy.rates || s.rates[req.user.role],
         rate = rates?.[h];
@@ -1043,42 +1063,75 @@ export async function createApp(db) {
     });
     res.json({ ok: true });
   });
-  app.get("/api/payments/:id/checkout", auth, async (req, res) => {
-    const s = await settings();
-    if (s.mode !== "live" || !process.env.CLOUDPAYMENTS_PUBLIC_ID)
-      fail("Реальная касса ещё не подключена", 409);
-    const p = await one(
-      db,
-      "SELECT p.*,u.email FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id WHERE p.id=$1 AND b.user_id=$2 AND p.status='pending'",
-      [req.params.id, req.user.id],
-    );
-    if (!p) fail("Счёт не найден", 404);
-    res.json({
-      publicId: process.env.CLOUDPAYMENTS_PUBLIC_ID,
-      description:
-        p.kind === "deposit"
-          ? "Предоплата рабочего места"
-          : "Итоговый расчёт Tattoo Office",
-      amount: p.amount / 100,
-      currency: "RUB",
-      accountId: p.email,
-      email: p.email,
-      invoiceId: p.id,
-      skin: "mini",
+  app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
+    await db.transaction(async q => {
+      await lock(q);
+      const p = await one(q, "SELECT p.*,b.policy,b.starts_at FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 FOR UPDATE OF p", [req.params.id]);
+      if (!p || p.kind !== "final" || p.policy.paymentMethod !== "cash" || new Date(p.starts_at) > new Date()) fail("Наличный расчёт недоступен", 409);
+      if (p.status === "paid") return;
+      await settle(q, p.id, "cash:" + p.id);
+      await audit(q, req.user.id, "payment.cash", { paymentId: p.id, amount: p.amount });
     });
+    res.json({ ok: true });
+  });
+  const syncYookassa = async (p) => {
+    if (!p.checkout_id || !["pending", "expired"].includes(p.status)) return;
+    const remote = await yookassaRequest("payments/" + encodeURIComponent(p.checkout_id));
+    if (verifyYookassaPayment(remote, p))
+      await db.transaction(q => settle(q, p.id, "yookassa:" + remote.id));
+  };
+  app.locals.reconcilePayments = async () => {
+    if (!yookassaEnabled()) return;
+    const payments = (await db.query("SELECT * FROM payments WHERE checkout_id IS NOT NULL AND status IN ('pending','expired') AND created_at>now()-interval '1 day' ORDER BY created_at DESC LIMIT 50")).rows;
+    for (const payment of payments) {
+      try { await syncYookassa(payment); }
+      catch (error) { console.error("Payment reconciliation:", error.message); }
+    }
+  };
+  app.post("/api/payments/:id/checkout", auth, async (req, res) => {
+    if (!yookassaEnabled()) fail("ЮKassa пока не подключена", 409);
+    if (!yookassaTest()) fail("Боевые платежи пока не включены", 409);
+    const result = await db.transaction(async q => {
+      await lock(q);
+      await expire(q);
+      const p = await one(q, "SELECT p.*,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 AND b.user_id=$2 AND p.status='pending' FOR UPDATE OF p", [req.params.id, req.user.id]);
+      if (!p) fail("Счёт недоступен или резерв истёк", 409);
+      if (p.policy.paymentMethod === "cash") fail("Оплата наличными в студии", 409);
+      const remote = p.checkout_id
+        ? await yookassaRequest("payments/" + encodeURIComponent(p.checkout_id))
+        : await yookassaRequest("payments", {
+            amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
+            capture: true,
+            confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
+            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : "Tattoo Office — итоговый счёт за сеанс",
+            metadata: { payment_id: p.id, booking_id: p.booking_id },
+          }, p.id + "-" + p.amount);
+      verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
+      if (remote.status !== "pending" || !remote.confirmation?.confirmation_url) fail("Платёж уже завершён. Обновите страницу", 409);
+      await q.query("UPDATE payments SET checkout_id=$1 WHERE id=$2", [remote.id, p.id]);
+      return { confirmationUrl: remote.confirmation.confirmation_url, test: remote.test };
+    });
+    res.json(result);
   });
   app.get("/api/payments/:id", auth, async (req, res) => {
-    const p = await one(
-      db,
-      "SELECT p.*,b.user_id,b.tariff FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1",
-      [req.params.id],
-    );
+    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1", [req.params.id]);
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
-    res.json({ payment: p, mode: (await settings()).mode });
+    await syncYookassa(p);
+    p = { ...p, ...(await one(db, "SELECT * FROM payments WHERE id=$1", [p.id])) };
+    res.json({ payment: p, mode: (await settings()).mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() ? "yookassa" : null, test: yookassaTest() });
+  });
+  app.post("/api/webhooks/yookassa", async (req, res) => {
+    const id = req.body?.object?.id;
+    if (typeof id !== "string" || id.length > 64) return res.sendStatus(400);
+    const p = await one(db, "SELECT * FROM payments WHERE checkout_id=$1", [id]);
+    // Verify notifications against the authenticated provider API, never their body.
+    if (p) await syncYookassa(p);
+    res.json({ ok: true });
   });
   app.post("/api/payments/:id/test", auth, async (req, res) => {
     if (
       (await settings()).mode !== "test" ||
+      yookassaEnabled() ||
       process.env.NODE_ENV === "production"
     )
       fail("Тестовая оплата отключена", 403);
@@ -1157,6 +1210,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const db = await database();
   const app = await createApp(db);
   const stopWorker = startWorker(db);
+  let reconciling = false;
+  const paymentTimer = setInterval(async () => {
+    if (reconciling) return;
+    reconciling = true;
+    try { await app.locals.reconcilePayments(); }
+    finally { reconciling = false; }
+  }, 30000);
+  paymentTimer.unref();
   const server = app.listen(
     Number(process.env.PORT || 3000),
     process.env.HOST || "127.0.0.1",
@@ -1166,6 +1227,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       ),
   );
   process.on("SIGTERM", () => {
+    clearInterval(paymentTimer);
     stopWorker();
     server.close(async () => {
       await db.close();
