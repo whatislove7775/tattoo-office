@@ -16,6 +16,21 @@
     popup.querySelector('[aria-selected="true"],button:not(:disabled)')?.focus({preventScroll:true});
   }
   function enhance(root=document) {
+    root.querySelectorAll('input[type="number"]:not([data-quantity-styled])').forEach(input=>{
+      input.dataset.quantityStyled='true';
+      const wrapper=document.createElement('div');wrapper.className='quantity-control';
+      const minus=document.createElement('button'),plus=document.createElement('button');
+      minus.type=plus.type='button';
+      const name=input.getAttribute('aria-label')||input.closest('label')?.querySelector('span')?.textContent.trim()||'Количество';
+      minus.setAttribute('aria-label','Уменьшить: '+name);plus.setAttribute('aria-label','Увеличить: '+name);
+      minus.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-minus"></use></svg>';
+      plus.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-plus"></use></svg>';
+      input.before(wrapper);wrapper.append(minus,input,plus);
+      const sync=()=>{minus.disabled=input.disabled||input.readOnly||input.min!==''&&Number(input.value)<=Number(input.min);plus.disabled=input.disabled||input.readOnly||input.max!==''&&Number(input.value)>=Number(input.max);};
+      const change=(direction,event)=>{event.preventDefault();try{direction>0?input.stepUp():input.stepDown();}catch{return;}input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));sync();};
+      minus.onclick=event=>change(-1,event);plus.onclick=event=>change(1,event);
+      input.addEventListener('input',sync);input.addEventListener('change',sync);sync();
+    });
     root.querySelectorAll('select:not([data-styled])').forEach(select=>{
       select.dataset.styled='true';select.classList.add('native-select');select.tabIndex=-1;select.setAttribute('aria-hidden','true');
       const button=document.createElement('button');button.type='button';button.className='office-select';button.setAttribute('aria-haspopup','listbox');button.setAttribute('aria-expanded','false');

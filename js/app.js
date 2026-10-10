@@ -295,6 +295,7 @@
     var tabH = 66;
     var notchX = Math.round(w * 0.32);
     var bodyX = notchX;
+    menu.style.setProperty("--menu-tab-width", notchX + "px");
     path.setAttribute(
       "d",
       "M" +

@@ -433,6 +433,22 @@ function authPage(signup) {
     `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<div class="auth-photo"><img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом"></div>' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p class="muted small">${signup ? "Создайте аккаунт мастера. Условия Private Club команда студии подключит после знакомства." : "Почта, пароль — и вы снова в офисе."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Создать аккаунт"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
   );
 }
+function adminAuthPage() {
+  if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('email','Почта администратора','','email','required autocomplete="username"') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button></form>');
+}
+function mountAdminAuth() {
+  onForm('#admin-auth-form', async d=>{
+    await api('/auth/login','POST',d);
+    await refresh();
+    if (me?.role !== 'admin') {
+      await api('/auth/logout','POST');
+      await refresh();
+      throw new Error('У этого аккаунта нет доступа администратора.');
+    }
+    go('admin');
+  });
+}
 function mountAuth(signup) {
   onForm("#auth-form", async (d) => {
     await api("/auth/" + (signup ? "register" : "login"), "POST", {
@@ -499,11 +515,11 @@ function bookingPage() {
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<hr><p>Сейчас: ${money(s.deposit)}<br><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p><a href="#/login" id="booking-login">Войдите, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate + extra)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<hr><p>Сейчас: ${money(s.deposit)}<br><small>С баланса ${money(Math.min(me?.balance || 0, s.deposit))}, картой ${money(Math.max(0, s.deposit - (me?.balance || 0)))}</small></p></div><p class="small muted">При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
-    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить запись" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${receipt()}</div>`,
+    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← Назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить запись" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${receipt()}</div>`,
   );
 }
 async function mountBooking() {
@@ -757,7 +773,7 @@ let adminData,
 const table = (heads, rows) =>
   `<div class="table-wrap"><table><thead><tr>${heads.map((x) => `<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>${!rows.length ? '<div class="empty">Пока пусто.</div>' : ""}`;
 async function adminPage() {
-  if (!me) return authPage(false);
+  if (!me) return adminAuthPage();
   if (me.role !== "admin")
     return win("Служебный вход", "У вас нет доступа к этому разделу.");
   adminData = await api("/admin");
@@ -932,7 +948,7 @@ function dialogForm(title, html, submit) {
 }
 function mountAdmin() {
   if (!me) {
-    mountAuth(false);
+    mountAdminAuth();
     return;
   }
   if (!adminData) return;
@@ -1284,8 +1300,8 @@ async function render() {
         mount = mountCabinet;
         break;
       case "admin":
-        html = await adminPage();
-        mount = mountAdmin;
+        html = path[1] === 'login' ? adminAuthPage() : await adminPage();
+        mount = path[1] === 'login' ? mountAdminAuth : mountAdmin;
         break;
       case "payment":
         html = await paymentPage(path[1]);
