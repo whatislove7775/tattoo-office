@@ -525,3 +525,7 @@ body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
 #dialog .close,.modal__x { display:grid;place-items:center;padding:0;line-height:1; }
 #dialog .close .ui-icon,.modal__x .ui-icon { display:block;width:18px;height:18px;margin:0;flex:none; }
 @media(min-width:901px) { body.admin-session .stage { min-height:0; } }
+/* Login images share the same column and edges as the fields. */
+.auth-form--role .auth-illustration { width:100%;grid-template-columns:minmax(0,1fr);gap:8px; }
+.auth-form--role .auth-illustration .auth-photo { width:100%;justify-self:center; }
+.auth-form--role .auth-caption { justify-self:end;text-align:right;margin:0; }
