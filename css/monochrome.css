@@ -759,7 +759,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .rail .login.login--admin,body.admin-session .rail .login.login--admin {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;}
   .login--admin .who {gap:8px;}
   .login--admin .office-initial {width:32px;height:32px;font-size:22px;flex:none;}
-  .rail .login--admin .who__name {font-size:clamp(14px,1vw,17px);}
+  .rail .login.login--admin .who__name {font-size:clamp(15px,1.35vw,19px);}
   .rail .login--admin .who .menu-logout {width:24px;height:24px;}
 }
 .master-profile__action small {display:block;margin-top:10px;font-size:12px;}
