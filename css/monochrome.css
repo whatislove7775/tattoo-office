@@ -558,3 +558,9 @@ body[data-page] .office-feature .window:has(>.auth-form)>.window-head { flex:non
 .rent-slider { touch-action:pan-y; }
 .rent-slider.is-dragging .rent-slider__thumb { transition:none!important;cursor:grabbing; }
 .rent-slider__thumb { cursor:grab;will-change:transform; }
+/* Booking content ends at its actions, without an unused lower band. */
+body[data-page="booking"] .office-feature .window { min-height:0;padding-bottom:28px; }
+.booking-grid>div:first-child { display:flex;flex-direction:column;min-width:0; }
+.booking-grid>div:first-child>.form-actions { margin-top:auto;padding-top:30px; }
+#booking-error:empty { display:none; }
+@media(min-width:901px) { body[data-page="booking"] .stage { min-height:0; } }
