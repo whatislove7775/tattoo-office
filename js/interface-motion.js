@@ -49,3 +49,12 @@ new MutationObserver(records=>{
 reducedMotion.addEventListener('change',()=>{
   if(reducedMotion.matches) document.getAnimations().forEach(animation=>{try{animation.finish();}catch{animation.cancel();}});
 });
+
+// The footer follows the studio's calendar year, including a page left open overnight.
+function updateCopyrightYear(){
+  const year=new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'Europe/Moscow'}).format(new Date());
+  document.getElementById('copyrightYear').textContent=year+' ©';
+}
+updateCopyrightYear();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateCopyrightYear();});
+setInterval(updateCopyrightYear,60000);

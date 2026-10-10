@@ -36,8 +36,9 @@
     if (event.key === "ArrowLeft") { event.preventDefault(); show(index - 1); }
     if (event.key === "ArrowRight") { event.preventDefault(); show(index + 1); }
   });
-  image.addEventListener("touchstart", function (event) { startX = event.changedTouches[0].screenX; }, {passive:true});
-  image.addEventListener("touchend", function (event) {
+  var swipeSurface=dialog.querySelector(".photo-viewer__stage");
+  swipeSurface.addEventListener("touchstart", function (event) { startX = event.changedTouches[0].screenX; }, {passive:true});
+  swipeSurface.addEventListener("touchend", function (event) {
     var diff = event.changedTouches[0].screenX - startX;
     if (Math.abs(diff) > 45) show(index + (diff < 0 ? 1 : -1));
   }, {passive:true});

@@ -172,7 +172,7 @@
     html: function () {
       var d = global.DATA.interior;
       var thumbs = d.photos.map(function (p, i) {
-        return img(p.src, 'int' + i, pick(p.cap), '', ' data-i="' + i + '" data-sfx="click"', 'room');
+        return '<button type="button" data-i="' + i + '" aria-label="' + esc(pick(p.cap)) + '">' + img(p.src, 'int' + i, pick(p.cap), '', '', 'room') + '</button>';
       }).join('');
       var dots = d.photos.map(function (_, i) {
         return '<span class="dot" data-i="' + i + '"' + (i === 0 ? ' aria-current="true"' : '') + '></span>';
@@ -208,7 +208,8 @@
       }
 
       root.querySelector('#intThumbs').addEventListener('click', function (e) {
-        if (e.target.tagName === 'IMG') show(+e.target.dataset.i);
+        var button=e.target.closest('button[data-i]');
+        if(button) show(+button.dataset.i);
       });
       dots.addEventListener('click', function (e) {
         if (e.target.classList.contains('dot')) show(+e.target.dataset.i);
