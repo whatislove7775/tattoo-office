@@ -540,16 +540,16 @@ body[data-page="login"] .office-feature .window { min-height:0;padding-bottom:32
 }
 .site-bottom .foot .foot__links { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
 /* Auth content is centered as one group, with its action kept attached. */
-body[data-page] .office-feature .window:has(>.auth-form) { display:flex;flex-direction:column; }
-body[data-page] .office-feature .window:has(>.auth-form)>.window-head { flex:none; }
+body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { display:flex;flex-direction:column; }
+body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head { flex:none; }
 .office-feature .window>.auth-form { margin-left:auto;margin-right:auto; }
 @media(min-width:901px) {
-  body[data-page] .stage:has(.auth-form) { min-height:calc(100svh - 134px); }
-  body[data-page] .office-feature .window:has(>.auth-form) { min-height:calc(100svh - 196px); }
+  body[data-page] .stage:has(.auth-form:not(#feedback-form)) { min-height:calc(100svh - 134px); }
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { min-height:calc(100svh - 196px); }
   .office-feature .window>.auth-form { flex:none;margin-top:auto;margin-bottom:auto; }
 }
 @media(max-width:900px) {
-  body[data-page] .office-feature .window:has(>.auth-form) { min-height:0; }
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { min-height:0; }
   .office-feature .window>.auth-form { margin-top:20px;margin-bottom:0; }
 }
 .archive-footer a { display:inline-flex;align-items:center;gap:8px;max-width:100%;line-height:1.35; }
@@ -567,3 +567,12 @@ body[data-page="booking"] .office-feature .window { min-height:0;padding-bottom:
 
 .office-feature .booking-grid--review { grid-template-columns:minmax(0,1fr); }
 .booking-review__total { display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:22px;font-size:18px; }
+/* Content panels follow their content; authentication keeps its own layout. */
+body[data-page]:not([data-page="login"]):not([data-page="signup"]) .stage:not(.stage--bare):not(:has(.auth-form:not(#feedback-form))) { min-height:0; }
+body[data-page]:not([data-page="login"]):not([data-page="signup"]) .stage:not(.stage--bare):not(:has(.auth-form:not(#feedback-form)))>.stage__inner { padding-bottom:24px; }
+body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-feature .window:not(:has(.auth-form:not(#feedback-form))) { min-height:0;padding-bottom:0; }
+.office-feature .window:not(:has(.auth-form:not(#feedback-form)))>:last-child { margin-bottom:0; }
+.office-feature .find-grid,.office-feature .about-grid,.office-feature .interior-dossier,.office-feature .safety-card,.office-feature .find-card,.office-feature .archive-card,.office-feature .archive-card__body { min-height:0; }
+.office-feature #feedback-form { flex:none; }
+.office-feature #feedback-form button[type="submit"] { margin-top:18px; }
+.office-feature .archive-card__body>:last-child,.office-feature .find-card>:last-child { margin-bottom:0; }
