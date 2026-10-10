@@ -68,10 +68,13 @@ function scheduleRailLayout(){
     const rentVisible=rent && getComputedStyle(rent).display!=='none';
     const reserve=rentVisible ? rent.offsetHeight+36 : 18;
     const stage=document.querySelector('.stage'),inner=document.querySelector('.stage__inner');
-    const naturalBottom=stage && inner && !stage.classList.contains('stage--bare') && !stage.querySelector('.auth-form:not(#feedback-form)') ? stage.getBoundingClientRect().top+scrollY+inner.offsetHeight : 0;
-    const top=Math.max(innerHeight-24-footer.offsetHeight,rail.getBoundingClientRect().bottom+scrollY+reserve,naturalBottom-footer.offsetHeight);
+    const stageTop=stage ? stage.getBoundingClientRect().top+scrollY : 100;
+    const footerHeight=footer.getBoundingClientRect().height;
+    const naturalBottom=stage && inner && !stage.classList.contains('stage--bare') && !stage.querySelector('.auth-form:not(#feedback-form)') ? inner.getBoundingClientRect().bottom+scrollY+parseFloat(getComputedStyle(stage).borderBottomWidth) : 0;
+    const top=Math.max(innerHeight-24-footerHeight,rail.getBoundingClientRect().bottom+scrollY+reserve,naturalBottom-footerHeight);
+    document.body.style.setProperty('--desktop-stage-top',stageTop+'px');
     document.body.style.setProperty('--desktop-footer-top',top+'px');
-    document.body.style.setProperty('--desktop-footer-bottom',(top+footer.offsetHeight)+'px');
+    document.body.style.setProperty('--desktop-footer-bottom',(top+footerHeight)+'px');
   });
 }
 const railLayoutObserver=new ResizeObserver(scheduleRailLayout);

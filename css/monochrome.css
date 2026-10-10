@@ -745,8 +745,8 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .site-bottom {margin-top:0;}
   .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {position:absolute;top:var(--desktop-footer-top,calc(100svh - 107px));bottom:auto;}
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {position:absolute;top:calc(var(--desktop-footer-top,calc(100svh - 107px)) - 74px);bottom:auto;}
-  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px)!important;}
-  body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px);}
+  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px))!important;}
+  body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px));}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 162px);}
 }
 @media(min-width:901px) {
@@ -754,8 +754,8 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head {margin-bottom:24px;}
 }
 @media(min-width:901px) {
-  body[data-page] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px)!important;}
-  .stage--bare .stage__inner {height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px);}
+  body[data-page] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px))!important;}
+  .stage--bare .stage__inner {height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px));}
   .rail .login.login--admin,body.admin-session .rail .login.login--admin {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;}
   .login--admin .who {gap:8px;}
   .login--admin .office-initial {width:32px;height:32px;font-size:22px;flex:none;}
