@@ -12,7 +12,7 @@
   function setProgress(value) {
     progress = Math.max(0, Math.min(1, value));
     track.style.setProperty("--slide-progress", progress.toFixed(3));
-    thumb.style.setProperty("--slide-x", Math.round(travel() * progress) + "px");
+    thumb.style.setProperty("--slide-x", (travel() * progress).toFixed(2) + "px");
     thumb.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
     thumb.setAttribute("aria-valuetext", progress >= .85 ? "Отпустите для бронирования" : "Перетащите вправо");
   }
@@ -29,29 +29,38 @@
       window.setTimeout(reset, 400);
     } else reset();
   }
-  thumb.addEventListener("pointerdown", event => {
+  track.addEventListener("pointerdown", event => {
     if (event.button !== 0 || complete) return;
     pointer = event.pointerId;
     origin = event.clientX;
     starting = progress;
     track.classList.add("is-dragging");
-    thumb.setPointerCapture(pointer);
+    track.setPointerCapture(pointer);
     event.preventDefault();
   });
-  thumb.addEventListener("pointermove", event => {
+  track.addEventListener("pointermove", event => {
     if (pointer !== event.pointerId) return;
     setProgress(starting + (event.clientX - origin) / travel());
+    if (event.pointerType === "mouse" && progress >= .85) {
+      const captured = pointer;
+      pointer = null;
+      suppressClickUntil = Date.now() + 500;
+      if (track.hasPointerCapture(captured)) track.releasePointerCapture(captured);
+      finish();
+    }
   });
-  thumb.addEventListener("pointerup", event => {
+  track.addEventListener("pointerup", event => {
     if (pointer !== event.pointerId) return;
+    setProgress(starting + (event.clientX - origin) / travel());
     pointer = null;
     if (progress > .05) suppressClickUntil = Date.now() + 500;
     finish();
   });
-  thumb.addEventListener("pointercancel", () => { pointer = null; reset(); });
-  thumb.addEventListener("lostpointercapture", () => {
+  track.addEventListener("pointercancel", () => { pointer = null; reset(); });
+  track.addEventListener("lostpointercapture", () => {
     if (pointer !== null) { pointer = null; reset(); }
   });
+  track.addEventListener("dragstart", event => event.preventDefault());
   thumb.addEventListener("click", event => event.preventDefault());
   // A mouse click is an equivalent desktop action; dragging remains available.
   track.addEventListener("click", () => {

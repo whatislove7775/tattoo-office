@@ -554,3 +554,7 @@ body[data-page] .office-feature .window:has(>.auth-form)>.window-head { flex:non
 }
 .archive-footer a { display:inline-flex;align-items:center;gap:8px;max-width:100%;line-height:1.35; }
 .archive-footer a .ui-icon { display:block;flex:none;width:18px;height:18px; }
+
+.rent-slider { touch-action:pan-y; }
+.rent-slider.is-dragging .rent-slider__thumb { transition:none!important;cursor:grabbing; }
+.rent-slider__thumb { cursor:grab;will-change:transform; }
