@@ -12,7 +12,7 @@
     try {
       var url = new URL(master.bookingLink);
       if (url.protocol !== 'https:' || !['t.me','telegram.me'].includes(url.hostname)) return '';
-      if (!url.searchParams.has('text')) url.searchParams.set('text', 'Здравствуйте! Хочу записаться к мастеру ' + pick(master.name) + '.');
+      if (!/^\/m\//.test(url.pathname) && !url.searchParams.has('text')) url.searchParams.set('text', 'Здравствуйте! Хочу записаться к мастеру ' + pick(master.name) + '.');
       return url.href;
     } catch (_) { return ''; }
   }

@@ -512,6 +512,12 @@ test("admin chooses which existing masters appear on the public home", async () 
   const bookingLink = "https://t.me/studio_master?text=" + encodeURIComponent("Хочу записаться к мастеру");
   assert.equal((await request("/admin/content/master-1", "PUT", {...payload,featured:true,bookingLink},admin)).status,200);
   assert.equal((await request("/public")).data.content.find(x=>x.id==="master-1").data.bookingLink,bookingLink);
+  const businessLink = "https://t.me/m/OL1NHb70MGY6";
+  assert.equal((await request("/admin/content/master-2", "PUT", {...payload,bookingLink:businessLink},admin)).status,200);
+  const links = (await request("/public")).data.content;
+  assert.equal(links.find(x=>x.id==="master-2").data.bookingLink,businessLink);
+  assert.equal(links.find(x=>x.id==="master-1").data.bookingLink,bookingLink);
+  assert.equal((await request("/admin/content/master-2", "PUT", {...payload,bookingLink:"https://t.me/m/"},admin)).status,400);
   assert.equal((await request("/admin/content/master-1", "PUT", {...payload,bookingLink:"https://example.com/fake"},admin)).status,400);
   assert.equal((await request("/admin/content/master-1", "PUT", {...payload,bookingLink:"javascript:alert(1)"},admin)).status,400);
   assert.equal(visible.data.featured, true);

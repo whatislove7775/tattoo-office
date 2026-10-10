@@ -1000,8 +1000,10 @@ export async function createApp(db) {
     let bookingLink = String(req.body.bookingLink || "").trim();
     if (bookingLink) {
       let link;
-      try { link = new URL(bookingLink); } catch { fail("Укажите ссылку на чат Telegram: https://t.me/имя"); }
-      if (bookingLink.length > 2048 || link.protocol !== "https:" || !["t.me","telegram.me"].includes(link.hostname) || link.username || link.password || link.port || !/^\/[a-zA-Z0-9_]{3,64}\/?$/.test(link.pathname) || ["share","addstickers","joinchat","proxy"].includes(link.pathname.replaceAll("/",""))) fail("Укажите ссылку на чат Telegram: https://t.me/имя");
+      try { link = new URL(bookingLink); } catch { fail("Укажите ссылку Telegram: https://t.me/имя или https://t.me/m/код"); }
+      const business = /^\/m\/[a-zA-Z0-9_-]{1,128}\/?$/.test(link.pathname);
+      const username = /^\/[a-zA-Z0-9_]{3,64}\/?$/.test(link.pathname) && !["share","addstickers","joinchat","proxy"].includes(link.pathname.replaceAll("/",""));
+      if (bookingLink.length > 2048 || link.protocol !== "https:" || !["t.me","telegram.me"].includes(link.hostname) || link.username || link.password || link.port || !(business || username)) fail("Укажите ссылку Telegram: https://t.me/имя или https://t.me/m/код");
       bookingLink = link.href;
     }
     const data = {
