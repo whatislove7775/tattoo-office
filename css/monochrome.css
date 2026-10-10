@@ -723,6 +723,13 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(100svh - 124px);}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(100svh - 186px);}
 }
+/* The desktop admin workspace shares the footer baseline and rail width. */
+@media(min-width:901px) {
+  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(100svh - 124px);}
+  body.admin-session .rail .login {width:100%;align-self:stretch;box-sizing:border-box;}
+  body.admin-session .rail .who__name {font-size:clamp(15px,1.35vw,19px);}
+  body.admin-session .rail .who .menu-logout {flex:none;}
+}
 :root .office-feature .password-control input,:root #dialog .password-control input {font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;letter-spacing:0;font-variant-ligatures:none;}
 @media(min-width:901px) {
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {padding-bottom:0;}
