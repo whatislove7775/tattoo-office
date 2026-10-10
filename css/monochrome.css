@@ -539,3 +539,16 @@ body[data-page="login"] .office-feature .window { min-height:0;padding-bottom:32
   .auth-form--role .auth-caption { justify-self:start;text-align:left;font-size:11px; }
 }
 .site-bottom .foot .foot__links { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+/* Auth content is centered as one group, with its action kept attached. */
+body[data-page] .office-feature .window:has(>.auth-form) { display:flex;flex-direction:column; }
+body[data-page] .office-feature .window:has(>.auth-form)>.window-head { flex:none; }
+.office-feature .window>.auth-form { margin-left:auto;margin-right:auto; }
+@media(min-width:901px) {
+  body[data-page] .stage:has(.auth-form) { min-height:calc(100svh - 134px); }
+  body[data-page] .office-feature .window:has(>.auth-form) { min-height:calc(100svh - 196px); }
+  .office-feature .window>.auth-form { flex:none;margin-top:auto;margin-bottom:auto; }
+}
+@media(max-width:900px) {
+  body[data-page] .office-feature .window:has(>.auth-form) { min-height:0; }
+  .office-feature .window>.auth-form { margin-top:20px;margin-bottom:0; }
+}
