@@ -1,0 +1,338 @@
+/* Classic iOS 3–5 interaction language, adapted to Tattoo Office's paper,
+   pin and monochrome identity. Selected actions use the glossy black studio finish. */
+:root{
+  --ios-bar-top:#f9f9f9;
+  --ios-bar-mid:#d9d9d9;
+  --ios-bar-bottom:#bfbfbf;
+  --ios-cell:#fff;
+  --ios-cell-bottom:#f5f5f5;
+  --ios-edge:#adadad;
+  --ios-rule:#cbcbcb;
+  --ios-label:#646464;
+  --ios-action-top:#4a4a4a;
+  --ios-action-mid:#171717;
+  --ios-action-bottom:#303030;
+}
+:root[data-theme="dark"]{
+  --ios-bar-top:#565656;
+  --ios-bar-mid:#3a3a3a;
+  --ios-bar-bottom:#262626;
+  --ios-cell:#313131;
+  --ios-cell-bottom:#262626;
+  --ios-edge:#797979;
+  --ios-rule:#575757;
+  --ios-label:#cacaca;
+  --ios-action-top:#4a4a4a;
+  --ios-action-mid:#171717;
+  --ios-action-bottom:#303030;
+}
+
+/* Navigation chrome: bevel, hairline and an inset highlight. */
+.office-feature .window-head{
+  min-height:47px;
+  padding:8px 13px;
+  border:1px solid var(--ios-edge);
+  border-radius:11px;
+  background:linear-gradient(180deg,var(--ios-bar-top) 0%,var(--ios-bar-mid) 49%,var(--ios-bar-bottom) 100%);
+  box-shadow:inset 0 1px 0 #fff9,inset 0 -1px 0 #0001,0 2px 5px #0002;
+  color:var(--ink);
+  text-shadow:0 1px 0 #fff9;
+}
+:root[data-theme="dark"] .office-feature .window-head{text-shadow:0 -1px 0 #0008;box-shadow:inset 0 1px #fff3,0 2px 7px #0005}
+.office-feature .window-head h1{font-style:normal;font-size:18px;font-weight:600;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.office-feature .window-head img{filter:drop-shadow(0 1px 0 #fff9)}
+.ios-back{display:inline-flex;margin-right:6px}
+.office-feature .window-head .back,
+.office-feature .window-head .ios-back{
+  flex:none;
+  align-items:center;
+  gap:2px;
+  min-height:29px;
+  padding:4px 10px 4px 5px;
+  border:1px solid #787878;
+  border-radius:6px;
+  background:linear-gradient(#b8b8b8,#8b8b8b 50%,#6e6e6e);
+  box-shadow:inset 0 1px #fff7,0 1px 2px #0003;
+  color:#fff;
+  font-size:12px;
+  font-weight:600;
+  text-decoration:none;
+  text-shadow:0 -1px #3a3a3a;
+}
+.office-feature .window-head .back{display:inline-flex}
+.office-feature .window-head .back .ui-icon{font-size:16px}
+.office-feature .window-head .back:hover,.office-feature .window-head .ios-back:hover{filter:brightness(1.07)}
+.office-feature .window-head .back:active,.office-feature .window-head .ios-back:active{box-shadow:inset 0 2px 4px #0005}
+
+/* Pressable, reflective buttons and linked rows. */
+.office-feature .chrome,
+.office-feature .form-actions .back-btn,
+.office-feature .admin-tools .chrome,
+.office-feature .calendar-head button,
+.office-feature .model-controls button,
+.office-select,.office-picker button,.date-open{
+  border:1px solid #989898;
+  border-radius:10px;
+  background:linear-gradient(#fff 0%,#f7f7f7 42%,#d7d7d7 52%,#bdbdbd 100%);
+  box-shadow:inset 0 1px #fff,inset 0 -1px #7e7e7e55,0 2px 5px #0003;
+  color:#272727;
+  font-weight:600;
+  text-shadow:0 1px #fff9;
+  text-decoration:none;
+}
+.office-feature .chrome:hover,
+.office-feature .form-actions .back-btn:hover,
+.office-feature .model-controls button:hover{filter:brightness(1.05)}
+.office-feature .chrome:active,
+.office-feature .form-actions .back-btn:active,
+.office-feature .calendar-head button:active,
+.office-feature .model-controls button:active{background:linear-gradient(#b9b9b9,#e8e8e8);box-shadow:inset 0 2px 5px #0004}
+.office-feature .auth-form button[type="submit"],
+.office-feature .form-actions #booking-next,
+.office-feature #content-form button[type="submit"],
+.office-feature #settings-form button[type="submit"],
+#dialog button[type="submit"]{
+  border-color:#5c5c5c;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
+  box-shadow:inset 0 1px #eaeaea,0 2px 5px #0003;
+  color:white;
+  text-shadow:0 -1px #3b3b3b;
+}
+:root[data-theme="dark"] .office-feature .chrome,
+:root[data-theme="dark"] .office-feature .form-actions .back-btn,
+:root[data-theme="dark"] .office-feature .calendar-head button,
+:root[data-theme="dark"] .office-feature .model-controls button,
+:root[data-theme="dark"] .office-select{
+  color:var(--ink);
+  border-color:#696969;
+  background:linear-gradient(#5e5e5e,#434343 50%,#353535);
+  box-shadow:inset 0 1px #fff3,0 2px 6px #0006;
+  text-shadow:0 -1px #0009;
+}
+
+/* The classic segmented control retains the site's real tab behavior. */
+.office-feature .tabs{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  gap:0;
+  padding:2px;
+  border:1px solid #888888;
+  border-radius:10px;
+  background:linear-gradient(#9c9c9c,#e2e2e2);
+  box-shadow:inset 0 1px 2px #0005,0 1px #fff9;
+  overflow-x:auto;
+}
+.office-feature .tabs button,.office-feature .tabs a{
+  flex:none;
+  min-height:34px;
+  margin:0;
+  padding:7px 16px;
+  border:0;
+  border-right:1px solid #979797;
+  border-radius:0;
+  background:linear-gradient(#fff,#ececec 50%,#cdcdcd);
+  box-shadow:inset 0 1px #fff;
+  color:#343434;
+  font-size:13px;
+  font-weight:600;
+  text-decoration:none;
+  text-shadow:0 1px #fff;
+}
+.office-feature .tabs :first-child{border-radius:7px 0 0 7px}
+.office-feature .tabs :last-child{border-right:0;border-radius:0 7px 7px 0}
+.office-feature .tabs [aria-selected="true"],.office-feature .tabs .active{
+  border-color:#565656;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 50%,var(--ios-action-bottom));
+  box-shadow:inset 0 1px #e6e6e6,inset 0 -1px #353535;
+  color:#fff;
+  text-shadow:0 -1px #454545;
+}
+:root[data-theme="dark"] .office-feature .tabs button:not([aria-selected="true"]):not(.active){
+  color:#eee;background:linear-gradient(#636363,#3c3c3c);text-shadow:0 -1px #0008
+}
+
+/* iOS grouped table: one casing, aligned rows, hairline separators. */
+.find-cards{gap:0;border:1px solid var(--ios-edge);border-radius:12px;overflow:hidden;background:var(--ios-cell);box-shadow:inset 0 1px #fff,0 2px 5px #0002}
+.find-card{
+  min-height:0;
+  padding:16px 20px;
+  border:0;
+  border-bottom:1px solid var(--ios-rule);
+  border-radius:0;
+  background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  box-shadow:inset 0 1px #fff8;
+}
+.find-card:last-child{border-bottom:0}
+.find-card h3{margin:4px 0 3px;font-size:19px;font-weight:600}
+.find-card p{font-size:13px}
+.find-card__number,.dossier-label,.eyebrow{color:var(--ios-label)}
+.about-grid>div{gap:0;border:1px solid var(--ios-edge);border-radius:12px;overflow:hidden;box-shadow:0 2px 5px #0002}
+.about-grid .find-card{min-height:0}
+.about-grid .find-card a,.archive-footer a,.find-bottom a:not(.chrome){color:var(--ios-label);font-weight:600}
+.interior-dossier{
+  border:1px solid var(--ios-edge);
+  border-radius:13px;
+  background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  box-shadow:inset 0 1px #fff8,0 2px 6px #0002;
+}
+.dossier-rule{border-color:var(--ios-rule)}
+.archive-card,.safety-card,.stat,.stamp-card,.receipt,.note-paper{
+  border:1px solid var(--ios-edge);
+  background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  box-shadow:inset 0 1px #fff9,0 3px 7px #0002;
+}
+.archive-card{border-radius:13px}
+.archive-card__photo{border-bottom:1px solid var(--ios-rule)}
+.office-feature .stat,.office-feature .stamp-card,.office-feature .receipt,.office-feature .note-paper{border:1px solid var(--ios-edge);border-radius:13px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom))}
+.office-feature .booking-item,.office-feature .choice{
+  border:1px solid var(--ios-edge);
+  border-radius:11px;
+  background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  box-shadow:inset 0 1px #fff8,0 2px 5px #0002;
+}
+.office-feature .choice.selected,.office-feature .time.selected,.office-feature .calendar button.selected{
+  border-color:#565656;
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
+  color:#fff;
+  text-shadow:0 -1px #454545;
+  box-shadow:inset 0 1px #e6e6e6,0 2px 6px #0003;
+}
+.office-feature .choice.selected small{color:#f5f5f5}
+.office-feature .calendar button,.office-feature .time{border:1px solid var(--ios-edge);border-radius:8px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));box-shadow:inset 0 1px #fff,0 1px 3px #0002}
+.office-feature .steps b{border:1px solid var(--ios-edge);background:linear-gradient(#fff,#c5c5c5);box-shadow:inset 0 1px #fff,0 2px 4px #0002}
+.office-feature .steps li.active b{border-color:#525252;background:linear-gradient(var(--ios-action-top),var(--ios-action-bottom));color:#fff}
+
+/* Inset fields, aligned labels, and list-style management surfaces. */
+.office-feature .field input,.office-feature .field textarea,
+.office-feature .admin-tools input,.office-feature .office-select,
+#dialog input,#dialog textarea,#dialog select{
+  border:1px solid #b2b2b2;
+  border-radius:11px;
+  background:linear-gradient(#e8e8e8,#fafafa 11%,#fff);
+  box-shadow:inset 0 2px 4px #0002,0 1px #fff;
+  color:var(--ink);
+}
+.office-feature .field textarea,#dialog textarea{border-radius:11px}
+.office-feature .field input:focus,.office-feature .field textarea:focus,
+.office-feature .admin-tools input:focus,#dialog input:focus,#dialog textarea:focus{
+  border-radius:11px;
+  border-color:#797979;
+  outline:none;
+  box-shadow:inset 0 2px 4px #0002,0 0 0 3px #81818144;
+}
+:root[data-theme="dark"] .office-feature .field input,
+:root[data-theme="dark"] .office-feature .field textarea,
+:root[data-theme="dark"] .office-feature .admin-tools input,
+:root[data-theme="dark"] #dialog input{
+  background:linear-gradient(#171717,#2b2b2b 16%,#313131);border-color:#696969;color:var(--ink)
+}
+.office-feature .table-wrap{border:1px solid var(--ios-edge);border-radius:12px;background:var(--ios-cell);box-shadow:0 2px 5px #0002}
+.office-feature table{border:0;border-radius:0;border-collapse:collapse;background:transparent}
+.office-feature th{padding:11px 12px;background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid));border-bottom:1px solid var(--ios-edge);font-weight:600;color:var(--ink-2)}
+.office-feature td{padding:12px;border-bottom:1px solid var(--ios-rule);background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom))}
+.office-feature tbody tr:last-child td{border-bottom:0}
+.office-feature td button{border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#cecece);box-shadow:inset 0 1px #fff;color:#343434;text-decoration:none}
+.office-feature .admin-tools{gap:0;overflow-x:auto;border:1px solid var(--ios-edge);border-radius:10px;background:linear-gradient(var(--ios-bar-top),var(--ios-bar-bottom));padding:4px;box-shadow:inset 0 1px #fff9,0 2px 5px #0002}
+.office-feature .admin-tools .chrome{border-radius:7px;box-shadow:inset 0 1px #fff,0 1px 2px #0002}
+
+/* Paper sheets and alerts rise above the interface without losing context. */
+.modal__window,#dialog{
+  border:1px solid #919191;
+  border-radius:15px;
+  background:repeating-linear-gradient(180deg,transparent 0,transparent 36px,#9f9f9f1a 37px),linear-gradient(var(--ios-cell),var(--ios-cell-bottom));
+  box-shadow:0 20px 60px #0007,inset 0 1px #fff;
+  overflow:hidden;
+}
+.modal__bar{
+  min-height:46px;
+  padding:8px 14px;
+  border-bottom:1px solid #959595;
+  background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid) 51%,var(--ios-bar-bottom));
+  box-shadow:inset 0 1px #fff9;
+  text-shadow:0 1px #fff9;
+}
+.modal__title{font-size:16px}
+.modal__x,#dialog .close{min-width:29px;min-height:29px;border:1px solid var(--ios-edge);border-radius:7px;background:linear-gradient(#fff,#c9c9c9);box-shadow:inset 0 1px #fff;color:#323232}
+.toast,#notice{border:1px solid #7c7c7c;border-radius:12px;background:linear-gradient(#fafafa,#d3d3d3);box-shadow:inset 0 1px #fff,0 10px 30px #0004;color:#303030;text-shadow:0 1px #fff8}
+
+/* The older public master dossiers use the same tactile controls. */
+.section-head .tabs{
+  display:inline-flex;
+  gap:0;
+  padding:2px;
+  border:1px solid #949494;
+  border-radius:10px;
+  background:linear-gradient(#acacac,#dedede);
+  box-shadow:inset 0 1px 2px #0004,0 1px #fff8;
+}
+.section-head .tab{
+  min-height:35px;
+  padding:5px 13px;
+  gap:6px;
+  border-right:1px solid #959595;
+  background:linear-gradient(#fff,#eaeaea 51%,#c7c7c7);
+  box-shadow:inset 0 1px #fff;
+  color:#2f2f2f;
+  font-size:14px;
+  text-shadow:0 1px #fff;
+}
+.section-head .tab:first-child{border-radius:7px 0 0 7px}
+.section-head .tab:last-child{border-right:0;border-radius:0 7px 7px 0}
+.section-head .tab[aria-selected="true"]{
+  background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));
+  color:#fff;
+  text-shadow:0 -1px #454545;
+}
+.section-head .tab[aria-selected="true"] .tab__label{font-style:normal}
+.section-head .tab__label{text-decoration:none}
+.section-head>a[href="#/masters"]{
+  display:inline-flex;align-items:center;gap:2px;min-height:30px;padding:4px 10px 4px 6px;
+  border:1px solid #737373;border-radius:7px;
+  background:linear-gradient(#bababa,#888888 51%,#6a6a6a);
+  box-shadow:inset 0 1px #fff8,0 2px 4px #0002;
+  color:#fff;font-size:12px;font-weight:600;text-decoration:none;text-shadow:0 -1px #464646;
+}
+.section-head>a[href="#/masters"]:hover{filter:brightness(1.08)}
+.master__photo,.work__img{padding:3px;border:1px solid var(--ios-edge);background:linear-gradient(#fff,#d7d7d7);box-shadow:inset 0 1px #fff,0 4px 9px #0002}
+.btn{
+  border:1px solid #929292;
+  border-radius:10px;
+  background:linear-gradient(#fff,#f0f0f0 45%,#c9c9c9);
+  box-shadow:inset 0 1px #fff,0 2px 6px #0003;
+  color:#313131;
+  font-weight:600;
+  text-decoration:none;
+  text-shadow:0 1px #fff;
+}
+.btn--primary{border-color:#5c5c5c;background:linear-gradient(var(--ios-action-top),var(--ios-action-mid) 51%,var(--ios-action-bottom));color:#fff;text-shadow:0 -1px #454545}
+.btn:active{background:linear-gradient(#c1c1c1,#eaeaea);box-shadow:inset 0 2px 5px #0004}
+:root[data-theme="dark"] .section-head .tab:not([aria-selected="true"]),:root[data-theme="dark"] .btn:not(.btn--primary){
+  border-color:#777777;background:linear-gradient(#6b6b6b,#424242);color:#eee;text-shadow:0 -1px #0008
+}
+.rail .login{border:1px solid var(--ios-edge);background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));box-shadow:inset 0 1px #fff9,0 8px 17px #0002}
+.rail .foot{border:1px solid var(--ios-edge);background:linear-gradient(var(--ios-bar-top),var(--ios-bar-mid) 45%,var(--ios-bar-bottom));box-shadow:inset 0 1px #fff9,0 5px 13px #0002}
+.menu__item{border-bottom:1px solid color-mix(in srgb,var(--ios-rule) 48%,transparent)}
+.menu__item:last-child{border-bottom:0}
+.menu__item[aria-current="true"] .menu__link{color:var(--ios-label);font-weight:700}
+
+@media(max-width:1100px){
+  .find-cards{grid-template-columns:1fr;grid-template-rows:auto}
+}
+@media(max-width:700px){
+  .office-feature .window-head{min-height:48px;padding:6px 9px;gap:5px}
+  .office-feature .window-head h1{font-size:14px}
+  .office-feature .window-head .ios-back{display:inline-flex;position:absolute;z-index:2;top:66px;left:18px;max-width:calc(100vw - 70px)}
+  .office-feature .window-head .back{top:66px;right:16px}
+  .office-feature .window:has(.window-head .ios-back)>.window-head,
+  .office-feature .window:has(.window-head .back)>.window-head{margin-bottom:66px}
+  .office-feature .tabs{width:100%;display:flex}
+  .office-feature .tabs button,.office-feature .tabs a{flex:1;min-width:max-content;text-align:center;padding-inline:10px}
+  .find-card{padding:15px 17px}
+  .find-card h3{font-size:18px}
+  .archive-card,.interior-dossier,.safety-card{border-radius:12px}
+  .office-feature .admin-tools{flex-wrap:nowrap}
+  .office-feature .admin-tools .chrome{flex:none}
+  .section-head>a[href="#/masters"]{position:absolute;top:65px;right:17px;max-width:81px;white-space:nowrap;overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){.modal__window,.modal__backdrop{animation:none}}

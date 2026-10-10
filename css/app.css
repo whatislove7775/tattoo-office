@@ -6,17 +6,17 @@
 
 /* ---------------------------------- тема --------------------------------- */
 :root {
-  --bg:            #f4f4f2;
-  --bg-2:          #dededb;
+  --bg:            #f4f4f4;
+  --bg-2:          #dedede;
   --panel:         #ffffff;
-  --panel-2:       #f7f7f5;
+  --panel-2:       #f7f7f7;
   --panel-edge:    rgba(0,0,0,.10);
   --panel-gloss:   rgba(255,255,255,.85);
   --ink:           #0a0a0a;
-  --ink-2:         #4a4a48;
-  --ink-3:         #8b8b87;
-  --beige:         #e6ded0;
-  --beige-2:       #f1ece2;
+  --ink-2:         #4a4a4a;
+  --ink-3:         #8b8b8b;
+  --beige:         #dfdfdf;
+  --beige-2:       #ececec;
   --line:          rgba(0,0,0,.14);
   --accent:        #1a1a1a;
   --shadow-lg:     0 18px 40px rgba(0,0,0,.14), 0 2px 6px rgba(0,0,0,.08);
@@ -27,33 +27,33 @@
   --pattern-ink:   rgba(0,0,0,.055);
   --polaroid-bg:   #fff;
   --field:         #fff;
-  --ok:            #2f6b3a;
-  --warn:          #8a5a12;
-  --bad:           #8c2b22;
+  --ok:            #5b5b5b;
+  --warn:          #5f5f5f;
+  --bad:           #3f3f3f;
 }
 
 :root[data-theme="dark"] {
-  --bg:            #1b1b1e;
-  --panel:         #202024;
-  --panel-2:       #26262b;
+  --bg:            #1b1b1b;
+  --panel:         #202020;
+  --panel-2:       #262626;
   --panel-edge:    rgba(255,255,255,.10);
   --panel-gloss:   rgba(255,255,255,.06);
-  --ink:           #f2efe8;
-  --ink-2:         #c3c0b8;
-  --ink-3:         #8b8880;
-  --beige:         #3a352c;
-  --beige-2:       #2c2823;
+  --ink:           #efefef;
+  --ink-2:         #c0c0c0;
+  --ink-3:         #888888;
+  --beige:         #353535;
+  --beige-2:       #282828;
   --line:          rgba(255,255,255,.16);
-  --accent:        #f2efe8;
+  --accent:        #efefef;
   --shadow-lg:     0 18px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
   --shadow-md:     0 8px 20px rgba(0,0,0,.45);
   --shadow-sm:     0 3px 10px rgba(0,0,0,.4);
   --pattern-ink:   rgba(255,255,255,.05);
-  --polaroid-bg:   #eae7e0;
-  --field:         #17171a;
-  --ok:            #7fbe8c;
-  --warn:          #d9ad5e;
-  --bad:           #e08b81;
+  --polaroid-bg:   #e7e7e7;
+  --field:         #171717;
+  --ok:            #adadad;
+  --warn:          #b1b1b1;
+  --bad:           #9c9c9c;
 }
 
 /* ---------------------------------- база --------------------------------- */
@@ -466,12 +466,12 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   top: 194px; right: 24px; bottom: 24px;
   width: 26px;
   border-radius: 14px;
-  background: linear-gradient(to right, #d5d5d1, #f4f4f2 40%, #cfcfcb);
+  background: linear-gradient(to right, #d5d5d5, #f4f4f4 40%, #cfcfcf);
   border: 1px solid var(--panel-edge);
   box-shadow: inset 0 1px 3px rgba(0,0,0,.14);
   z-index: 15;
 }
-:root[data-theme="dark"] .deco-scroll { background: linear-gradient(to right, #2a2a30, #3a3a42 40%, #26262c); }
+:root[data-theme="dark"] .deco-scroll { background: linear-gradient(to right, #2a2a2a, #3b3b3b 40%, #262626); }
 .deco-scroll__thumb {
   position: absolute;
   left: 2px; right: 2px; top: 2px;
@@ -479,13 +479,13 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   border-radius: 12px;
   background:
     linear-gradient(to right, rgba(255,255,255,.9), rgba(255,255,255,.25) 45%, rgba(0,0,0,.05)),
-    linear-gradient(to bottom, #fdfdfd, #d8d8d4);
+    linear-gradient(to bottom, #fdfdfd, #d8d8d8);
   border: 1px solid rgba(0,0,0,.18);
   box-shadow: 0 1px 2px rgba(0,0,0,.2);
   transition: top .12s linear;
 }
 :root[data-theme="dark"] .deco-scroll__thumb {
-  background: linear-gradient(to bottom, #55555e, #35353c);
+  background: linear-gradient(to bottom, #565656, #363636);
   border-color: rgba(255,255,255,.14);
 }
 
@@ -559,7 +559,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   height: auto;
   min-height: 0;
 }
-.drift--static .polaroid { position: static; width: auto; transform: none !important; }
+.drift--static .polaroid { position: static; width: auto; transform: none; }
 
 /* ============================ профиль мастера ============================= */
 .master {
@@ -612,7 +612,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   padding: 0 26px;
   border-radius: 999px;
   border: 1px solid rgba(0,0,0,.22);
-  background: linear-gradient(to bottom, #ffffff, #ececea 52%, #e0e0dd);
+  background: linear-gradient(to bottom, #ffffff, #ececec 52%, #e0e0e0);
   box-shadow: 0 2px 5px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.9);
   font-size: 16px;
   text-decoration: underline;
@@ -630,11 +630,11 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 .btn--sm { min-height: 32px; padding: 0 16px; font-size: 14px; text-decoration: none; }
 .btn[disabled] { opacity: .45; pointer-events: none; }
 :root[data-theme="dark"] .btn {
-  background: linear-gradient(to bottom, #3a3a42, #24242a);
+  background: linear-gradient(to bottom, #3b3b3b, #242424);
   border-color: rgba(255,255,255,.2);
   box-shadow: 0 2px 5px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
 }
-:root[data-theme="dark"] .btn--primary { background: linear-gradient(to bottom, #f4f1ea, #d9d4c8); color: #111; }
+:root[data-theme="dark"] .btn--primary { background: linear-gradient(to bottom, #f1f1f1, #d4d4d4); color: #111; }
 
 .field { margin-bottom: 14px; max-width: 460px; }
 .field label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 5px; }
@@ -696,12 +696,12 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   border-radius: 999px;
   padding: 13px 24px;
   font-size: 17px;
-  background: linear-gradient(to bottom, #ececea, #f7f7f6);
+  background: linear-gradient(to bottom, #ececec, #f7f7f7);
   border-color: rgba(0,0,0,.12);
   box-shadow: inset 0 2px 5px rgba(0,0,0,.10), 0 1px 0 #fff;
 }
 :root[data-theme="dark"] .input--pill {
-  background: linear-gradient(to bottom, #26262b, #2e2e34);
+  background: linear-gradient(to bottom, #262626, #2e2e2e);
   box-shadow: inset 0 2px 5px rgba(0,0,0,.5);
 }
 .input--pill::placeholder { color: var(--ink-3); }
@@ -827,10 +827,10 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: linear-gradient(to bottom, #fff, #f0f0ee);
+  background: linear-gradient(to bottom, #fff, #f0f0f0);
   transition: transform .12s ease, background .18s ease, color .18s ease;
 }
-:root[data-theme="dark"] .slot { background: linear-gradient(to bottom, #2b2b31, #232329); }
+:root[data-theme="dark"] .slot { background: linear-gradient(to bottom, #2b2b2b, #232323); }
 .slot:hover:not([disabled]) { transform: translateY(-1px); }
 .slot[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .slot[disabled] {

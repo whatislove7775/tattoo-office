@@ -1,0 +1,40 @@
+.icon-sprite{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.ui-icon{width:1em;height:1em;display:inline-block;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em}
+.ui-icon--inline{margin-left:.22em}
+.ui-icon--before{margin:0 .22em 0 0}
+
+/* A small enamel and chrome desk switch, without a status caption. */
+.brand__controls .theme{display:inline-flex;width:74px;height:38px;padding:0;border:0;border-radius:25px;background:none;text-decoration:none;cursor:url("../assets/cursors/link.png") 10 10,pointer}
+.theme__track{position:relative;display:block;box-sizing:border-box;width:74px;height:38px;padding:0;border:1px solid #9b9b9b;border-radius:25px;background:linear-gradient(180deg,#cfcfcf 0%,#f9f9f9 19%,#e5e5e5 68%,#c4c4c4 100%);box-shadow:inset 1px 2px 4px #0004,inset 0 -1px 1px #fff,0 2px 5px #0003;color:#222}
+.theme__track::after{content:"";position:absolute;inset:3px;border-radius:20px;border:1px solid #fff8;pointer-events:none}
+.theme__knob{position:absolute;z-index:1;left:3px;top:3px;width:30px;height:30px;box-sizing:border-box;border:1px solid #989898;border-radius:50%;background:linear-gradient(150deg,#fff 5%,#efefef 45%,#b7b7b7 100%);box-shadow:inset 0 1px 1px #fff,0 2px 5px #0005;transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.theme__sun,.theme__moon{position:absolute;z-index:2;top:9px;width:18px;height:18px;transition:opacity .2s,color .2s;pointer-events:none}
+.theme__sun{left:9px;color:#1b1b1b}
+.theme__moon{right:8px;color:#636363;opacity:.8}
+:root[data-theme="dark"] .theme__knob{transform:translateX(36px);background:linear-gradient(150deg,#fff,#d8d8d8 65%,#9c9c9c)}
+:root[data-theme="dark"] .theme__sun{opacity:.55}
+:root[data-theme="dark"] .theme__moon{color:#171717;opacity:1}
+.theme:focus-visible .theme__track{box-shadow:inset 1px 2px 4px #0004,0 0 0 3px #7b7b7b88}
+
+/* The rail action borrows the exact old phone unlock language: black
+   glossy channel, silver rectangular thumb, and a physical travel distance. */
+.rail .rent-slider{position:relative;align-self:flex-end;flex:none;width:68%;height:51px;margin:0;box-sizing:border-box;border:1px solid #171717;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,#0a0a0a 0%,#080808 16%,#292929 49%,#383838 100%);box-shadow:inset 0 1px 2px #fff6,inset 0 -2px 2px #000b,0 8px 18px #0003;color:#e7e7e7;user-select:none;-webkit-user-select:none}
+.rent-slider::before{content:"";position:absolute;inset:3px 4px auto;height:20px;border-radius:10px 10px 3px 3px;background:linear-gradient(#fff2,transparent);pointer-events:none}
+.rent-slider::after{content:"";position:absolute;z-index:0;left:4px;top:4px;bottom:4px;width:calc((100% - 8px) * var(--slide-progress,0));border-radius:8px;background:linear-gradient(90deg,#757575,#d4d4d4aa);opacity:.45;pointer-events:none}
+.rent-slider__label{position:absolute;inset:0 4px 0 58px;display:flex;align-items:center;justify-content:center;white-space:nowrap;font:400 11px/1 Helvetica,Arial,sans-serif;letter-spacing:-.025em;text-shadow:0 1px 2px #000;opacity:calc(1 - var(--slide-progress,0));pointer-events:none}
+.rent-slider__thumb{position:absolute;z-index:2;top:4px;left:4px;display:grid;place-items:center;width:48px;height:41px;padding:0;border:1px solid #7d7d7d;border-radius:9px;background:linear-gradient(#fff 0%,#f4f4f4 16%,#a6a6a6 89%,#777 100%);box-shadow:inset 0 1px 1px #fff,1px 2px 4px #000a;color:#575757;transform:translateX(var(--slide-x,0px));cursor:url("../assets/cursors/sizeall.png") 10 10,grab;touch-action:none}
+.rent-slider__thumb .ui-icon{width:28px;height:28px;stroke-width:2.6;filter:drop-shadow(0 1px 0 #fff9)}
+.rent-slider.is-dragging .rent-slider__thumb{cursor:url("../assets/cursors/sizeall.png") 10 10,grabbing}
+.rent-slider:not(.is-dragging) .rent-slider__thumb{transition:transform .23s cubic-bezier(.2,.8,.2,1)}
+.rent-slider__thumb:focus-visible{outline:none;box-shadow:inset 0 1px 1px #fff,0 0 0 2px #eee,0 0 0 4px #444}
+@media(max-width:700px){
+  .brand__controls .theme,.theme__track{width:59px;height:32px}
+  .theme__knob{width:24px;height:24px}
+  .theme__sun,.theme__moon{top:8px;width:15px;height:15px}
+  .theme__sun{left:8px}.theme__moon{right:7px}
+  :root[data-theme="dark"] .theme__knob{transform:translateX(27px)}
+  .rail .rent-slider{align-self:center;width:min(88vw,480px);height:53px;margin-inline:auto}
+  .rent-slider__thumb{height:43px}
+  .rent-slider__label{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){.theme__knob,.rent-slider__thumb{transition:none!important}}

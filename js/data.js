@@ -35,6 +35,7 @@
       id: 'zinaida',
       name: { ru: 'Зинаида Петровна', en: 'Zinaida Petrovna' },
       age: 21,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '2 года', en: '2 years' },
       bio: {
         ru: 'работает в стиле барокко. качественно, долго и с характером.',
@@ -48,6 +49,7 @@
       id: 'mr-a',
       name: { ru: 'Mr.A', en: 'Mr.A' },
       age: 33,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '12 лет', en: '12 years' },
       bio: {
         ru: 'основатель офиса. орнаменты, блэкворк, всё, что режет глаз.',
@@ -61,6 +63,7 @@
       id: 'sexova',
       name: { ru: 'Зинаида Сексова', en: 'Zinaida Sexova' },
       age: 24,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '4 года', en: '4 years' },
       bio: {
         ru: 'тонкие линии, шрифты, всё маленькое и злое.',
@@ -74,6 +77,7 @@
       id: 'kostya',
       name: { ru: 'Костя Офисный', en: 'Kostya Office' },
       age: 29,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '7 лет', en: '7 years' },
       bio: {
         ru: 'олдскул, традишнл, флэши по средам.',
@@ -87,6 +91,7 @@
       id: 'vera',
       name: { ru: 'Вера Никитична', en: 'Vera Nikitichna' },
       age: 26,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '5 лет', en: '5 years' },
       bio: {
         ru: 'реализм в сером, портреты животных и людей, которых уже нет.',
@@ -100,6 +105,7 @@
       id: 'gleb',
       name: { ru: 'Глеб Факсов', en: 'Gleb Faxov' },
       age: 31,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '9 лет', en: '9 years' },
       bio: {
         ru: 'киберсигилизм, техно-орнамент, любит большие проекты.',
@@ -113,6 +119,7 @@
       id: 'nastya',
       name: { ru: 'Настя Скрепкина', en: 'Nastya Skrepkina' },
       age: 23,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '3 года', en: '3 years' },
       bio: {
         ru: 'акварель, ботаника, цвет. записывается на месяц вперёд.',
@@ -126,6 +133,7 @@
       id: 'petr',
       name: { ru: 'Пётр Архивный', en: 'Petr Archive' },
       age: 38,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '15 лет', en: '15 years' },
       bio: {
         ru: 'японская традиция, рукава и спины. работает только по записи.',
@@ -139,6 +147,7 @@
       id: 'liza',
       name: { ru: 'Лиза Печатная', en: 'Liza Pechatnaya' },
       age: 25,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '6 лет', en: '6 years' },
       bio: {
         ru: 'графика, гравюра, всё чёрное и очень плотное.',
@@ -152,6 +161,7 @@
       id: 'sasha',
       name: { ru: 'Саша Штампов', en: 'Sasha Shtampov' },
       age: 27,
+      city: { ru: 'Москва', en: 'Moscow' },
       exp: { ru: '8 лет', en: '8 years' },
       bio: {
         ru: 'леттеринг и шрифты. пишет на коже так же, как на бумаге.',

@@ -1,0 +1,77 @@
+/* Shared, keyboard-accessible controls in the studio's visual language. */
+(() => {
+  let active;
+  function close() { if (!active) return; const {popup,button}=active; popup.hidePopover(); popup.remove(); button.setAttribute('aria-expanded','false'); active=null; }
+  function open(button, build) {
+    if(active?.button===button){close();return;}
+    close();
+    const popup=document.createElement('div');popup.className='office-picker'+(button.closest('.space-picker')?' office-picker--space':'');popup.setAttribute('popover','manual');
+    // Keep the popup in its dialog's top layer when a modal form is open.
+    (button.closest('dialog')||document.body).append(popup);build(popup);
+    popup.showPopover();button.setAttribute('aria-expanded','true');active={popup,button};
+    const r=button.getBoundingClientRect(),width=Math.min(Math.max(r.width,button.classList.contains('date-open')?300:button.closest('.space-picker')?210:240),innerWidth-24);
+    popup.style.boxSizing='border-box';popup.style.width=width+'px';popup.style.left=Math.max(12,Math.min(r.left,innerWidth-width-12))+'px';
+    const height=Math.min(popup.getBoundingClientRect().height,320,innerHeight-24);
+    popup.style.maxHeight=height+'px';popup.style.top=Math.max(12,r.bottom+height+8<innerHeight?r.bottom+6:r.top-height-6)+'px';
+    popup.querySelector('[aria-selected="true"],button:not(:disabled)')?.focus({preventScroll:true});
+  }
+  function enhance(root=document) {
+    root.querySelectorAll('input[type="password"]:not([data-reveal])').forEach(input=>{
+      const field=input.closest('label.field');if(field){const div=document.createElement('div');div.className=field.className;field.replaceWith(div);div.append(...field.childNodes);}
+      input.dataset.reveal='true';input.setAttribute('aria-label',input.closest('.field')?.querySelector('span')?.textContent || 'Пароль');
+      const wrapper=document.createElement('div');wrapper.className='password-control';input.before(wrapper);wrapper.append(input);
+      const toggle=document.createElement('button');toggle.type='button';toggle.className='password-toggle';toggle.setAttribute('aria-label','Показать пароль');toggle.dataset.visible='false';
+      toggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      wrapper.append(toggle);
+      const reveal=()=>{const show=input.type==='password';input.type=show?'text':'password';toggle.dataset.visible=String(show);toggle.setAttribute('aria-label',show?'Скрыть пароль':'Показать пароль');};
+      let pointerAction=false;
+      toggle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();pointerAction=true;reveal();});
+      toggle.addEventListener('click',event=>{event.preventDefault();if(pointerAction){pointerAction=false;return;}reveal();});
+      toggle.addEventListener('pointercancel',()=>{pointerAction=false;});
+      toggle.addEventListener('keydown',()=>{pointerAction=false;});
+    });
+    root.querySelectorAll('input[type="number"]:not([data-quantity-styled])').forEach(input=>{
+      input.dataset.quantityStyled='true';
+      const wrapper=document.createElement('div');wrapper.className='quantity-control';
+      const minus=document.createElement('button'),plus=document.createElement('button');
+      minus.type=plus.type='button';
+      const name=input.getAttribute('aria-label')||input.closest('label')?.querySelector('span')?.textContent.trim()||'Количество';
+      minus.setAttribute('aria-label','Уменьшить: '+name);plus.setAttribute('aria-label','Увеличить: '+name);
+      minus.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-minus"></use></svg>';
+      plus.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-plus"></use></svg>';
+      input.before(wrapper);wrapper.append(minus,input,plus);
+      const sync=()=>{minus.disabled=input.disabled||input.readOnly||input.min!==''&&Number(input.value)<=Number(input.min);plus.disabled=input.disabled||input.readOnly||input.max!==''&&Number(input.value)>=Number(input.max);};
+      const change=(direction,event)=>{event.preventDefault();try{direction>0?input.stepUp():input.stepDown();}catch{return;}input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));sync();};
+      minus.onclick=event=>change(-1,event);plus.onclick=event=>change(1,event);
+      input.addEventListener('input',sync);input.addEventListener('change',sync);sync();
+    });
+    root.querySelectorAll('select:not([data-styled])').forEach(select=>{
+      select.dataset.styled='true';select.classList.add('native-select');select.tabIndex=-1;select.setAttribute('aria-hidden','true');
+      const button=document.createElement('button');button.type='button';button.className='office-select';button.setAttribute('aria-haspopup','listbox');button.setAttribute('aria-expanded','false');
+      const label=select.closest('label')?.querySelector('span')?.textContent||select.getAttribute('aria-label')||select.name||'Выбрать';
+      const sync=()=>{button.textContent=select.selectedOptions[0]?.textContent||'Выбрать';button.setAttribute('aria-label',label+': '+button.textContent);button.disabled=select.disabled;};sync();select.after(button);select.addEventListener('change',sync);
+      button.addEventListener('click',()=>open(button,popup=>{popup.setAttribute('role','listbox');popup.setAttribute('aria-label',label);
+        [...select.options].forEach(option=>{const item=document.createElement('button');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(option.selected));item.textContent=option.textContent;item.disabled=option.disabled;popup.append(item);item.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));close();button.focus();};});
+      }));
+      select.form?.addEventListener('reset',()=>setTimeout(sync));
+    });
+    root.querySelectorAll('input[type="date"]:not([data-styled])').forEach(input=>{
+      input.dataset.styled='true';const button=document.createElement('button');button.type='button';button.className='date-open';button.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg>';button.setAttribute('aria-label','Открыть календарь');input.after(button);
+      button.onclick=()=>open(button,popup=>{let month=new Date((input.value||new Date().toISOString().slice(0,10))+'T12:00:00');
+        const draw=()=>{popup.replaceChildren();const bar=document.createElement('div');bar.className='picker-month';
+          const prev=document.createElement('button'),next=document.createElement('button'),title=document.createElement('span');prev.type=next.type='button';prev.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>';next.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg>';prev.setAttribute('aria-label','Предыдущий месяц');next.setAttribute('aria-label','Следующий месяц');title.textContent=month.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});bar.append(prev,title,next);popup.append(bar);
+          prev.onclick=()=>{month.setMonth(month.getMonth()-1,1);draw();};next.onclick=()=>{month.setMonth(month.getMonth()+1,1);draw();};
+          const grid=document.createElement('div');grid.className='picker-days';['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(x=>{const e=document.createElement('small');e.textContent=x;grid.append(e);});
+          const y=month.getFullYear(),m=month.getMonth();for(let i=0;i<(new Date(y,m,1).getDay()+6)%7;i++)grid.append(document.createElement('span'));
+          for(let day=1;day<=new Date(y,m+1,0).getDate();day++){const value=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`,b=document.createElement('button');b.type='button';b.textContent=day;b.disabled=Boolean(input.min&&value<input.min||input.max&&value>input.max);b.setAttribute('aria-selected',String(input.value===value));b.onclick=()=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));close();input.focus();};grid.append(b);}popup.append(grid);
+        };draw();
+      });
+    });
+  }
+  document.addEventListener('pointerdown',e=>{if(active&&!active.popup.contains(e.target)&&!active.button.contains(e.target))close();});
+  document.addEventListener('keydown',e=>{if(!active)return;if(e.key==='Escape'){const b=active.button;close();b.focus();e.preventDefault();}else if(e.key==='Tab')close();else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){const items=[...active.popup.querySelectorAll('button:not(:disabled)')],i=items.indexOf(document.activeElement);items[e.key==='Home'?0:e.key==='End'?items.length-1:(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus({preventScroll:true});e.preventDefault();}});
+  window.addEventListener('resize',close);window.addEventListener('hashchange',close);
+  document.addEventListener('wheel',e=>{if(active&&!active.popup.contains(e.target))close();},{passive:true});
+  document.addEventListener('touchmove',e=>{if(active&&!active.popup.contains(e.target))close();},{passive:true});
+  new MutationObserver(()=>enhance()).observe(document.body,{childList:true,subtree:true});enhance();
+})();

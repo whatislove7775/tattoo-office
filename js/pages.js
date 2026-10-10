@@ -7,6 +7,15 @@
   'use strict';
 
   var t = global.t, pick = function (o) { return global.I18N.pick(o); };
+  function masterBookingLink(master) {
+    if (!master.bookingLink) return '';
+    try {
+      var url = new URL(master.bookingLink);
+      if (url.protocol !== 'https:' || !['t.me','telegram.me'].includes(url.hostname)) return '';
+      if (!/^\/m\//.test(url.pathname) && !url.searchParams.has('text')) url.searchParams.set('text', 'Здравствуйте! Хочу записаться к мастеру ' + pick(master.name) + '.');
+      return url.href;
+    } catch (_) { return ''; }
+  }
 
   /* ------------------------------ хелперы --------------------------------- */
   function esc(s) {
@@ -34,11 +43,11 @@
   /* =========================== 1. КАТАЛОГ МАСТЕРОВ ======================== */
   var Masters = {
     html: function () {
-      var cards = global.DATA.masters.map(function (m) {
+      var cards = global.DATA.masters.filter(function (m) { return m.featured !== false; }).map(function (m) {
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
-                 img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') +
+                 '<span class="polaroid__photo">' + img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') + '<span class="desktop-shortcut" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 18c0-5 4-9 9-11l-3-3h10v10l-4-4c-5 2-8 5-6 10-3 0-6-1-6-2Z"/></svg></span></span>' +
                  '<div class="polaroid__cap">' + esc(name) + '</div>' +
                '</button>';
       }).join('');
@@ -48,10 +57,7 @@
 
     mount: function (root) {
       var box = root.querySelector('#driftBox');
-      var narrow = global.matchMedia('(max-width: 900px)').matches;
-
-      /* На узких экранах и в «бережном» режиме — обычная сетка. */
-      if (narrow || global.Drift.reduced) {
+      if (global.Drift.reduced) {
         box.classList.add('drift--static');
       } else {
         var drift = new global.Drift(box);
@@ -95,23 +101,23 @@
         '</div>';
 
       return '<div class="section-head">' +
-               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a> / ' + esc(name) + '</span>' +
+               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a><span class="crumbs__current"> / ' + esc(name) + '</span></span>' +
                tabs +
                '<span class="spacer"></span>' +
-               '<a href="#/masters" data-sfx="nav">←' + esc(t('master.back')) + '</a>' +
+               '<a class="master-back" href="#/masters" aria-label="Назад к мастерам" data-sfx="nav">← Назад</a>' +
              '</div>' +
 
              '<div class="master">' +
-               '<div>' +
-                 img(m.photo, m.id, name, 'master__photo') +
+               '<div class="master-profile">' +
+                 img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
                  '<div class="master__name">' + esc(name) + '</div>' +
+                 '<div class="master__city">' + esc(pick(m.city)) + '</div>' +
                  '<div class="master__meta">' +
                    '<span>' + m.age + ' ' + esc(t('master.age')) + '</span>' +
                    '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
-                 '<p style="margin-top:26px"><a class="btn" href="#/book/' + esc(m.id) + '" data-sfx="open">' +
-                   esc(t('master.book')) + '</a></p>' +
+                 '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p></div>' +
                '</div>' +
                '<div id="worksPane"></div>' +
              '</div>';
@@ -130,7 +136,7 @@
         }
         pane.innerHTML = '<div class="works">' + list.map(function (w, i) {
           var cap = pick(w.cap);
-          return '<figure class="work" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
+          return '<figure class="work" role="button" tabindex="0" aria-label="Открыть: ' + esc(cap) + '" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
                  'data-seed="' + esc(m.id + i) + '" data-sfx="open">' +
                    img(w.src, m.id + '-' + tab + i, cap, 'work__img', '', 'tattoo') +
                    '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' +
@@ -154,7 +160,17 @@
         var fig = e.target.closest('.work');
         if (!fig) return;
         var im = fig.querySelector('img');
-        global.TO.modal(fig.dataset.cap, '<img src="' + esc(im.currentSrc || im.src) + '" alt="">');
+        var figures = Array.prototype.slice.call(pane.querySelectorAll('.work'));
+        global.PhotoViewer.open(figures.map(function (item) {
+          var picture = item.querySelector('img');
+          return { src: picture.currentSrc || picture.src, caption: item.dataset.cap };
+        }), figures.indexOf(fig));
+      });
+      pane.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          var fig = e.target.closest('.work');
+          if (fig) { e.preventDefault(); fig.click(); }
+        }
       });
     }
   };
@@ -164,7 +180,7 @@
     html: function () {
       var d = global.DATA.interior;
       var thumbs = d.photos.map(function (p, i) {
-        return img(p.src, 'int' + i, pick(p.cap), '', ' data-i="' + i + '" data-sfx="click"', 'room');
+        return '<button type="button" data-i="' + i + '" aria-label="' + esc(pick(p.cap)) + '">' + img(p.src, 'int' + i, pick(p.cap), '', '', 'room') + '</button>';
       }).join('');
       var dots = d.photos.map(function (_, i) {
         return '<span class="dot" data-i="' + i + '"' + (i === 0 ? ' aria-current="true"' : '') + '></span>';
@@ -200,7 +216,8 @@
       }
 
       root.querySelector('#intThumbs').addEventListener('click', function (e) {
-        if (e.target.tagName === 'IMG') show(+e.target.dataset.i);
+        var button=e.target.closest('button[data-i]');
+        if(button) show(+button.dataset.i);
       });
       dots.addEventListener('click', function (e) {
         if (e.target.classList.contains('dot')) show(+e.target.dataset.i);
