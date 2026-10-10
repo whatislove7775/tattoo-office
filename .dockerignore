@@ -5,3 +5,6 @@ work
 .env.*
 test-results
 playwright-report
+google-service-account.json
+before-*.env
+before-*.sql

@@ -71,7 +71,7 @@ export async function workerTick(db) {
           )
         : null;
       if (job.kind.startsWith("calendar.")) {
-        if (settings.mode !== "test") {
+        if (process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true") {
           if (
             job.kind === "calendar.upsert" ||
             job.kind === "calendar.delete"
@@ -86,7 +86,9 @@ export async function workerTick(db) {
                     summary: "Tattoo Office / запись " + b.id.slice(0, 8),
                     start: { dateTime: new Date(b.starts_at).toISOString() },
                     end: { dateTime: new Date(b.ends_at).toISOString() },
-                    visibility: "private",
+                    // The workspace calendar itself is private. Normal events
+                    // allow the service account to edit without access to personal events.
+                    visibility: "default",
                   },
             );
           } else {
@@ -116,7 +118,7 @@ export async function workerTick(db) {
                         end: {
                           dateTime: new Date(block.ends_at).toISOString(),
                         },
-                        visibility: "private",
+                        visibility: "default",
                       },
                 );
             }
@@ -202,7 +204,9 @@ export async function workerTick(db) {
       }
       await db.query(
         "UPDATE outbox SET status=$1,last_error=NULL WHERE id=$2",
-        [job.kind === "email.auth" || settings.mode !== "test" ? "done" : "simulated", job.id],
+        [job.kind.startsWith("calendar.")
+          ? process.env.GOOGLE_CALENDAR_SYNC_ENABLED === "true" ? "done" : "simulated"
+          : job.kind === "email.auth" || settings.mode !== "test" ? "done" : "simulated", job.id],
       );
     } catch (e) {
       const receipt = job.kind.startsWith("receipt.");
