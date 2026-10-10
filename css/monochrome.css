@@ -636,3 +636,8 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 /* Reserve arrow space even for a long office name. */
 .space-picker .office-select {position:relative;display:block;width:min(100%,340px);padding-inline:14px 44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
 .space-picker .office-select::after {position:absolute;right:18px;top:50%;transform:translateY(-70%) rotate(45deg);}
+
+/* A slightly tighter footer and more room for the second link column. */
+.site-bottom .foot,body[data-page="masters"] .site-bottom .foot {padding-block:14px;}
+.site-bottom .foot .foot__links {grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);}
+.site-bottom .foot .foot__copy {margin-top:12px;}
