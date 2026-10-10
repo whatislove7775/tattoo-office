@@ -725,7 +725,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 }
 /* The desktop admin workspace shares the footer baseline and rail width. */
 @media(min-width:901px) {
-  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(100svh - 124px);}
+  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(100svh - 124px)!important;}
   body.admin-session .rail .login {width:100%;align-self:stretch;box-sizing:border-box;}
   body.admin-session .rail .who__name {font-size:clamp(15px,1.35vw,19px);}
   body.admin-session .rail .who .menu-logout {flex:none;}
