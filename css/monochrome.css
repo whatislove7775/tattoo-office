@@ -486,3 +486,42 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
 }
 @media(prefers-reduced-motion:reduce) { .view-enter,.office-feature>.window { animation:none; } }
 @media(min-width:901px) { body.admin-session .menu__list { margin-left:0; } }
+
+/* Admin sections: compact content and a rail that reserves space for the footer. */
+body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
+.admin-section-head { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px; }
+.admin-section-head .admin-section-title { margin:0;font-size:26px; }
+.office-feature .admin-back { display:inline-flex;align-items:center;gap:8px;min-width:max-content;width:auto;padding:10px 18px;font-size:14px; }
+.admin-content .empty { min-height:0;padding:24px;text-align:left;border:0;border-radius:16px;background:var(--panel-2);font-size:14px; }
+.admin-content .table-wrap { border:1px solid var(--panel-edge);border-radius:16px;margin-bottom:16px; }
+.admin-content table { font-size:13px; }
+.admin-content th { background:var(--panel-2);box-shadow:none;font-size:11px;padding:14px 16px; }
+.admin-content td { padding:16px; }
+.admin-content .admin-tools { display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px; }
+.admin-content .admin-tools .chrome { min-height:42px;padding:10px 16px;font-size:13px; }
+.admin-content .admin-tools #manual-booking { background:linear-gradient(#333,#191919);color:white;border-color:#222; }
+.schedule-scroll { overflow:auto;border:1px solid var(--panel-edge);border-radius:16px;max-height:65vh; }
+.admin-content .schedule { border:0;border-radius:0;overflow:visible;font-size:12px; }
+.admin-content .schedule>div { min-height:48px;padding:14px 12px;line-height:1.4; }
+.admin-content .schedule .schedule-heading { position:sticky;top:0;z-index:2;background:var(--panel-2);font-weight:600;min-height:65px; }
+.schedule-heading button { font-size:11px;font-weight:400;color:var(--ink-2);margin-top:5px; }
+.admin-content .schedule .schedule-hour { position:sticky;left:0;background:var(--panel-2);font-variant-numeric:tabular-nums;z-index:1;font-weight:600; }
+.schedule-free { color:var(--muted);font-size:11px; }
+.admin-content .schedule .busy { background:#333;color:#fff; }
+.admin-content .schedule .closed { background:var(--panel-2);color:var(--muted); }
+@media(min-width:901px) {
+  body.admin-session .rail { position:fixed;right:24px;top:194px;width:var(--rail-width);margin:0;height:calc(100dvh - 236px - var(--desktop-foot-height,125px));min-height:0; }
+  body.admin-session .rail .menu { flex:1;min-height:0;display:flex;flex-direction:column; }
+  body.admin-session .menu__list { min-height:0;max-height:none;overflow-y:auto; }
+  body.admin-session .rail .login { flex:none;margin:0; }
+}
+@media(max-width:900px) {
+  .admin-section-head { flex-wrap:wrap;gap:12px; }
+  .admin-section-head .admin-section-title { font-size:22px; }
+  .admin-content .admin-tools .chrome { flex:1;min-width:max-content; }
+  .admin-content .table-wrap { max-width:100%; }
+}
+
+#dialog .close,.modal__x { display:grid;place-items:center;padding:0;line-height:1; }
+#dialog .close .ui-icon,.modal__x .ui-icon { display:block;width:18px;height:18px;margin:0;flex:none; }
+@media(min-width:901px) { body.admin-session .stage { min-height:0; } }

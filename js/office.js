@@ -811,7 +811,7 @@ async function adminPage() {
           }).format(new Date(b.starts_at)) === adminDate &&
           !["cancelled", "expired"].includes(b.status),
       );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div><p class="small muted">Москва · занято ${bookings.length} записей · ${resources.length} мест</p><div class="schedule" style="grid-template-columns:65px repeat(${resources.length},minmax(90px,1fr))"><div>Время</div>${resources.map((r) => `<div>${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
+    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div><p class="small muted">Москва · занято ${bookings.length} записей · ${resources.length} мест</p><div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
       { length: s.closeHour - s.openHour },
       (_, i) => {
         const h = s.openHour + i,
@@ -819,7 +819,7 @@ async function adminPage() {
             `${adminDate}T${String(h).padStart(2, "0")}:00:00+03:00`,
           );
         return (
-          `<div>${h}:00</div>` +
+          `<div class="schedule-hour">${String(h).padStart(2, "0")}:00</div>` +
           resources
             .map((r) => {
               const b = bookings.find(
@@ -834,12 +834,12 @@ async function adminPage() {
                     new Date(b.starts_at) <= time &&
                     new Date(b.ends_at) > time,
                 );
-              return `<div class="${b ? "busy" : block ? "closed" : ""}">${b ? `${esc(b.user_name)}<br><small>${statusName[b.status]}</small>` : block ? "закрыто" : "·"}</div>`;
+              return `<div class="${b ? "busy" : block ? "closed" : ""}">${b ? `${esc(b.user_name)}<br><small>${statusName[b.status]}</small>` : block ? "Закрыто" : '<span class="schedule-free">Свободно</span>'}</div>`;
             })
             .join("")
         );
       },
-    ).join("")}</div><h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
+     ).join("")}</div></div><h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
       ["Период", "Причина", ""],
       a.blocks.map(
         (b) =>
@@ -937,7 +937,7 @@ async function adminPage() {
     )}`;
   return win(
     "Admin panel",
-    `${adminTab !== "home" ? `<h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2>` : ""}<div class="admin-content">${body}</div>`,
+    `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}<div class="admin-content">${body}</div>`,
   );
 }
 function dialogForm(title, html, submit) {
