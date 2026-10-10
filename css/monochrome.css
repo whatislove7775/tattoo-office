@@ -731,6 +731,24 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   body.admin-session .rail .who .menu-logout {flex:none;}
 }
 :root .office-feature .password-control input,:root #dialog .password-control input {font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;letter-spacing:0;font-variant-ligatures:none;}
+/* Solid button edges in every interaction state, without a white inset ring. */
+.office-feature .chrome,#dialog .chrome,.btn,.office-feature .back-btn {background-clip:border-box;box-shadow:0 3px 8px #00000018!important;}
+/* The whole desktop rail follows its content. Only the document scrolls. */
+@media(min-width:901px) {
+  body {min-height:max(100svh,calc(var(--desktop-footer-bottom,0px) + 24px));}
+  .rail,body.admin-session .rail {position:absolute;right:24px;top:194px;width:var(--rail-width);height:auto;min-height:0;margin:0;}
+  .rail .menu,body.admin-session .rail .menu {flex:none;height:auto;min-height:0;}
+  .rail .menu__list,body.admin-session .rail .menu__list {height:auto;max-height:none;overflow:visible;}
+  .rail .login,body.admin-session .rail .login {width:100%;margin:0;align-self:stretch;box-sizing:border-box;}
+  .rail .who__name {font-size:clamp(15px,1.35vw,19px);}
+  .rail .who .menu-logout {flex:none;}
+  .site-bottom {margin-top:0;}
+  .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {position:absolute;top:var(--desktop-footer-top,calc(100svh - 107px));bottom:auto;}
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {position:absolute;top:calc(var(--desktop-footer-top,calc(100svh - 107px)) - 74px);bottom:auto;}
+  body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px)!important;}
+  body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 100px);}
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 162px);}
+}
 @media(min-width:901px) {
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {padding-bottom:0;}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head {margin-bottom:24px;}

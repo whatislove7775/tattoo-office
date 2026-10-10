@@ -56,5 +56,26 @@ function updateCopyrightYear(){
   document.getElementById('copyrightYear').textContent=year+' ©';
 }
 updateCopyrightYear();
+// Reserve real space for the account, rent control and footer after every route change.
+let railLayoutFrame;
+function scheduleRailLayout(){
+  if(railLayoutFrame) return;
+  railLayoutFrame=requestAnimationFrame(()=>{
+    railLayoutFrame=0;
+    if(innerWidth<=900) return;
+    const rail=document.querySelector('.rail'),footer=document.querySelector('.site-bottom .foot'),rent=document.querySelector('.site-bottom .rent-slider');
+    if(!rail || !footer) return;
+    const rentVisible=rent && getComputedStyle(rent).display!=='none';
+    const reserve=rentVisible ? rent.offsetHeight+36 : 18;
+    const top=Math.max(innerHeight-24-footer.offsetHeight,rail.getBoundingClientRect().bottom+scrollY+reserve);
+    document.body.style.setProperty('--desktop-footer-top',top+'px');
+    document.body.style.setProperty('--desktop-footer-bottom',(top+footer.offsetHeight)+'px');
+  });
+}
+const railLayoutObserver=new ResizeObserver(scheduleRailLayout);
+document.querySelectorAll('.rail,.site-bottom .foot,.site-bottom .rent-slider').forEach(el=>railLayoutObserver.observe(el));
+new MutationObserver(scheduleRailLayout).observe(document.body,{attributes:true,attributeFilter:['class','data-page']});
+addEventListener('resize',scheduleRailLayout);
+scheduleRailLayout();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateCopyrightYear();});
 setInterval(updateCopyrightYear,60000);

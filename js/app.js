@@ -77,6 +77,7 @@
     var hash = location.hash || "#/masters";
     var found = resolve(hash);
     document.body.dataset.page = hash.split("/")[1] || "masters";
+    paintLogin();
 
     /* закрытая зона */
     if (found && found.route.auth && !global.Store.current()) {
