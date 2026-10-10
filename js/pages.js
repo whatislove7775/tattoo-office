@@ -7,6 +7,15 @@
   'use strict';
 
   var t = global.t, pick = function (o) { return global.I18N.pick(o); };
+  function masterBookingLink(master) {
+    if (!master.bookingLink) return '';
+    try {
+      var url = new URL(master.bookingLink);
+      if (url.protocol !== 'https:' || !['t.me','telegram.me'].includes(url.hostname)) return '';
+      if (!url.searchParams.has('text')) url.searchParams.set('text', 'Здравствуйте! Хочу записаться к мастеру ' + pick(master.name) + '.');
+      return url.href;
+    } catch (_) { return ''; }
+  }
 
   /* ------------------------------ хелперы --------------------------------- */
   function esc(s) {
@@ -108,8 +117,7 @@
                    '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
-                 '<p class="master-profile__action"><a class="btn btn--primary" href="#/book/' + esc(m.id) + '" data-sfx="open">' +
-                   esc(t('master.book')) + '</a></p></div>' +
+                 '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p></div>' +
                '</div>' +
                '<div id="worksPane"></div>' +
              '</div>';

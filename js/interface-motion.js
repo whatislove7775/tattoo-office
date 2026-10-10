@@ -67,13 +67,15 @@ function scheduleRailLayout(){
     if(!rail || !footer) return;
     const rentVisible=rent && getComputedStyle(rent).display!=='none';
     const reserve=rentVisible ? rent.offsetHeight+36 : 18;
-    const top=Math.max(innerHeight-24-footer.offsetHeight,rail.getBoundingClientRect().bottom+scrollY+reserve);
+    const stage=document.querySelector('.stage'),inner=document.querySelector('.stage__inner');
+    const naturalBottom=stage && inner && !stage.classList.contains('stage--bare') && !stage.querySelector('.auth-form:not(#feedback-form)') ? stage.getBoundingClientRect().top+scrollY+inner.offsetHeight : 0;
+    const top=Math.max(innerHeight-24-footer.offsetHeight,rail.getBoundingClientRect().bottom+scrollY+reserve,naturalBottom-footer.offsetHeight);
     document.body.style.setProperty('--desktop-footer-top',top+'px');
     document.body.style.setProperty('--desktop-footer-bottom',(top+footer.offsetHeight)+'px');
   });
 }
 const railLayoutObserver=new ResizeObserver(scheduleRailLayout);
-document.querySelectorAll('.rail,.site-bottom .foot,.site-bottom .rent-slider').forEach(el=>railLayoutObserver.observe(el));
+document.querySelectorAll('.rail,.stage__inner,.site-bottom .foot,.site-bottom .rent-slider').forEach(el=>railLayoutObserver.observe(el));
 new MutationObserver(scheduleRailLayout).observe(document.body,{attributes:true,attributeFilter:['class','data-page']});
 addEventListener('resize',scheduleRailLayout);
 scheduleRailLayout();

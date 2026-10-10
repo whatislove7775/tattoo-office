@@ -172,6 +172,7 @@ function paintShell() {
   if (!el) return;
   const en = window.I18N?.get() === "en";
   el.classList.toggle("login--user", !!me);
+  el.classList.toggle("login--admin", me?.role === "admin");
   const logoutButton = document.getElementById("menuLogout");
   logoutButton.hidden = !me;
   logoutButton.onclick = async () => {
@@ -198,8 +199,10 @@ function syncMasters() {
     const c = pub?.content.find((c) => c.id === "master-" + m.id)?.data;
     m.name = c?.title || window.I18N.pick(window.DATA.masters[m.id - 1].name);
     m.featured = c?.featured !== false;
+    m.bookingLink = c?.bookingLink || "";
     const original = window.DATA.masters[m.id - 1];
     original.featured = m.featured;
+    original.bookingLink = m.bookingLink;
     if (c?.title) original.name = { ru: c.title, en: c.title };
     if (c?.body) original.bio = { ru: c.body, en: c.body };
     if (c?.portfolio?.length)
@@ -1190,6 +1193,7 @@ function mountAdmin() {
       try {
         await api("/admin/content/master-" + m.id, "PUT", {
           title: m.name, body: m.bio, specialty: m.specialty,
+          bookingLink: m.bookingLink,
           portfolio: m.portfolio, drafts: m.drafts,
           published: true, featured: input.checked,
         });
@@ -1209,7 +1213,7 @@ function mountAdmin() {
         const m = masters.find((x) => x.id === +b.dataset.editMaster);
         dialogForm(
           "Личное дело мастера",
-          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<label class="check"><input name="featured" type="checkbox" ${m.featured ? "checked" : ""}><span>Показывать на главной</span></label><p class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
+          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${field("bookingLink", "Telegram для записи (https://t.me/имя?text=сообщение)", m.bookingLink, "url")}<p class="small muted">Откроется чат этого мастера. Если текст не указан в ссылке, добавится приветствие для записи.</p>${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<label class="check"><input name="featured" type="checkbox" ${m.featured ? "checked" : ""}><span>Показывать на главной</span></label><p class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
           (d) =>
             api("/admin/content/master-" + m.id, "PUT", {
               ...d,

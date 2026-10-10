@@ -997,6 +997,13 @@ export async function createApp(db) {
   );
   app.put("/api/admin/content/:id", roles("admin"), async (req, res) => {
     if (!/^[\w-]{1,50}$/.test(req.params.id)) fail("Недопустимый ключ");
+    let bookingLink = String(req.body.bookingLink || "").trim();
+    if (bookingLink) {
+      let link;
+      try { link = new URL(bookingLink); } catch { fail("Укажите ссылку на чат Telegram: https://t.me/имя"); }
+      if (bookingLink.length > 2048 || link.protocol !== "https:" || !["t.me","telegram.me"].includes(link.hostname) || link.username || link.password || link.port || !/^\/[a-zA-Z0-9_]{3,64}\/?$/.test(link.pathname) || ["share","addstickers","joinchat","proxy"].includes(link.pathname.replaceAll("/",""))) fail("Укажите ссылку на чат Telegram: https://t.me/имя");
+      bookingLink = link.href;
+    }
     const data = {
       title: String(req.body.title || "").slice(0, 150),
       body: String(req.body.body || "").slice(0, 20000),
@@ -1005,6 +1012,7 @@ export async function createApp(db) {
       published: req.body.published === true,
       featured: /^master-/.test(req.params.id) ? req.body.featured !== false : undefined,
       specialty: String(req.body.specialty || "").slice(0, 150),
+      bookingLink: /^master-/.test(req.params.id) ? bookingLink : undefined,
       portfolio: Array.isArray(req.body.portfolio)
         ? req.body.portfolio.filter((x) => /^tattoo-[1-8]$/.test(x))
         : [],
