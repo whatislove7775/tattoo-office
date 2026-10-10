@@ -47,5 +47,5 @@ new MutationObserver(records=>{
   for(const record of records) for(const node of record.addedNodes) observeCards(node);
 }).observe(document.body,{childList:true,subtree:true});
 reducedMotion.addEventListener('change',()=>{
-  if(reducedMotion.matches) document.getAnimations().forEach(animation=>animation.finish());
+  if(reducedMotion.matches) document.getAnimations().forEach(animation=>{try{animation.finish();}catch{animation.cancel();}});
 });

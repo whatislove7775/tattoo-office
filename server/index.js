@@ -1215,6 +1215,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (reconciling) return;
     reconciling = true;
     try { await app.locals.reconcilePayments(); }
+    catch (error) { console.error("Payment reconciliation:", error.message); }
     finally { reconciling = false; }
   }, 30000);
   paymentTimer.unref();
