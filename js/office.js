@@ -467,7 +467,8 @@ function adminAuthPage() {
 }
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
-    await api('/auth/login','POST',{...d,email:'89615020777@mail.ru',accountType:'admin'});
+    try { await api('/auth/login','POST',{...d,email:'89615020777@mail.ru',accountType:'admin'}); }
+    catch(error) { if(error.message === 'Email или пароль не совпадают') throw new Error('Пароль не совпадает. Проверьте раскладку и регистр.'); throw error; }
     await refresh();
     if (me?.role !== 'admin') {
       await api('/auth/logout','POST');

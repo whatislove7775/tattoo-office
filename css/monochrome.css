@@ -717,3 +717,14 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 .password-toggle {inset-block:0;top:0;bottom:0;right:12px;margin-block:auto;transform:none;translate:none;scale:1;align-self:center;border-radius:8px;background:transparent;box-shadow:none;transition:color 120ms ease;}
 .password-toggle[data-visible="true"] {background:transparent;}
 .password-toggle:active,.password-toggle:focus:not(:focus-visible) {transform:none;translate:none;scale:1;box-shadow:none!important;}
+
+/* Authentication panels end on the same baseline as the desktop footer. */
+@media(min-width:901px) {
+  body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(100svh - 124px);}
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(100svh - 186px);}
+}
+:root .office-feature .password-control input,:root #dialog .password-control input {font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;letter-spacing:0;font-variant-ligatures:none;}
+@media(min-width:901px) {
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {padding-bottom:0;}
+  body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head {margin-bottom:24px;}
+}
