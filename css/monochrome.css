@@ -576,3 +576,17 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 .office-feature #feedback-form { flex:none; }
 .office-feature #feedback-form button[type="submit"] { margin-top:18px; }
 .office-feature .archive-card__body>:last-child,.office-feature .find-card>:last-child { margin-bottom:0; }
+
+/* Location details are independent, compact cards. */
+.office-feature .find-cards { gap:12px;grid-template-rows:auto;align-content:start;border:0;border-radius:0;overflow:visible;background:none;box-shadow:none; }
+.office-feature .find-card { padding:18px 20px;gap:0;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel-2);box-shadow:none; }
+.office-feature .find-card:last-child { border-bottom:1px solid var(--panel-edge); }
+.office-feature .find-card__number { font-size:10px;line-height:1.4;letter-spacing:.08em;color:var(--muted); }
+.office-feature .find-card h3 { font-size:20px;font-weight:500;line-height:1.3;margin:8px 0 6px; }
+.office-feature .find-card p { font-size:13px;line-height:1.5; }
+.office-feature .find-card h3 a { margin:0;padding:0;color:inherit; }
+@media(max-width:900px) {
+  .office-feature .find-cards { grid-template-columns:1fr;gap:10px; }
+  .office-feature .find-card { padding:16px 18px; }
+  .office-feature .find-card h3 { font-size:18px; }
+}
