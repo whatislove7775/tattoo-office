@@ -663,7 +663,7 @@ button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!import
 .password-control input {width:100%;padding-right:52px!important;}
 .password-toggle {position:absolute;right:12px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:28px;height:28px;min-height:0!important;padding:4px;border:0;background:transparent;box-shadow:none;color:var(--ink-2);}
 .password-toggle svg {width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;}
-.password-toggle[aria-pressed="true"] {color:var(--ink);background:var(--panel-2);border-radius:8px;}
+.password-toggle[data-visible="true"] {color:var(--ink);background:var(--panel-2);border-radius:8px;}
 .auth-switch {display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;}
 .office-feature .auth-photo .auth-image {left:-6.05%;top:-11.73%;width:112.74%;height:123.46%;}
 .rules-full {margin-top:24px;padding:16px 0 0;}
