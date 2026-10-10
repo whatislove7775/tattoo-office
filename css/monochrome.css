@@ -414,3 +414,18 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
   .menu__title,body[data-page="admin"] .menu__title { width:var(--menu-tab-width,115px); }
   body[data-page="admin"] .menu__list { max-height:max(160px,calc(100dvh - 395px));overflow-y:auto;padding-right:2px; }
 }
+
+.office-feature .auth-form--role { display:flex;flex-direction:column;width:min(100%,340px);max-width:340px;min-height:calc(100svh - 220px);margin:20px auto 0; }
+.auth-illustration { display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:9px;align-items:end;margin-bottom:16px; }
+.auth-illustration .auth-photo { margin:0; }
+.office-feature .auth-caption { margin:0;font-size:10px;line-height:1.25;color:var(--ink); }
+.office-feature .auth-form--role .field { margin-bottom:16px; }
+.office-feature .auth-form--role .field>span { font-size:16px; }
+.office-feature .auth-form--role .field input { min-height:42px;border-radius:24px;padding:10px 16px;font-size:15px; }
+.office-feature .auth-form--role .auth-switch { margin:0;text-align:center;font-size:11px; }
+.auth-role-actions { display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:auto;padding-top:36px; }
+.office-feature .auth-role-actions button[type="submit"] { width:78%;min-height:42px;margin:0; }
+@media(max-width:900px) {
+  .office-feature .auth-form--role { min-height:calc(100svh - 190px);margin-top:24px; }
+  .auth-illustration { grid-template-columns:minmax(0,1fr) 90px; }
+}
