@@ -711,3 +711,9 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 :root[data-theme="dark"] .rent-slider__label {text-shadow:none;}
 /* The copyright row can use the space below the footer mark. */
 .site-bottom .foot .foot__copy {padding-right:0;margin-right:-24px;column-gap:8px;}
+/* Keep the visibility toggle in the same slot for both input types. */
+.password-control {display:grid;grid-template-columns:minmax(0,1fr);align-items:center;}
+.password-control input {display:block;grid-area:1/1;}
+.password-toggle {inset-block:0;top:0;bottom:0;right:12px;margin-block:auto;transform:none;translate:none;scale:1;align-self:center;border-radius:8px;background:transparent;box-shadow:none;transition:color 120ms ease;}
+.password-toggle[data-visible="true"] {background:transparent;}
+.password-toggle:active,.password-toggle:focus:not(:focus-visible) {transform:none;translate:none;scale:1;box-shadow:none!important;}
