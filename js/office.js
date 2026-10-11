@@ -8,7 +8,7 @@ const esc = (s) =>
         c
       ],
   );
-const managerLink = (label = "Написать Екатерине") => `<a href="https://t.me/artasimnsupport" target="_blank" rel="noopener noreferrer">${label}</a>`;
+const managerLink = (label = "Написать в поддержку") => `<a href="https://t.me/artasimnsupport" target="_blank" rel="noopener noreferrer">${label}</a>`;
 const money = (n) =>
   new Intl.NumberFormat("ru-RU", {
     style: "currency",
@@ -358,7 +358,7 @@ function masterPage(id) {
   if (!m) return win("Личное дело", "Мастер не найден", "masters");
   return win(
     "Masters / " + m.name,
-    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br>${managerLink("Написать менеджеру ↗")}</div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p data-help class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
+    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br>${managerLink()}</div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p data-help class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
     "masters",
   );
 }
@@ -433,7 +433,7 @@ function findPage() {
 
 3. Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.
 
-Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a><a class="location-map__credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink("Екатерина")}</h3><p>Менеджер студии · все вопросы в Telegram.</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a><a class="location-map__credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -450,13 +450,13 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
     </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>Поздняя отмена — ${s.lateCancellation === "review" ? "по решению администратора" : "по регламенту студии"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
-    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink("Екатерина в Telegram")}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text">${esc(s.rules)}</div><small>Версия ${esc(s.rulesVersion)}</small></details>
+    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text">${esc(s.rules)}</div><small>Версия ${esc(s.rulesVersion)}</small></details>
   </section>`);
 }
 
 function aboutPage() {
   const body=pub.content.find(c=>c.id==="about")?.data?.body||"Tattoo Office — тату-студия и рабочее пространство для мастеров. У каждого здесь своё дело, а у пространства — общий ритм, порядок и место для новых идей.";
-  return win("Tattoo Office",`<div class="brand-story"><div class="brand-story__copy"><h2>Tattoo Office</h2><p>${esc(body)}</p><div class="brand-story__actions">${managerLink("Связаться с менеджером ↗")}<a class="chrome" href="#/masters">Познакомиться с мастерами →</a><a class="chrome" href="#/interior">Посмотреть пространство →</a></div></div><img src="assets/interior/3.jpg" alt="Рабочее пространство Tattoo Office"></div><a class="club-teaser" href="#/club"><span><b>The Tattoo Office Private Club</b><small>Клуб постоянных мастеров с особыми условиями аренды.</small></span><span aria-hidden="true">›</span></a>`);
+  return win("Tattoo Office",`<div class="brand-story"><div class="brand-story__copy"><h2>Tattoo Office</h2><p>${esc(body)}</p><div class="brand-story__actions">${managerLink()}<a class="chrome" href="#/masters">Познакомиться с мастерами →</a><a class="chrome" href="#/interior">Посмотреть пространство →</a></div></div><img src="assets/interior/3.jpg" alt="Рабочее пространство Tattoo Office"></div><a class="club-teaser" href="#/club"><span><b>The Tattoo Office Private Club</b><small>Клуб постоянных мастеров с особыми условиями аренды.</small></span><span aria-hidden="true">›</span></a>`);
 }
 function clubPage() {
   const rates = pub.settings.rates;
@@ -1503,7 +1503,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии. Если нужен ответ, оставьте способ связи. Не указывайте медицинские или платёжные данные.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<button class="chrome" type="submit">Отправить записку →</button><p class="manager-contact">Связь и все вопросы — ${managerLink("Екатерина в Telegram")}.</p></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии. Если нужен ответ, оставьте способ связи. Не указывайте медицинские или платёжные данные.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<button class="chrome" type="submit">Отправить записку →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
         );
         mount = () => {
           if (path[0] === "book") {

@@ -1028,3 +1028,8 @@ a>.ui-icon {flex:none;}
 .admin-content .admin-profile .password-control {width:100%;}
 .admin-content .admin-profile form>button[type="submit"] {align-self:flex-start;min-width:0;width:auto;max-width:100%;white-space:nowrap;margin-top:6px;padding:12px 20px;}
 @media(max-width:730px) {.admin-content .admin-profile {grid-template-columns:minmax(0,1fr);gap:18px;}}
+
+@media(min-width:901px) {
+  .brand {height:auto;padding:28px;align-items:center;}
+  .brand__logo img {display:block;}
+}
