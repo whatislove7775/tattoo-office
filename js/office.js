@@ -108,6 +108,20 @@ function go(path) {
 function head(title, back = "") {
   return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${esc(title)}</h1>${back ? `<a class="back" href="#/${back}">← Назад</a>` : ""}</div>`;
 }
+function icon(name) {
+  const paths = {gift:'M20 12v8H4v-8M2 7h20v5H2zM12 7v13M12 7H7.5A2.5 2.5 0 1 1 10 4.5L12 7zm0 0h4.5A2.5 2.5 0 1 0 14 4.5L12 7z',receipt:'M5 3v18l3-2 4 2 4-2 3 2V3l-3 2-4-2-4 2-3-2zM9 9h6M9 13h6'};
+  return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || ''}"/></svg>`;
+}
+function catalogHelp(item) {
+  const descriptions = {
+    "Защитная плёнка": "Защитная плёнка для сеанса. Добавьте нужное количество в штуках.",
+    "Набор расходников": "Комплект расходных материалов для сеанса. Состав набора уточните у администратора.",
+    "Сборка места": "Помощь с подготовкой рабочего места перед сеансом.",
+    "Разборка места": "Помощь с разборкой рабочего места после сеанса.",
+  };
+  const text = descriptions[item.name] || (item.kind === "service" ? "Дополнительная услуга к аренде рабочего места. Детали уточните у администратора." : "Дополнительный расходный материал для сеанса. Количество указывается в штуках.");
+  return `<span data-help data-help-inline data-help-label="${esc(item.name)}">${esc(text)}</span>`;
+}
 function win(title, body, back = "") {
   return `<section class="window">${head(title, back)}${body}</section>`;
 }
@@ -412,7 +426,7 @@ function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."><span>Увеличить карту</span></button><figcaption><span class="location-map__legend"><i></i> Пешком от метро до дома 24</span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии скоро появятся здесь."}</p></article></div></div><section class="walking-route"><span class="eyebrow">ОТ МЕТРО ПЕШКОМ</span><ol><li>Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.</li><li>У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».</li><li>Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.</li></ol><p>Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</p></section><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg?v=2" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."><span>Увеличить карту</span></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро</span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${s.email?`<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`:"Пишите нам заранее"}</h3><p>${s.phone?esc(s.phone):"Контакты студии скоро появятся здесь."}</p></article></div></div><section class="walking-route"><span class="eyebrow">ОТ МЕТРО · 1–2 МИНУТЫ ПЕШКОМ</span><ol><li>Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.</li><li>У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».</li><li>Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.</li></ol><p>Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</p></section><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -500,17 +514,17 @@ function mountAuth(signup) {
     storage.set("returnTo", "cabinet");
   });
 }
-const bookingDeposit = () => me?.role === "resident" && me.depositWaived ? 0 : pub.settings.deposit;
+const bookingDeposit = () => me?.loyalty?.freeNext ? 0 : me?.role === "resident" && me.depositWaived ? 0 : pub.settings.deposit;
 function receipt() {
   const s = pub.settings,
-    rate = s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
+    rate = me?.loyalty?.freeNext ? 0 : s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
     extras = draft.extras.reduce(
       (a, x) =>
         a + (pub.catalog.find((c) => c.id === x.id)?.price || 0) * x.qty,
       0,
     ),
     r = pub.resources.find((x) => x.id === draft.resourceId);
-  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>Тариф</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
+  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
 }
 function calendarHTML() {
   const [y, m] = month.split("-").map(Number),
@@ -542,7 +556,7 @@ function bookingPage() {
       .join("")}</div>`;
   }
   if (draft.step === 2)
-    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span>${esc(x.name)}<br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
+    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
     const rate =
         s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
@@ -700,14 +714,14 @@ async function cabinetPage() {
     body =
       data.bookings
         .filter((b) => !active.includes(b))
-        .map((b) => bookingItem(b, []))
+        .map((b) => bookingItem(b, data.payments))
         .join("") || '<div class="empty">Здесь будет история сеансов.</div>';
   if (cabTab === "balance")
     body = `<p data-help class="small muted">Баланс используется автоматически для предоплаты. Это учёт внесённых средств, а не банковский счёт.</p><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>${data.ledger.map((x) => `<tr><td>${dateLabel(x.created_at)}</td><td>${esc(x.description)}</td><td>${x.amount > 0 ? "+" : ""}${money(x.amount)}</td></tr>`).join("")}</tbody></table></div>${!data.ledger.length ? '<div class="empty">Операций пока нет.</div>' : ""}`;
   if (cabTab === "notifications")
     body = inbox.notifications.length
       ? inbox.notifications
-          .map(notificationItem)
+          .map((n) => notificationItem(n, data))
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
@@ -729,7 +743,7 @@ async function cabinetPage() {
         : "";
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><span class="eyebrow">ЛИЧНОЕ ДЕЛО</span><h2 style="margin-top:10px">${esc(me.name)}</h2><p class="small muted">${roleName[me.role]} · ${esc(me.profile.status || "Снова в офисе.")}</p></div><button id="logout" class="small cabinet-action">Выйти</button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div><div class="stamp-card" style="${accent}"><div class="row between"><span>Книжка посещений</span><span class="small muted">${me.sequence ? ((me.sequence - 1) % 20) + 1 : 0} / 20 · цикл ${Math.floor(Math.max(0, me.sequence - 1) / 20) + 1}</span></div><div class="stamps">${Array.from({ length: 20 }, (_, i) => `<span class="stamp ${i < (me.sequence ? ((me.sequence - 1) % 20) + 1 : 0) ? "used" : ""}">${String(i + 1).padStart(2, "0")}</span>`).join("")}</div></div><div class="tabs">${[
+    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><span class="eyebrow">ЛИЧНОЕ ДЕЛО</span><h2 style="margin-top:10px">${esc(me.name)}</h2><p class="small muted">${roleName[me.role]} · ${esc(me.profile.status || "Снова в офисе.")}</p></div><button id="logout" class="small cabinet-action">Выйти</button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -743,10 +757,22 @@ async function cabinetPage() {
       .join("")}</div><div class="cabinet-content">${body}</div></div>`,
   );
 }
-function notificationItem(n) {
+function loyaltyCard(loyalty, accent) {
+  const progress = loyalty?.progress || 0, cycle = loyalty?.cycle || 1;
+  return `<section class="stamp-card" style="${accent}"><div class="loyalty-heading"><div><h3>Каждое 20-е посещение — бесплатно</h3><p>${loyalty?.reserved ? "Бесплатное место уже забронировано" : progress === 19 ? "Следующая аренда места — в подарок" : `${19-progress} посещений до бесплатного места`}</p></div><span class="loyalty-counter">${progress}<small>/ 19</small></span></div><div class="stamps" aria-label="${progress} завершённых посещений в цикле ${cycle}">${Array.from({length:20},(_,i)=>`<span class="stamp ${i<progress?"used":""} ${i===19?"stamp--gift":""}" aria-label="${i===19?"20-е посещение бесплатно":`Посещение ${i+1}${i<progress?" завершено":""}`}">${i===19 ? icon("gift") : i<progress ? "✓" : String(i+1).padStart(2,"0")}</span>`).join("")}</div><div class="loyalty-foot"><span>20-е — в подарок</span><span class="small muted">Цикл ${cycle}</span></div><p data-help>Считаем завершённые посещения. Каждая 20-я аренда места бесплатная по выбранному тарифу. Расходники и дополнительные услуги оплачиваются отдельно. Отменённые брони не считаются.</p></section>`;
+}
+function placePhoto(booking) {
+  const index = pub.resources.findIndex(r=>r.id===booking.resource_id);
+  return `assets/interior/${[1,4,4,2][Math.max(0,index)%4]}.jpg`;
+}
+function notificationItem(n, data) {
   const lines = String(n.message || "").split("\n").map((line) => line.trim()).filter(Boolean);
   const text = lines.filter((line) => !/^https?:\/\/\S+\/#\/cabinet\/?$/.test(line));
-  return `<article class="note-paper cabinet-notification"><span class="eyebrow">${dateLabel(n.created_at)}</span><h3>${esc(text[0] || "Уведомление")}</h3>${text.slice(1).map((line) => `<p>${esc(line)}</p>`).join("")}</article>`;
+  const code = text.join(" ").match(/Запись ([a-f0-9]{8})\b/i)?.[1];
+  const matches = code ? data.bookings.filter(b=>b.id.startsWith(code)) : [];
+  const booking = matches.length === 1 ? matches[0] : null;
+  const payments = booking ? data.payments.filter(p=>p.booking_id===booking.id&&p.status==='paid') : [];
+  return `<article class="note-paper cabinet-notification ${booking?"cabinet-notification--booking":""}">${booking?`<img class="notification-photo" src="${placePhoto(booking)}" alt="${esc(booking.resource_name)}" loading="lazy">`:""}<div><span class="eyebrow">${dateLabel(n.created_at)}</span><h3>${esc(text[0] || "Уведомление")}</h3>${booking?`<p class="notification-place">${esc(booking.resource_name)}</p><p>${dateLabel(booking.starts_at)} · ${timeLabel(booking.starts_at)}—${timeLabel(booking.ends_at)} (МСК)</p><p>До ${booking.tariff} ч · ${money(booking.total)}${booking.policy?.loyaltyFree?" · бесплатная аренда":""}</p>${payments.map(p=>`<button type="button" class="receipt-link" data-payment-document="${p.id}">${icon("receipt")} ${p.kind==='deposit'?"Предоплата":"Оплата места"} ${money(p.amount)} · ${pub.settings.mode==='test'?'Чек (тест)':'Чек'}</button>`).join("")}`:text.slice(1).map((line)=>`<p>${esc(line)}</p>`).join("")}</div></article>`;
 }
 function bookingItem(b, payments) {
   const payment = payments.find(
@@ -766,6 +792,11 @@ function mountCabinet() {
         render();
       }),
   );
+  $$("[data-payment-document]").forEach(button=>button.onclick=async()=>{
+    const {payment:p, test:remoteTest, mode, provider} = await api("/payments/"+button.dataset.paymentDocument);
+    const test = remoteTest || mode === "test";
+    modal(`<h2>${test?"Тестовая оплата":"Подтверждение оплаты"}</h2><p>${provider==='yookassa'?"ЮKassa":"Tattoo Office"} · ${money(p.amount)}</p><p>${p.kind==='deposit'?"Предоплата рабочего места":"Оплата рабочего места"}</p><p class="small muted">№ ${esc(p.checkout_id||p.id)}</p><p>${test?"Тестовая операция: деньги не списывались. Фискальный чек не сформирован.":"Фискальный чек пока недоступен на сайте. После регистрации касса отправит его на электронную почту плательщика."}</p>`);
+  });
   $("#logout").onclick = async () => {
     await api("/auth/logout", "POST");
     await refresh();
@@ -900,7 +931,7 @@ async function adminPage() {
       ["Позиция", "Тип", "Цена", "Остаток", ""],
       a.catalog.map(
         (x) =>
-          `<tr><td>${esc(x.name)} ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Расходник" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? x.stock : "—"}</td><td><button data-edit-catalog="${x.id}">Изменить</button></td></tr>`,
+          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Расходник" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? x.stock : "—"}</td><td><button data-edit-catalog="${x.id}">Изменить</button></td></tr>`,
       ),
     )}`;
   if (adminTab === "finance")
@@ -1325,6 +1356,7 @@ async function render() {
         };
         break;
       case "booking":
+        if (me) me.loyalty = (await api("/bookings")).loyalty;
         if (draft.step === 1)
           availability = await api(
             `/availability?date=${draft.date}&duration=${draft.duration}`,
@@ -1398,7 +1430,7 @@ async function render() {
         break;
       case "find":
         html = findPage();
-        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg",caption:"Tattoo Office · Кирочная, 24"}],0); };
+        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg?v=2",caption:"Tattoo Office · Кирочная, 24"}],0); };
         break;
       case "safety":
         html = safetyPage();

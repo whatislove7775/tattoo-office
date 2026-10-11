@@ -549,3 +549,33 @@ test('resident cash exception is administrator-controlled, confirms without bala
   assert.equal((await request('/admin/users/'+u.id,'PATCH',{role:'guest'},admin)).status,200);
   assert.equal((await db.query('SELECT deposit_waived FROM users WHERE id=$1',[u.id])).rows[0].deposit_waived,false);
 });
+
+test('20th completed visit: one free rental, extras payable, cancellation restores bonus and next cycle resets', async()=>{
+  const cookie=await register('loyalty@test.invalid');
+  const u=(await db.query("SELECT id FROM users WHERE email='loyalty@test.invalid'")).rows[0];
+  for(let i=0;i<19;i++) await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,now()-interval '30 days',now()-interval '29 days',3,200000,200000,'completed')",[randomUUID(),u.id,pub.resources[0].id]);
+  assert.equal((await request('/bookings','GET',null,cookie)).data.loyalty.freeNext,true);
+  const a=await request('/bookings','POST',booking(pub.resources[0].id,tomorrow(100)),cookie);
+  assert.equal(a.status,201);assert.equal(a.data.paymentId,null);
+  const first=(await db.query('SELECT * FROM bookings WHERE id=$1',[a.data.bookingId])).rows[0];
+  assert.equal(first.total,0);assert.equal(first.deposit,0);assert.equal(first.policy.loyaltyFree,true);
+  const second=await request('/bookings','POST',booking(pub.resources[1].id,tomorrow(101)),cookie);
+  assert.equal(second.status,201);
+  assert.equal((await db.query('SELECT rate FROM bookings WHERE id=$1',[second.data.bookingId])).rows[0].rate,200000);
+  assert.equal((await request('/bookings/'+first.id+'/cancel','POST',{},cookie)).status,200);
+  assert.equal((await request('/bookings','GET',null,cookie)).data.loyalty.freeNext,true);
+  const service=pub.catalog.find(x=>x.kind==='service');
+  const bonus=await request('/bookings','POST',{...booking(pub.resources[2].id,tomorrow(102)),extras:[{id:service.id,qty:1}]},cookie);
+  assert.equal(bonus.status,201);assert.equal(bonus.data.paymentId,null);
+  let b=(await db.query('SELECT * FROM bookings WHERE id=$1',[bonus.data.bookingId])).rows[0];
+  assert.equal(b.total,service.price);assert.equal(b.rate,0);
+  await db.query("UPDATE bookings SET starts_at=now()-interval '4 hours',ends_at=now()-interval '1 hour' WHERE id=$1",[b.id]);
+  const invoice=await request('/admin/bookings/'+b.id+'/invoice','POST',{duration:6},admin);
+  assert.equal(invoice.status,200);
+  b=(await db.query('SELECT * FROM bookings WHERE id=$1',[b.id])).rows[0];
+  assert.equal(b.rate,0);assert.equal(b.total,service.price);
+  assert.equal((await db.query('SELECT amount FROM payments WHERE id=$1',[invoice.data.paymentId])).rows[0].amount,service.price);
+  await db.query("UPDATE bookings SET status='completed' WHERE id=$1",[b.id]);
+  const state=(await request('/bookings','GET',null,cookie)).data.loyalty;
+  assert.equal(state.progress,0);assert.equal(state.cycle,2);assert.equal(state.freeNext,false);
+});

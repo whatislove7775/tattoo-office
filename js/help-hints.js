@@ -35,7 +35,7 @@ function enhance(root){
     const text=helper.textContent.trim();
     if(!text){helper.remove();continue;}
     const button=document.createElement('button');
-    button.type='button';button.className='help-alert';button.setAttribute('aria-label','Пояснение');
+    button.type='button';button.className='help-alert';button.setAttribute('aria-label',helper.dataset.helpLabel?'Пояснение: '+helper.dataset.helpLabel:'Пояснение');
     button.setAttribute('aria-describedby',popup.id);button.setAttribute('aria-expanded','false');
     button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path/></svg>';
     const morph=createMorph(button.querySelector('path'),alertPath,{reducedMotion:'user'});
@@ -48,7 +48,8 @@ function enhance(root){
     button.addEventListener('click',e=>{if(current===item&&(touch||e.detail===0))hide();else show(item);});
     const prev=helper.previousElementSibling;
     // Keep labels valid: a help button must not toggle the associated input.
-    if(prev?.matches('h2,h3')){prev.classList.add('has-help');prev.append(button);helper.remove();}
+    if(helper.hasAttribute('data-help-inline')){button.classList.add('help-alert--small');helper.replaceWith(button);}
+    else if(prev?.matches('h2,h3')){prev.classList.add('has-help');prev.append(button);helper.remove();}
     else if(prev?.matches('.field')){const label=prev.querySelector(':scope>span');
       if(label){label.classList.add('has-help');label.append(button);helper.remove();}
       else helper.replaceWith(button);

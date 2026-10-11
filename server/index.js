@@ -235,6 +235,10 @@ export async function createApp(db) {
     );
   };
   const expire = expireReservations;
+  const loyalty = async (q, userId) => {
+    const row = await one(q, "SELECT count(*) FILTER (WHERE status='completed')::int AS completed, count(*) FILTER (WHERE status IN ('pending','confirmed','invoiced','cancel_requested') AND policy->>'loyaltyFree'='true')::int AS reserved FROM bookings WHERE user_id=$1", [userId]);
+    return {completed:row.completed, progress:row.completed % 20, cycle:Math.floor(row.completed / 20)+1, freeNext:row.completed % 20 === 19 && row.reserved === 0, reserved:row.reserved > 0};
+  };
   const confirmed = async (q, b) => {
     const u = await one(
       q,
@@ -518,10 +522,11 @@ export async function createApp(db) {
           qty,
         });
       }
-      const rate = s.rates[u.role][duration],
+      const bonus = await loyalty(q, u.id);
+      const rate = bonus.freeNext ? 0 : s.rates[u.role][duration],
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
         cash = u.role === "resident" && u.deposit_waived,
-        deposit = cash ? 0 : s.deposit,
+        deposit = cash || bonus.freeNext ? 0 : Math.min(s.deposit, total),
         used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
@@ -549,6 +554,7 @@ export async function createApp(db) {
           rates: s.rates[u.role],
           rulesVersion: s.rulesVersion,
           paymentMethod: cash ? "cash" : "online",
+          loyaltyFree: bonus.freeNext,
         }),
         id,
       ]);
@@ -581,6 +587,7 @@ export async function createApp(db) {
   );
   app.get("/api/bookings", auth, async (req, res) =>
     res.json({
+      loyalty: await loyalty(db, req.user.id),
       bookings: (
         await db.query(
           "SELECT b.*,r.name AS resource_name FROM bookings b JOIN resources r ON r.id=b.resource_id WHERE b.user_id=$1 ORDER BY b.starts_at DESC",
@@ -931,7 +938,7 @@ export async function createApp(db) {
       const u = await one(q, "SELECT * FROM users WHERE id=$1", [b.user_id]),
         s = await settings(q),
         rate =
-          duration === b.tariff
+          b.policy.loyaltyFree ? 0 : duration === b.tariff
             ? b.rate
             : (b.policy.rates ||
                 s.rates[
@@ -1099,8 +1106,8 @@ export async function createApp(db) {
       if (await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='final' AND status='pending' AND checkout_id IS NOT NULL", [b.id])) fail("Счёт уже передан в кассу. Обратитесь к администратору для изменения", 409);
       const s = await settings(q),
         rates = b.policy.rates || s.rates[req.user.role],
-        rate = rates?.[h];
-      if (!rate) fail("Тариф недоступен");
+        rate = b.policy.loyaltyFree ? 0 : rates?.[h];
+      if (rate === undefined) fail("Тариф недоступен");
       const total = rate + b.extras.reduce((a, x) => a + x.qty * x.price, 0);
       await q.query(
         "UPDATE bookings SET tariff=$1,rate=$2,total=$3 WHERE id=$4",
