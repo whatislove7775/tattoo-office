@@ -1072,3 +1072,12 @@ a>.ui-icon {flex:none;}
 :root[data-theme="dark"] :is(#dialog .close,.modal__x):focus-visible {outline-offset:0;}
 :root[data-theme="dark"] .office-feature .tabs button,:root[data-theme="dark"] .office-feature .steps li.active b,:root[data-theme="dark"] #dialog button[type="submit"],:root[data-theme="dark"] .office-feature button[type="submit"] {box-shadow:0 3px 8px #0003!important;}
 :root[data-theme="dark"] .office-initial {box-shadow:0 3px 8px #0002;}
+/* Keep the mobile admin sign-in group centered inside its panel. */
+@media(max-width:900px) {
+  .office-feature .window>#admin-auth-form {margin: auto; padding-block:24px; text-align:center;}
+  #admin-auth-form .has-help {justify-content:center;}
+  #admin-auth-form .field>span {text-align:center;}
+}
+@media(max-width:900px) {
+  body[data-page] #stage>.stage__inner>div:has(#admin-auth-form) {display:flex;flex-direction:column;flex:1 0 auto;}
+}
