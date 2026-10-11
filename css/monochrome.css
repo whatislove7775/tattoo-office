@@ -932,3 +932,9 @@ a>.ui-icon {flex:none;}
   .menu__studio a.menu__club {background:#171717;border-color:#171717;color:#fff;}
   .menu__club svg {display:block;flex:none;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
 }
+
+/* Space options share one popup surface, without a nested selected/focus plate. */
+.office-picker--space {padding:0;background:var(--control-fill);overflow:hidden;}
+.office-picker--space>button,.office-picker--space>button[aria-selected="true"],.office-picker--space>button:hover,.office-picker--space>button:focus,:root[data-theme="dark"] .office-picker--space>button[aria-selected="true"] {padding:12px 34px 12px 14px;border:0;border-radius:0;background:transparent!important;box-shadow:none!important;outline:none!important;color:var(--ink);text-shadow:none;}
+.office-picker--space:has(>button:focus-visible) {border-color:var(--ink-3);}
+.office-picker--space>button[aria-selected="true"]::after {right:14px;}
