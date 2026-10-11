@@ -172,6 +172,7 @@ function paintShell() {
   if (!el) return;
   const en = window.I18N?.get() === "en";
   el.classList.toggle("login--user", !!me);
+  el.classList.toggle("login--guest", !me);
   el.classList.toggle("login--admin", me?.role === "admin");
   const logoutButton = document.getElementById("menuLogout");
   logoutButton.hidden = !me;
@@ -185,7 +186,7 @@ function paintShell() {
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
     ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a><small>${me.role === "admin" ? "" : roleName[me.role]}</small></span></div>`
-    : `<div class="login__row"><span class="login__label">login:</span><span class="login__links"><a href="#/login/customer">CUSTOMER</a><span aria-hidden="true">/</span><a href="#/login/master">TATTOO MASTER</a></span></div>`;
+    : `<a class="login__master" href="#/login/master">Login as tattoo master</a>`;
   if (me) el.querySelector(".who").append(logoutButton);
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({

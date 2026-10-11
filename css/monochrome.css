@@ -764,6 +764,11 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .rail .login--admin .who .menu-logout {width:24px;height:24px;}
 }
 .master-profile__action small {display:block;margin-top:10px;font-size:12px;}
+.login__master {display:block;width:100%;white-space:nowrap;text-align:center;text-decoration:none;font-size:15px;line-height:1.4;color:var(--ink);}
+@media(min-width:901px) {
+  .rail .login.login--guest {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;min-height:58px;display:flex;align-items:center;}
+  .rail .login__master {font-size:clamp(13px,1.1vw,16px);}
+}
 /* Desktop chrome stays in the viewport; content scrolls inside its panel. */
 @media(min-width:901px) {
   body {height:100dvh;min-height:100dvh;overflow:hidden;}
