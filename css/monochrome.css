@@ -903,3 +903,16 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 
 .photo-viewer:has(img[src*="location-map.svg"]) {width:min(900px,96vw);}
 .photo-viewer:has(img[src*="location-map.svg"]) .photo-viewer__stage img {width:100%;height:auto;max-height:90dvh;object-fit:contain;}
+
+/* Compact studio links occupy the free corner of the mobile navigation. */
+.menu__studio {display:none;}
+@media(max-width:900px) {
+  .mobile-menu-open .menu__studio {position:absolute;z-index:2;right:12px;top:calc(var(--mobile-menu-notch-depth,46px) + 7px);display:flex;flex-direction:column;gap:4px;}
+  .menu__studio a {display:block;min-width:94px;padding:5px 8px;border:1px solid var(--panel-edge);border-radius:10px;background:var(--control-fill);color:var(--ink);font-size:12px;line-height:1.2;text-align:center;text-decoration:none;white-space:nowrap;}
+}
+.office-feature .walking-route {padding:0;border:0;background:none;}
+.walking-route .eyebrow {display:inline-flex;align-items:center;gap:8px;}
+.help-tooltip {white-space:pre-line;}
+
+.foot__manager {display:inline-block;margin-top:6px;font-size:10px;color:var(--ink-2);text-decoration:underline;text-underline-offset:2px;}
+.manager-contact {margin-top:18px;font-size:13px;line-height:1.5;color:var(--ink-2);}

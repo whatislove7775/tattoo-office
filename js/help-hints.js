@@ -39,13 +39,13 @@ function enhance(root){
     button.setAttribute('aria-describedby',popup.id);button.setAttribute('aria-expanded','false');
     button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path/></svg>';
     const morph=createMorph(button.querySelector('path'),alertPath,{reducedMotion:'user'});
-    const item={button,morph,text};let touch=false;
+    const item={button,morph,text},clickOnly=helper.dataset.helpTrigger==='click';let touch=false;
     button.addEventListener('pointerdown',e=>{touch=e.pointerType==='touch';});
-    button.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')show(item);});
-    button.addEventListener('pointerleave',later);
-    button.addEventListener('focus',()=>{if(!touch&&button.matches(':focus-visible'))show(item);});
+    button.addEventListener('pointerenter',e=>{if(!clickOnly&&e.pointerType!=='touch')show(item);});
+    button.addEventListener('pointerleave',()=>{if(!clickOnly)later();});
+    button.addEventListener('focus',()=>{if(!clickOnly&&!touch&&button.matches(':focus-visible'))show(item);});
     button.addEventListener('blur',hide);
-    button.addEventListener('click',e=>{if(current===item&&(touch||e.detail===0))hide();else show(item);});
+    button.addEventListener('click',e=>{if(current===item&&(clickOnly||touch||e.detail===0))hide();else show(item);});
     const prev=helper.previousElementSibling;
     // Keep labels valid: a help button must not toggle the associated input.
     if(helper.hasAttribute('data-help-inline')){button.classList.add('help-alert--small');helper.replaceWith(button);}
