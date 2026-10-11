@@ -186,7 +186,7 @@ function paintShell() {
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
     ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a><small>${me.role === "admin" ? "" : roleName[me.role]}</small></span></div>`
-    : `<a class="login__master" href="#/login/master">Login as tattoo master</a>`;
+    : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
 }
 const masters = Array.from({ length: 10 }, (_, i) => ({
