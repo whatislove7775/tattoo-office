@@ -464,6 +464,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
 @keyframes officePageIn { from { opacity:0;transform:translateY(4px); } to { opacity:1;transform:none; } }
 @media(max-width:900px) {
   body[data-page="master"] .section-head .crumbs__current { display:none; }
+  body[data-page="master"] .section-head:has(.crumbs) .crumbs {min-height:0;}
   body[data-page="master"] .section-head { margin-bottom:18px;row-gap:12px; }
   .master { gap:24px; }
   .master-profile { display:grid;grid-template-columns:108px minmax(0,1fr);gap:16px;align-items:start; }
