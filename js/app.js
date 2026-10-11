@@ -219,6 +219,7 @@
     }
     var w = header.clientWidth;
     var h = brand.offsetHeight;
+    document.documentElement.style.setProperty("--desktop-brand-height", h + "px");
     var a = fringe.offsetHeight;
     var l = brand.offsetWidth;
     var r = 26;

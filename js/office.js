@@ -766,7 +766,8 @@ async function cabinetPage() {
 }
 function loyaltyCard(loyalty, accent) {
   const progress = loyalty?.progress || 0, cycle = loyalty?.cycle || 1;
-  return `<section class="stamp-card" style="${accent}"><div class="loyalty-heading"><div><h3>Каждое 20-е посещение — бесплатно</h3><p>${loyalty?.reserved ? "Бесплатное место уже забронировано" : progress === 19 ? "Следующая аренда места — в подарок" : `${19-progress} посещений до бесплатного места`}</p></div><span class="loyalty-counter">${progress}<small>/ 19</small></span></div><div class="stamps" aria-label="${progress} завершённых посещений в цикле ${cycle}">${Array.from({length:20},(_,i)=>`<span class="stamp ${i<progress?"used":""} ${i===19?"stamp--gift":""}" aria-label="${i===19?"20-е посещение бесплатно":`Посещение ${i+1}${i<progress?" завершено":""}`}">${i===19 ? icon("gift") : i<progress ? "✓" : String(i+1).padStart(2,"0")}</span>`).join("")}</div><div class="loyalty-foot"><span>20-е — в подарок</span><span class="small muted">Цикл ${cycle}</span></div><p data-help data-help-for=".loyalty-heading h3">Считаем завершённые посещения. Каждая 20-я аренда места бесплатная по выбранному тарифу. Расходники и дополнительные услуги оплачиваются отдельно. Отменённые брони не считаются.</p></section>`;
+  const stamps = Array.from({length:19},(_,i)=>`<span class="stamp ${i<progress?"used":""}" aria-label="Посещение ${i+1}${i<progress?" завершено":""}">${i<progress?"✓":String(i+1).padStart(2,"0")}</span>`).join("");
+  return `<section class="stamp-card" style="${accent}"><div class="loyalty-heading"><div><h3>Каждое 20-е посещение — бесплатно</h3><p>${loyalty?.reserved ? "Бесплатное место уже забронировано" : progress === 19 ? "Следующая аренда места — в подарок" : `${19-progress} посещений до бесплатного места`}</p></div><span class="loyalty-counter">${progress}<small>/ 19</small></span></div><div class="stamps" aria-label="${progress} завершённых посещений в цикле ${cycle}">${stamps}<button class="stamp stamp--gift" type="button" id="loyalty-gift" aria-label="20-е посещение: условия бесплатной аренды" aria-haspopup="dialog">${icon("gift")}</button></div><div class="loyalty-foot"><span class="small muted">Цикл ${cycle}</span></div></section>`;
 }
 function placePhoto(booking) {
   const index = pub.resources.findIndex(r=>r.id===booking.resource_id);
@@ -792,6 +793,7 @@ function mountCabinet() {
     mountAuth(false);
     return;
   }
+  if ($("#loyalty-gift")) $("#loyalty-gift").onclick = () => modal(`<h2>20-е посещение — бесплатно</h2><p>После 19 завершённых посещений следующая аренда места бесплатна по выбранному тарифу.</p><p>Расходники и дополнительные услуги оплачиваются отдельно. Отменённые брони не считаются.</p>`);
   $$("[data-cabtab]").forEach(
     (b) =>
       (b.onclick = () => {

@@ -72,7 +72,8 @@ function scheduleRailLayout(){
     const top=innerHeight-24-footerHeight;
     const rentHeight=rentVisible ? rent.getBoundingClientRect().height : 0;
     const accountHeight=account?.getBoundingClientRect().height || 0;
-    const menuRoom=top-18-(rentVisible?rentHeight+18:0)-accountHeight-18-194-31;
+    const railTop=document.querySelector(".brand").getBoundingClientRect().bottom+18;
+    const menuRoom=top-18-(rentVisible?rentHeight+18:0)-accountHeight-18-Math.max(194,railTop)-31;
     const rows=list?.children.length || 6;
     document.body.style.setProperty('--desktop-menu-row-height',Math.max(16,Math.min(document.body.classList.contains('admin-session')?36:39,menuRoom/rows))+'px');
     document.body.style.setProperty('--desktop-foot-height',footerHeight+'px');

@@ -1033,3 +1033,18 @@ a>.ui-icon {flex:none;}
   .brand {height:auto;padding:28px;align-items:center;}
   .brand__logo img {display:block;}
 }
+
+@media(min-width:901px) {
+  .rail,body.admin-session .rail {top:calc(var(--desktop-brand-height,176px) + 18px);}
+}
+
+.office-feature .cabinet .loyalty-heading {align-items:flex-start;}
+.office-feature .cabinet .loyalty-heading>div {min-width:0;}
+.office-feature .cabinet .loyalty-counter {flex:none;}
+.office-feature .cabinet .stamps {width:100%;max-width:none;align-items:center;justify-items:center;gap:12px 8px;}
+.office-feature .cabinet .stamp {display:grid;place-items:center;box-sizing:border-box;width:min(100%,40px);height:auto;min-height:0;aspect-ratio:1;margin:0;padding:0;line-height:1;font-family:inherit;border-radius:50%;}
+.office-feature .cabinet .stamp--gift,:root[data-theme="dark"] .office-feature .cabinet .stamp--gift {background:#111;color:#fff;border:1px solid #111;box-shadow:none;transition:transform 160ms ease,box-shadow 160ms ease;}
+.office-feature .cabinet .stamp--gift:hover {transform:translateY(-2px);box-shadow:0 4px 10px #0002;}
+.office-feature .cabinet .stamp--gift:active {transform:scale(.94);}
+.office-feature .cabinet .loyalty-foot {justify-content:flex-end;margin-top:12px;}
+@media(prefers-reduced-motion:reduce) {.office-feature .cabinet .stamp--gift {transition:none;}}
