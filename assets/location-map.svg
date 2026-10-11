@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 610" role="img" aria-labelledby="title desc">
+<title id="title">Tattoo Office — Кирочная, 24</title><desc id="desc">Схема района: метро Чернышевская к востоку от проспекта Чернышевского, Tattoo Office к западу. Маршрут идёт к Кирочной улице, через переход на проспекте и вдоль дома 24. Ориентиры: ВкусВилл, Хлебник и Пятёрочка. Детали входа уточните перед визитом.</desc>
+<rect width="760" height="610" fill="#f4f3ef"/>
+<g fill="#e3e1db" stroke="#d3d0c8" stroke-width="1.5">
+<path d="M28 20h400v48H28zM544 20h153v48H544z"/>
+<path d="M36 146h380v298H36z M105 199v136h234V199z" fill-rule="evenodd"/>
+<rect x="549" y="145" width="145" height="84" rx="6"/>
+<path d="M549 260h145v181H549zM590 326v62h63v-62z" fill-rule="evenodd"/>
+<rect x="36" y="539" width="390" height="48" rx="6"/><rect x="549" y="539" width="145" height="48" rx="6"/>
+</g>
+<g fill="#fff" stroke="#dedbd3" stroke-width="1.5"><rect x="-5" y="82" width="770" height="48"/><rect x="-5" y="474" width="770" height="48"/><rect x="455" y="-5" width="74" height="620"/><rect x="712" y="-5" width="44" height="620"/></g>
+<g fill="#e3e8de"><rect x="27" y="99" width="414" height="14" rx="7"/><rect x="544" y="99" width="153" height="14" rx="7"/><rect x="486" y="148" width="10" height="292" rx="5"/><rect x="114" y="208" width="216" height="118" rx="9"/></g>
+<g stroke="#aaa89f" stroke-width="3"><path d="M463 462v13m9-13v13m9-13v13m9-13v13m9-13v13m9-13v13m9-13v13m9-13v13"/><path d="M443 481h12m-12 8h12m-12 8h12m-12 8h12m-12 8h12"/></g>
+<g font-family="Helvetica,Arial,sans-serif" fill="#77756d" font-size="16"><text x="155" y="96">Фурштатская улица</text><text x="84" y="507">Кирочная улица</text><text x="572" y="507">Кирочная улица</text><text transform="translate(481 338) rotate(-90)" text-anchor="middle">проспект Чернышевского</text><text transform="translate(739 330) rotate(-90)" text-anchor="middle">улица Восстания</text><text x="203" y="272" text-anchor="middle" fill="#a2a499">двор</text><text x="371" y="176">25</text><text x="669" y="173">18</text><text x="652" y="294">20</text><text x="360" y="432">24</text></g>
+<path d="M566 294H521V462H436V461H275" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M566 294H521V462H436V461H275" fill="none" stroke="#252525" stroke-width="4" stroke-dasharray="6 8" stroke-linecap="round" stroke-linejoin="round"/>
+<g font-family="Helvetica,Arial,sans-serif">
+<circle cx="568" cy="294" r="21" fill="#252525"/><text x="568" y="301" fill="#fff" font-size="21" text-anchor="middle" font-weight="700">М</text>
+<rect x="548" y="331" width="153" height="57" rx="10" fill="#fff"/><text x="560" y="352" fill="#222" font-size="17" font-weight="600">Чернышевская</text><text x="560" y="373" fill="#777" font-size="14">выход из метро</text>
+<circle cx="275" cy="427" r="24" fill="#252525"/><path d="m269 447 6 12 6-12" fill="#252525"/><text x="275" y="434" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">TO</text>
+<rect x="76" y="354" width="268" height="52" rx="12" fill="#fff"/><text x="93" y="376" fill="#171717" font-size="22" font-weight="600">Tattoo Office</text><text x="93" y="394" fill="#777" font-size="14">Кирочная, 24</text>
+<g fill="#555" font-size="16"><circle cx="396" cy="240" r="4"/><text x="305" y="226">ВкусВилл</text><circle cx="407" cy="448" r="4"/><text x="336" y="414">Хлебник</text><circle cx="125" cy="444" r="4"/><text x="65" y="431">Пятёрочка</text></g>
+<g fill="#777" font-size="12"><text x="28" y="580">Схема района · не в масштабе</text><path d="M710 563v-25m-5 6 5-6 5 6" fill="none" stroke="#777" stroke-width="1.5"/><text x="710" y="581" text-anchor="middle">С</text></g>
+</g></svg>

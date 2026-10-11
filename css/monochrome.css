@@ -823,3 +823,28 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .office-feature .cabinet .tabs {width:100%;border-radius:18px;}
   .office-feature .cabinet .tabs button {padding:8px 10px;font-size:12px;}
 }
+
+/* A district map based on the studio's actual surroundings. */
+.office-feature .location-map {margin:0;border:1px solid var(--panel-edge);border-radius:22px;overflow:hidden;background:var(--panel-2);}
+.location-map__open {position:relative;display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in;}
+.location-map__open img {display:block;width:100%;height:auto;}
+.location-map__open>span {position:absolute;right:14px;bottom:14px;padding:7px 11px;background:#fff;border:1px solid #ddd;border-radius:18px;color:#444;font-size:12px;}
+.location-map figcaption {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;font-size:12px;line-height:1.5;color:var(--ink-2);}
+.location-map figcaption a {color:var(--ink);white-space:nowrap;}
+.location-map__legend {display:inline-flex;align-items:center;gap:8px;}
+.location-map__legend i {width:24px;border-top:2px dashed var(--ink);}
+:root[data-theme="dark"] .location-map__open img {filter:invert(1);}
+.office-feature .walking-route {margin:24px 0;padding:22px;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel-2);}
+.walking-route ol {margin:14px 0;padding-left:22px;display:grid;gap:10px;font-size:14px;line-height:1.6;}
+.walking-route p {font-size:12px;color:var(--ink-2);margin:12px 0 0;line-height:1.5;}
+@media(max-width:900px) {
+  body {display:flex;flex-direction:column;min-height:100dvh;}
+  #stage,.rail {flex:none;}
+  .site-bottom,body[data-page="masters"] .site-bottom {flex:none;margin-top:auto;padding-top:18px;margin-bottom:max(14px,env(safe-area-inset-bottom));padding-bottom:0;}
+}
+
+/* Paint circular edges inside the control to avoid fractional-pixel clipping. */
+.office-feature .calendar-head button,.office-feature .model-controls button,.date-open,.picker-month button,#dialog .close,.photo-viewer__bar button,.photo-viewer__stage button {border:0!important;background-clip:border-box;box-shadow:inset 0 0 0 1px var(--panel-edge),0 2px 7px #0002!important;}
+.office-feature .check {display:flex;align-items:center;gap:10px;}
+.office-feature .check>input[type="checkbox"] {flex:none;margin:0;align-self:center;}
+.office-feature .check>span {display:block;line-height:1.5;}
