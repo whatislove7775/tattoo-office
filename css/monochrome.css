@@ -1048,3 +1048,5 @@ a>.ui-icon {flex:none;}
 .office-feature .cabinet .stamp--gift:active {transform:scale(.94);}
 .office-feature .cabinet .loyalty-foot {justify-content:flex-end;margin-top:12px;}
 @media(prefers-reduced-motion:reduce) {.office-feature .cabinet .stamp--gift {transition:none;}}
+
+.office-initial,:root[data-theme="dark"] .office-initial {color:#000;}
