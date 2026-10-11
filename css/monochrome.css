@@ -757,11 +757,11 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 @media(min-width:901px) {
   body[data-page] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px))!important;}
   .stage--bare .stage__inner {height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px));}
-  .rail .login.login--admin,body.admin-session .rail .login.login--admin {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;}
-  .login--admin .who {gap:8px;}
-  .login--admin .office-initial {width:32px;height:32px;font-size:22px;flex:none;}
-  .rail .login.login--admin .who__name {font-size:clamp(15px,1.35vw,19px);}
-  .rail .login--admin .who .menu-logout {width:24px;height:24px;}
+  .rail .login.login--user,body.admin-session .rail .login.login--user {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;}
+  .login--user .who {gap:8px;}
+  .login--user .office-initial {width:32px;height:32px;font-size:22px;flex:none;}
+  .rail .login.login--user .who__name {font-size:clamp(15px,1.35vw,19px);}
+  .rail .login--user .who .menu-logout {width:24px;height:24px;}
 }
 .master-profile__action small {display:block;margin-top:10px;font-size:12px;}
 .login__master {display:block;width:100%;white-space:nowrap;text-align:center;text-decoration:none;font-size:15px;line-height:1.4;color:var(--ink);}
