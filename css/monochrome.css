@@ -1011,3 +1011,10 @@ a>.ui-icon {flex:none;}
   .admin-content .table-wrap td button {justify-self:start;}
   .admin-content .table-wrap {overflow:visible;background:none;}
 }
+
+/* Every select reflects its shared expanded state, including office pickers. */
+.office-select::after {content:"";display:block;width:7px;height:7px;flex:none;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform 160ms ease;}
+.office-select[aria-expanded="true"]::after {transform:rotate(225deg);}
+.space-picker .office-select::after {transform:translateY(-70%) rotate(45deg);}
+.space-picker .office-select[aria-expanded="true"]::after {transform:translateY(-30%) rotate(225deg);}
+@media(prefers-reduced-motion:reduce) {.office-select::after {transition:none;}}

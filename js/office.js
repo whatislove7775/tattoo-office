@@ -427,7 +427,7 @@ function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg?v=3" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."><span>Увеличить карту</span></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg?v=4" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
 
 2. У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».
 
@@ -1490,7 +1490,7 @@ async function render() {
         break;
       case "find":
         html = findPage();
-        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg?v=3",caption:"Tattoo Office · Кирочная, 24"}],0); };
+        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg?v=4",caption:"Tattoo Office · Кирочная, 24"}],0); };
         break;
       case "safety":
         html = safetyPage();
