@@ -900,3 +900,6 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   body[data-page]:has(.schedule-scroll) #stage {position:relative;inset:auto;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 24px)!important;height:auto;}
   body[data-page]:has(.schedule-scroll) #stage>.stage__inner {position:relative;inset:auto;height:auto;overflow:visible;}
 }
+
+.photo-viewer:has(img[src*="location-map.svg"]) {width:min(900px,96vw);}
+.photo-viewer:has(img[src*="location-map.svg"]) .photo-viewer__stage img {width:100%;height:auto;max-height:90dvh;object-fit:contain;}
