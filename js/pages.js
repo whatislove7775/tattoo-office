@@ -101,7 +101,7 @@
         '</div>';
 
       return '<div class="section-head">' +
-               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a><span class="crumbs__current"> / ' + esc(name) + '</span></span>' +
+               '<span class="crumbs"><span class="bullet" aria-hidden="true"></span><a href="#/masters">' + esc(t('masters.title')) + '</a><span class="crumbs__current"> / ' + esc(name) + '</span></span>' +
                tabs +
                '<span class="spacer"></span>' +
                '<a class="master-back" href="#/masters" aria-label="Назад к мастерам" data-sfx="nav">← Назад</a>' +
