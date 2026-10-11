@@ -343,7 +343,7 @@ function masterPage(id) {
   if (!m) return win("Личное дело", "Мастер не найден", "masters");
   return win(
     "Masters / " + m.name,
-    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br><a href="#/feedback">Написать в студию ↗</a></div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
+    `${testNote()}<div class="profile-grid"><div><img class="profile-photo" src="${m.photo}" alt="${m.name}"><h2>${m.name}</h2>${m.specialty ? `<p>${esc(m.specialty)}</p>` : ""}<p class="small muted">${m.bio ? esc(m.bio) : "Портрет из архива студии. Имя, стиль и авторство работ предстоит подтвердить."}</p><button class="chrome" id="save-master">${storage.get("favorites", []).includes(m.id) ? "★ в избранном" : "☆ запомнить мастера"}</button><div class="note-paper">Хорошие совпадения начинаются со знакомства.<br><br><a href="#/feedback">Написать в студию ↗</a></div></div><div><div class="tabs"><button aria-selected="true" data-gallery="tattoo">📎 portfolio</button><button aria-selected="false" data-gallery="draft">◉ drafts</button></div><p data-help class="small muted">Общий архив работ студии — распределение по авторам ещё не заполнено.</p><div class="gallery" id="gallery"></div></div></div>`,
     "masters",
   );
 }
@@ -450,12 +450,12 @@ function authPage(signup) {
   }
   return win(
     signup ? "Новое личное дело" : "Войти в офис",
-    `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<div class="auth-photo"><img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом"></div>' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p class="muted small">${role === "customer" ? "Создайте аккаунт клиента, чтобы сохранять свои записи." : "Создайте аккаунт мастера. Условия Private Club команда студии подключит после знакомства."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}/${role}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Создать аккаунт"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
+    `${testNote()}<form id="auth-form" class="auth-form">${!signup ? '<div class="auth-photo"><img class="auth-image" src="assets/auth/master.png" alt="Кажется, я обрёл дом"></div>' : ""}<h2>${signup ? "Будем знакомы." : "Вы на месте."}</h2><p data-help class="muted small">${role === "customer" ? "Создайте аккаунт клиента, чтобы сохранять свои записи." : "Создайте аккаунт мастера. Условия Private Club команда студии подключит после знакомства."}</p>${signup ? field("name", "Как вас зовут", "", "text", 'required autocomplete="name" maxlength="100"') : ""}${field("email", "Почта для входа и чеков", "", "email", 'required autocomplete="email"')}${field("password", "Пароль", "", "password", `required minlength="12" maxlength="128" autocomplete="${signup ? "new-password" : "current-password"}"`)}${signup ? '<p data-help class="small muted">Не менее 12 символов.</p><label class="check"><input name="rules" type="checkbox" required><span>Я прочитал(а) и принимаю <a href="#/safety" target="_blank">правила студии</a></span></label><label class="check"><input name="consent" type="checkbox" required><span>Я даю <a href="#/legal/data" target="_blank">согласие на обработку персональных данных</a></span></label>' : ""}<button type="submit" class="chrome">${signup ? "Создать личное дело" : "Войти"} →</button><div class="auth-switch"><a href="#/${signup ? "login" : "signup"}/${role}">${signup ? "Уже есть аккаунт? Войти" : "Первый раз? Создать аккаунт"}</a></div>${pub.telegramEnabled ? '<p class="auth-switch"><a href="/api/auth/telegram">Войти через Telegram ↗</a></p>' : '<p data-help class="small muted" style="margin-top:24px">Вход через Telegram появится после подключения бота студии.</p>'}</form>`,
   );
 }
 function recoveryPage(reset) {
   const type = (location.hash.split('/')[2] || 'master').split('?')[0];
-  return win(reset ? 'Новый пароль' : 'Восстановление доступа', `<form id="recovery-form" class="auth-form"><h2>${reset ? 'Задайте новый пароль.' : 'Забыли пароль?'}</h2><p class="small muted">${reset ? 'Не менее 12 символов. После смены войдите заново.' : 'Отправим ссылку на почту вашего профиля.'}</p>${reset ? field('password','Новый пароль','','password','required minlength="12" maxlength="128" autocomplete="new-password"') : field('email','Почта','','email','required autocomplete="email"')}<button type="submit" class="chrome">${reset ? 'Сохранить пароль' : 'Получить ссылку'}</button><div class="auth-switch"><a href="#/${type === 'admin' ? 'admin/login' : 'login/' + type}">Назад ко входу</a></div></form>`);
+  return win(reset ? 'Новый пароль' : 'Восстановление доступа', `<form id="recovery-form" class="auth-form"><h2>${reset ? 'Задайте новый пароль.' : 'Забыли пароль?'}</h2><p data-help class="small muted">${reset ? 'Не менее 12 символов. После смены войдите заново.' : 'Отправим ссылку на почту вашего профиля.'}</p>${reset ? field('password','Новый пароль','','password','required minlength="12" maxlength="128" autocomplete="new-password"') : field('email','Почта','','email','required autocomplete="email"')}<button type="submit" class="chrome">${reset ? 'Сохранить пароль' : 'Получить ссылку'}</button><div class="auth-switch"><a href="#/${type === 'admin' ? 'admin/login' : 'login/' + type}">Назад ко входу</a></div></form>`);
 }
 function mountRecovery(reset) {
   onForm('#recovery-form', async d => {
@@ -467,7 +467,7 @@ function mountRecovery(reset) {
 }
 function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
 }
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
@@ -530,7 +530,7 @@ function bookingPage() {
     steps = ["Дата и тариф", "Время и место", "Всё для сеанса", "Проверка"];
   let body = "";
   if (draft.step === 0)
-    body = `<h2>Когда встретимся?</h2><p class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(s.rates[me?.role === "resident" ? "resident" : "guest"][h])}</em></button>`).join("")}</div>`;
+    body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(s.rates[me?.role === "resident" ? "resident" : "guest"][h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
     body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span></button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div><div class="choices">${pub.resources
@@ -542,7 +542,7 @@ function bookingPage() {
       .join("")}</div>`;
   }
   if (draft.step === 2)
-    body = `<h2>Всё под рукой.</h2><p class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span>${esc(x.name)}<br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
+    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span>${esc(x.name)}<br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
     const rate =
         s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
@@ -703,7 +703,7 @@ async function cabinetPage() {
         .map((b) => bookingItem(b, []))
         .join("") || '<div class="empty">Здесь будет история сеансов.</div>';
   if (cabTab === "balance")
-    body = `<p class="small muted">Баланс используется автоматически для предоплаты. Это учёт внесённых средств, а не банковский счёт.</p><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>${data.ledger.map((x) => `<tr><td>${dateLabel(x.created_at)}</td><td>${esc(x.description)}</td><td>${x.amount > 0 ? "+" : ""}${money(x.amount)}</td></tr>`).join("")}</tbody></table></div>${!data.ledger.length ? '<div class="empty">Операций пока нет.</div>' : ""}`;
+    body = `<p data-help class="small muted">Баланс используется автоматически для предоплаты. Это учёт внесённых средств, а не банковский счёт.</p><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>${data.ledger.map((x) => `<tr><td>${dateLabel(x.created_at)}</td><td>${esc(x.description)}</td><td>${x.amount > 0 ? "+" : ""}${money(x.amount)}</td></tr>`).join("")}</tbody></table></div>${!data.ledger.length ? '<div class="empty">Операций пока нет.</div>' : ""}`;
   if (cabTab === "notifications")
     body = inbox.notifications.length
       ? inbox.notifications
@@ -920,15 +920,15 @@ async function adminPage() {
       ),
     );
   if (adminTab === "masters")
-    body = `<p class="small muted">Укажите реальные имена и распределите загруженные работы по авторам.</p>${table(
+    body = `<p data-help class="small muted">Укажите реальные имена и распределите загруженные работы по авторам.</p>${table(
       ["Фото", "Мастер", "На главной", ""],
       masters.map(
         (m) =>
           `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button></td></tr>`,
       ),
-    )}<p class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
+    )}<p data-help class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
-    body = `<p class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
+    body = `<p data-help class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
       ["Заголовок", "Статус", ""],
       a.content
         .filter((c) => !/^master-/.test(c.id))
@@ -938,7 +938,7 @@ async function adminPage() {
         ),
     )}`;
   if (adminTab === "settings")
-    body = `<form id="settings-form"><h3>Студия и контакты</h3><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("address", "Адрес", s.address)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div><h3>Тарифы, ₽</h3><p class="small muted">Новые цены применяются к новым записям. Тариф существующей брони сохраняется.</p><div class="form-grid">${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, s.rates[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><h3>Студия и контакты</h3><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("address", "Адрес", s.address)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div><h3>Тарифы, ₽</h3><p data-help class="small muted">Новые цены применяются к новым записям. Тариф существующей брони сохраняется.</p><div class="form-grid">${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, s.rates[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -1017,7 +1017,7 @@ function mountAdmin() {
           ([r]) => me.role === "admin" || r === "guest",
         ),
         u?.role || "guest",
-      )}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
+      )}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
       (d) =>
         api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
           ...d,
@@ -1122,7 +1122,7 @@ function mountAdmin() {
           "Место",
           a.resources.filter((r) => r.active).map((r) => [r.id, r.name]),
           "",
-        )}<p class="small muted">Сервер проверит доступность. Предоплата не требуется.</p>`,
+        )}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется.</p>`,
         (d) =>
           api("/bookings", "POST", {
             ...d,
@@ -1216,7 +1216,7 @@ function mountAdmin() {
         const m = masters.find((x) => x.id === +b.dataset.editMaster);
         dialogForm(
           "Личное дело мастера",
-          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${field("bookingLink", "Ссылка на чат менеджера для записи", m.bookingLink, "url")}<p class="small muted">Можно указать t.me/имя или готовую ссылку Telegram Business t.me/m/код. Для каждого мастера сохраните ссылку с его текстом на одного менеджера. В Business-ссылках сообщение задаётся в Telegram; такие ссылки открываются без изменений.</p>${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<label class="check"><input name="featured" type="checkbox" ${m.featured ? "checked" : ""}><span>Показывать на главной</span></label><p class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
+          `${field("title", "Имя", m.name, "text", "required")}${field("specialty", "Стиль", m.specialty)}${field("bookingLink", "Ссылка на чат менеджера для записи", m.bookingLink, "url")}<p data-help class="small muted">Можно указать t.me/имя или готовую ссылку Telegram Business t.me/m/код. Для каждого мастера сохраните ссылку с его текстом на одного менеджера. В Business-ссылках сообщение задаётся в Telegram; такие ссылки открываются без изменений.</p>${textarea("body", "О мастере", m.bio)}${field("portfolio", "Работы: tattoo-1, tattoo-2…", m.portfolio.join(", "))}${field("drafts", "Эскизы: draft-1, draft-2…", m.drafts.join(", "))}<label class="check"><input name="featured" type="checkbox" ${m.featured ? "checked" : ""}><span>Показывать на главной</span></label><p data-help class="small muted">Доступны tattoo-1…8 и draft-1…7 из загруженного архива.</p>`,
           (d) =>
             api("/admin/content/master-" + m.id, "PUT", {
               ...d,
@@ -1411,7 +1411,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<p class="small muted">Если нужен ответ, оставьте удобный способ связи. Не указывайте медицинские или платёжные данные.</p><button class="chrome" type="submit">Отправить записку →</button></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<p data-help class="small muted">Если нужен ответ, оставьте удобный способ связи. Не указывайте медицинские или платёжные данные.</p><button class="chrome" type="submit">Отправить записку →</button></form>`,
         );
         mount = () => {
           if (path[0] === "book") {

@@ -848,3 +848,13 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 .office-feature .check {display:flex;align-items:center;gap:10px;}
 .office-feature .check>input[type="checkbox"] {flex:none;margin:0;align-self:center;}
 .office-feature .check>span {display:block;line-height:1.5;}
+
+/* Optional action explanations are exposed by the Morphicons alert control. */
+.has-help {display:flex!important;align-items:center;gap:8px;}
+.help-hint {display:inline-flex;vertical-align:middle;margin:0 0 14px;}
+.help-alert,.office-feature .help-alert,#dialog .help-alert {display:inline-grid!important;place-items:center;flex:none;width:26px;height:26px;min-width:26px;min-height:26px;margin:0;padding:3px;border:0;border-radius:50%;background:transparent;box-shadow:none!important;color:var(--ink-2);text-shadow:none;cursor:help;}
+.help-alert svg {display:block;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.help-alert:hover,.help-alert[aria-expanded="true"] {background:var(--panel-2);color:var(--ink);}
+.help-alert:focus-visible {outline:2px solid var(--ink-2);outline-offset:2px;}
+.help-tooltip {position:fixed;z-index:10000;width:max-content;max-width:min(340px,calc(100vw - 24px));max-height:min(320px,45dvh);overflow:auto;padding:14px 16px;border:1px solid var(--panel-edge);border-radius:14px;background:var(--panel);color:var(--ink);box-shadow:0 6px 22px #0002;font:13px/1.6 "Helvetica Neue",Helvetica,Arial,sans-serif;white-space:normal;overflow-wrap:anywhere;text-transform:none;letter-spacing:0;}
+.help-tooltip[hidden] {display:none!important;}
