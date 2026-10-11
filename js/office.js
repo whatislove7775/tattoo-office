@@ -707,10 +707,7 @@ async function cabinetPage() {
   if (cabTab === "notifications")
     body = inbox.notifications.length
       ? inbox.notifications
-          .map(
-            (n) =>
-              `<article class="note-paper"><span class="eyebrow">${dateLabel(n.created_at)}</span><div class="prose">${esc(n.message)}</div></article>`,
-          )
+          .map(notificationItem)
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
@@ -732,7 +729,7 @@ async function cabinetPage() {
         : "";
   return win(
     "My profile",
-    `${testNote()}<div class="row between"><div><span class="eyebrow">ЛИЧНОЕ ДЕЛО / ${me.id.slice(0, 8)}</span><h2 style="margin-top:10px">${esc(me.name)}</h2><p class="small muted">${roleName[me.role]} · ${esc(me.profile.status || "Снова в офисе.")}</p></div><button id="logout" class="small"><u>выйти ↗</u></button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">ещё одно место ↗</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div><div class="stamp-card" style="${accent}"><div class="row between"><span>Книжка посещений</span><span class="small muted">${me.sequence ? ((me.sequence - 1) % 20) + 1 : 0} / 20 · цикл ${Math.floor(Math.max(0, me.sequence - 1) / 20) + 1}</span></div><div class="stamps">${Array.from({ length: 20 }, (_, i) => `<span class="stamp ${i < (me.sequence ? ((me.sequence - 1) % 20) + 1 : 0) ? "used" : ""}">${String(i + 1).padStart(2, "0")}</span>`).join("")}</div></div><div class="tabs">${[
+    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><span class="eyebrow">ЛИЧНОЕ ДЕЛО</span><h2 style="margin-top:10px">${esc(me.name)}</h2><p class="small muted">${roleName[me.role]} · ${esc(me.profile.status || "Снова в офисе.")}</p></div><button id="logout" class="small cabinet-action">Выйти</button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div><div class="stamp-card" style="${accent}"><div class="row between"><span>Книжка посещений</span><span class="small muted">${me.sequence ? ((me.sequence - 1) % 20) + 1 : 0} / 20 · цикл ${Math.floor(Math.max(0, me.sequence - 1) / 20) + 1}</span></div><div class="stamps">${Array.from({ length: 20 }, (_, i) => `<span class="stamp ${i < (me.sequence ? ((me.sequence - 1) % 20) + 1 : 0) ? "used" : ""}">${String(i + 1).padStart(2, "0")}</span>`).join("")}</div></div><div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -743,14 +740,19 @@ async function cabinetPage() {
         ([v, l]) =>
           `<button data-cabtab="${v}" aria-selected="${v === cabTab}">${l}</button>`,
       )
-      .join("")}</div>${body}`,
+      .join("")}</div><div class="cabinet-content">${body}</div></div>`,
   );
+}
+function notificationItem(n) {
+  const lines = String(n.message || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const text = lines.filter((line) => !/^https?:\/\/\S+\/#\/cabinet\/?$/.test(line));
+  return `<article class="note-paper cabinet-notification"><span class="eyebrow">${dateLabel(n.created_at)}</span><h3>${esc(text[0] || "Уведомление")}</h3>${text.slice(1).map((line) => `<p>${esc(line)}</p>`).join("")}</article>`;
 }
 function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small" data-cancel="${b.id}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 function mountCabinet() {
   if (!me) {
