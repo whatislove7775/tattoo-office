@@ -46,14 +46,22 @@ function enhance(root){
     button.addEventListener('focus',()=>{if(!clickOnly&&!touch&&button.matches(':focus-visible'))show(item);});
     button.addEventListener('blur',hide);
     button.addEventListener('click',e=>{if(current===item&&(clickOnly||touch||e.detail===0))hide();else show(item);});
+    const scope=helper.closest('form,.stamp-card,.window,.modal__body')||helper.parentElement;
     const prev=helper.previousElementSibling;
-    // Keep labels valid: a help button must not toggle the associated input.
+    let target=helper.dataset.helpFor ? scope.querySelector(helper.dataset.helpFor) : prev;
+    if(target?.matches('input,select,textarea'))target=target.closest('.field');
+    if(target?.matches('.field'))target=target.querySelector(':scope>span');
+    else if(target?.matches('.check')){
+      let label=target.querySelector(':scope>span');
+      if(!label){label=document.createElement('span');for(const node of [...target.childNodes])if(node.nodeType===3)label.append(node);target.append(label);}
+      target=label;
+    } else if(target&&!target.matches('h1,h2,h3,h4,.tabs,span'))target=target.querySelector('h1,h2,h3,h4');
+    if(!target&&helper.parentElement.matches('.admin-content'))target=helper.closest('.window')?.querySelector('.admin-section-title');
+    if(!target)target=scope.querySelector('h2,h3,h1,.modal__title');
+    // A hint belongs to its label, including labels outside a nested content wrapper.
     if(helper.hasAttribute('data-help-inline')){button.classList.add('help-alert--small');helper.replaceWith(button);}
-    else if(prev?.matches('h2,h3')){prev.classList.add('has-help');prev.append(button);helper.remove();}
-    else if(prev?.matches('.field')){const label=prev.querySelector(':scope>span');
-      if(label){label.classList.add('has-help');label.append(button);helper.remove();}
-      else helper.replaceWith(button);
-    } else {const host=document.createElement('span');host.className='help-hint';host.append(button);helper.replaceWith(host);}
+    else if(target){if(!helper.dataset.helpLabel)button.setAttribute('aria-label','Пояснение: '+target.textContent.trim());target.classList.add('has-help');target.append(button);helper.remove();}
+    else {const host=document.createElement('span');host.className='help-hint';host.append(button);helper.replaceWith(host);}
     button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
   }
   if(current&&!current.button.isConnected)hide();
