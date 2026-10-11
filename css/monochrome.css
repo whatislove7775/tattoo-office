@@ -693,7 +693,7 @@ button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!import
 .password-toggle {z-index:1;}
 .password-toggle svg {pointer-events:none;}
 :root[data-theme="dark"] {background:var(--bg);}
-:root[data-theme="dark"] .foot__mark {filter:brightness(0);opacity:1;}
+:root[data-theme="dark"] .foot__mark {filter:brightness(0) invert(1);opacity:1;}
 button:focus-visible,a:focus-visible,summary:focus-visible,.office-feature button:focus-visible,.office-feature a:focus-visible,.office-select:focus-visible {outline:1px solid var(--ink-3)!important;outline-offset:3px;filter:none!important;}
 input:-webkit-autofill { -webkit-text-fill-color:var(--ink);box-shadow:inset 0 0 0 1000px var(--panel)!important; }
 .password-control input:-webkit-autofill {box-shadow:inset 0 0 0 1000px var(--panel)!important;}
