@@ -55,7 +55,7 @@ function enhance(root){
       let label=target.querySelector(':scope>span');
       if(!label){label=document.createElement('span');for(const node of [...target.childNodes])if(node.nodeType===3)label.append(node);target.append(label);}
       target=label;
-    } else if(target&&!target.matches('h1,h2,h3,h4,.tabs,span'))target=target.querySelector('h1,h2,h3,h4');
+    } else if(target&&!target.matches('h1,h2,h3,h4,legend,.tabs,span'))target=target.querySelector('h1,h2,h3,h4');
     if(!target&&helper.parentElement.matches('.admin-content'))target=helper.closest('.window')?.querySelector('.admin-section-title');
     if(!target)target=scope.querySelector('h2,h3,h1,.modal__title');
     // A hint belongs to its label, including labels outside a nested content wrapper.

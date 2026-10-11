@@ -427,13 +427,13 @@ function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg?v=2" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."><span>Увеличить карту</span></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро</span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink("Екатерина")}</h3><p>Менеджер студии · все вопросы в Telegram.</p></article></div></div><section class="walking-route"><span class="eyebrow">ОТ МЕТРО · 1–2 МИНУТЫ ПЕШКОМ<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map.svg?v=3" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."><span>Увеличить карту</span></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
 
 2. У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».
 
 3. Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.
 
-Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span></section><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a><a class="location-map__credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink("Екатерина")}</h3><p>Менеджер студии · все вопросы в Telegram.</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -871,7 +871,7 @@ async function adminPage() {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
     body = `<div class="admin-home"><h2>Главная</h2><div class="admin-shortcuts"><button class="chrome" id="manual-booking">${icon("plus")}Новая запись</button><button class="chrome" id="add-user">${icon("user")}Новый пользователь</button><button class="chrome" data-admintab="settings">${icon("edit")}Тарифы и условия</button><button class="chrome" data-admintab="schedule">${icon("calendar")}Календарь</button><button class="chrome" data-admintab="bookings">${icon("history")}История записей</button></div></div>`;
   }
-  if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form">${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><h3>Сменить пароль</h3><form id="admin-password-form">${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
+  if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
     const resources = a.resources.filter((r) => r.active),
       bookings = a.bookings.filter(
@@ -966,7 +966,7 @@ async function adminPage() {
       ),
     )}<p data-help class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
-    body = `<p data-help class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
+    body = `<p data-help class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><h3>Новая публикация</h3><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
       ["Заголовок", "Статус", ""],
       a.content
         .filter((c) => !/^master-/.test(c.id))
@@ -976,7 +976,7 @@ async function adminPage() {
         ),
     )}`;
   if (adminTab === "settings")
-    body = `<form id="settings-form"><h3>Студия и контакты</h3><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("address", "Адрес", s.address)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div><h3>Тарифы, ₽</h3><p data-help class="small muted">Новые цены применяются к новым записям. Тариф существующей брони сохраняется.</p><div class="form-grid">${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, s.rates[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("address", "Адрес", s.address)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div></fieldset><fieldset class="admin-group"><legend>Тарифы и бронирование</legend><p data-help class="small muted">Новые цены применяются к новым записям. Тариф существующей брони сохраняется.</p><div class="form-grid">${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, s.rates[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -984,7 +984,7 @@ async function adminPage() {
         ["retain", "Удержать предоплату по регламенту"],
       ],
       s.lateCancellation,
-    )}</div><h3>Реквизиты и документы</h3><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
+    )}</div></fieldset><fieldset class="admin-group"><legend>Реквизиты и документы</legend><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label></fieldset><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
       ["Сервис", "Ключи"],
       Object.entries(a.integrations || {}).map(
         ([k, v]) =>
@@ -1007,7 +1007,7 @@ async function adminPage() {
     )}`;
   return win(
     "Admin panel",
-    `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}<div class="admin-content">${body}</div>`,
+    `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
   );
 }
 function dialogForm(title, html, submit) {
@@ -1029,6 +1029,59 @@ function mountAdmin() {
   }
   if (!adminData) return;
   const a = adminData;
+  const content = $(".admin-content");
+  if (content) {
+    $$(".table-wrap", content).forEach((wrap, tableIndex) => {
+      const headers = $$("th", wrap).map(cell => cell.textContent.trim());
+      const rows = $$("tbody tr", wrap);
+      rows.forEach(row => $$("td", row).forEach((cell, index) => {
+        cell.dataset.label = headers[index] || "Действия";
+        const value = document.createElement("div");
+        value.className = "admin-cell-value";
+        value.append(...cell.childNodes);
+        cell.append(value);
+      }));
+      if (rows.length > 4 && adminTab !== "schedule") {
+        const toolbar = document.createElement("div");
+        toolbar.className = "admin-list-tools";
+        const label = document.createElement("label");
+        label.className = "field";
+        label.innerHTML = `<span>Поиск в списке</span><input type="search" placeholder="Имя, дата, статус…" aria-label="Поиск в списке ${tableIndex + 1}">`;
+        const count = document.createElement("span");
+        count.className = "small muted";
+        const update = () => {
+          const query = label.querySelector("input").value.trim().toLocaleLowerCase("ru");
+          let visible = 0;
+          rows.forEach(row => {
+            row.hidden = !row.textContent.toLocaleLowerCase("ru").includes(query);
+            if (!row.hidden) visible++;
+          });
+          count.textContent = `${visible} из ${rows.length}`;
+        };
+        label.querySelector("input").addEventListener("input", update);
+        toolbar.append(label, count);
+        wrap.before(toolbar);
+        update();
+      }
+    });
+    const summaries = {
+      bookings: [["Всего записей", a.bookings.length], ["Подтверждено", a.bookings.filter(b => b.status === "confirmed").length], ["Ожидают отмены", a.bookings.filter(b => b.status === "cancel_requested").length]],
+      users: [["Пользователей", a.users.length], ["Активны", a.users.filter(u => u.active).length]],
+      catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
+      finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
+      feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]],
+      masters: [["Мастеров", masters.length], ["На главной", masters.filter(m => m.featured).length]],
+      content: [["Материалов", a.content.filter(c => !/^master-/.test(c.id)).length]],
+      audit: [["Действий", a.audit.length], ["Событий в очереди", a.outbox.length]]
+    };
+    function safemodeLabel() { return pub.settings.mode === "test" ? "Тестовые оплаты" : "Успешные оплаты"; }
+    if (summaries[adminTab]) {
+      const summary = document.createElement("div");
+      summary.className = "admin-summary";
+      summary.innerHTML = summaries[adminTab].map(([label, value]) => `<div><span>${esc(label)}</span><strong>${esc(String(value))}</strong></div>`).join("");
+      content.prepend(summary);
+    }
+  }
   onForm("#admin-profile-form", async d => { await api("/me", "PATCH", {name:d.name}); await refresh(); notify("Профиль сохранён"); render(); });
   onForm("#admin-password-form", async d => { await api("/me/password", "POST", d); await refresh(); go("admin/login"); notify("Пароль изменён. Войдите заново."); });
   $$("[data-admintab]").forEach(
@@ -1437,7 +1490,7 @@ async function render() {
         break;
       case "find":
         html = findPage();
-        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg?v=2",caption:"Tattoo Office · Кирочная, 24"}],0); };
+        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map.svg?v=3",caption:"Tattoo Office · Кирочная, 24"}],0); };
         break;
       case "safety":
         html = safetyPage();
@@ -1450,7 +1503,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<p data-help class="small muted">Если нужен ответ, оставьте удобный способ связи. Не указывайте медицинские или платёжные данные.</p><button class="chrome" type="submit">Отправить записку →</button><p class="manager-contact">Связь и все вопросы — ${managerLink("Екатерина в Telegram")}.</p></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии. Если нужен ответ, оставьте способ связи. Не указывайте медицинские или платёжные данные.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<button class="chrome" type="submit">Отправить записку →</button><p class="manager-contact">Связь и все вопросы — ${managerLink("Екатерина в Telegram")}.</p></form>`,
         );
         mount = () => {
           if (path[0] === "book") {
