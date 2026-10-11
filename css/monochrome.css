@@ -1020,3 +1020,11 @@ a>.ui-icon {flex:none;}
 @media(prefers-reduced-motion:reduce) {.office-select::after {transition:none;}}
 
 .office-feature .receipt,:root[data-theme="dark"] .office-feature .receipt {background:transparent;border:0;border-radius:0;box-shadow:none;}
+
+/* Profile forms use the content width, without the old narrow form constraint. */
+.admin-content .admin-profile {width:100%;max-width:960px;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:24px;}
+.admin-content .admin-profile>form {display:flex;flex-direction:column;align-items:stretch;gap:0;}
+.admin-content .admin-profile .field {width:100%;max-width:none;margin-bottom:18px;}
+.admin-content .admin-profile .password-control {width:100%;}
+.admin-content .admin-profile form>button[type="submit"] {align-self:flex-start;min-width:0;width:auto;max-width:100%;white-space:nowrap;margin-top:6px;padding:12px 20px;}
+@media(max-width:730px) {.admin-content .admin-profile {grid-template-columns:minmax(0,1fr);gap:18px;}}
