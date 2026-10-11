@@ -1050,3 +1050,25 @@ a>.ui-icon {flex:none;}
 @media(prefers-reduced-motion:reduce) {.office-feature .cabinet .stamp--gift {transition:none;}}
 
 .office-initial,:root[data-theme="dark"] .office-initial {color:#000;}
+
+/* Booking details use the available desktop space beside the event. */
+@media(min-width:901px) {
+  .office-feature .cabinet .cabinet-notification--booking {grid-template-columns:100px minmax(0,1.2fr) minmax(230px,1fr);align-items:center;column-gap:24px;}
+  .cabinet-notification--booking .notification-details {justify-self:end;max-width:100%;}
+  .cabinet-notification--booking .receipt-link {text-align:left;white-space:normal;}
+}
+@media(max-width:900px) {
+  .cabinet-notification--booking .notification-photo {grid-row:1 / span 2;}
+  .cabinet-notification--booking .notification-details {grid-column:2;}
+  .office-feature .cabinet .cabinet-notification--booking {row-gap:0;}
+}
+/* Dark outlines have one constant edge, without a second bevel highlight. */
+:root[data-theme="dark"] {--control-shadow:0 2px 6px #0003;}
+:root[data-theme="dark"] :is(#dialog,.modal__window) {border:1px solid var(--ink-3);box-shadow:0 20px 60px #0007;}
+:root[data-theme="dark"] :is(.modal__bar,.login,.foot,.rent-slider,.rent-slider__thumb,.find-cards,.about-grid>div,.rules-booking,.master__photo,.work__img,.choice,.time,.steps b,.tabs,.office-select,.office-picker,.chrome,.btn,.calendar button,.desktop-shortcut) {box-shadow:0 3px 8px #0003!important;}
+:root[data-theme="dark"] :is(.modal__bar,.login,.foot,.find-cards,.about-grid>div,.note-paper,.rules-booking,.choice,.time,.tabs,.office-select,.office-picker,.calendar button) {border-color:var(--panel-edge);}
+:root[data-theme="dark"] :is(#dialog .close,.modal__x) {color:var(--ink);background:var(--control-fill);text-shadow:none;}
+:root[data-theme="dark"] :is(#dialog .close,.modal__x,.calendar-head button,.model-controls button,.date-open,.picker-month button,.photo-viewer__bar button,.photo-viewer__stage button) {border:1px solid var(--panel-edge)!important;box-shadow:0 2px 7px #0003!important;}
+:root[data-theme="dark"] :is(#dialog .close,.modal__x):focus-visible {outline-offset:0;}
+:root[data-theme="dark"] .office-feature .tabs button,:root[data-theme="dark"] .office-feature .steps li.active b,:root[data-theme="dark"] #dialog button[type="submit"],:root[data-theme="dark"] .office-feature button[type="submit"] {box-shadow:0 3px 8px #0003!important;}
+:root[data-theme="dark"] .office-initial {box-shadow:0 3px 8px #0002;}
