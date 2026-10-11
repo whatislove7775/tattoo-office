@@ -925,3 +925,10 @@ a>.ui-icon {flex:none;}
 .section-head .crumbs {display:inline-flex;align-items:center;gap:8px;}
 .section-head .crumbs>.bullet {width:20px;height:20px;}
 @media(max-width:900px) {.section-head .crumbs>.bullet {width:18px;height:18px;}}
+
+@media(max-width:900px) {
+  .menu__studio {align-items:stretch;}
+  .menu__studio a {display:flex;align-items:center;justify-content:center;gap:4px;width:106px;min-width:106px;min-height:28px;}
+  .menu__studio a.menu__club {background:#171717;border-color:#171717;color:#fff;}
+  .menu__club svg {display:block;flex:none;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+}

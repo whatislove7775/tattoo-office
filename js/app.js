@@ -146,7 +146,7 @@
     document.getElementById("footLinks").innerHTML = [
       ["privacy", "Конфиденциальность"], ["offer", "Оферта"],
       ["info", "Информация"], ["data", "Персональные данные"]
-    ].map(function (item) { return '<a href="#/legal/' + item[0] + '">' + item[1] + '</a>'; }).join("");
+    ].map(function (item) { return '<a href="#/legal/' + item[0] + '">' + item[1] + '</a>'; }).join("") + '<a href="https://t.me/artasimnsupport" target="_blank" rel="noopener noreferrer">Поддержка</a>';
   }
 
   /* ---------------------------- бегущая строка ---------------------------- */

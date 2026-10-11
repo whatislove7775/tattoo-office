@@ -89,3 +89,7 @@ addEventListener('resize',scheduleRailLayout);
 scheduleRailLayout();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateCopyrightYear();});
 setInterval(updateCopyrightYear,60000);
+
+// Lucide Crown data, rendered through the same Morphicons driver as other controls.
+const crownPath=document.getElementById('clubCrownPath');
+if(crownPath)createMorph(crownPath,crownPath.getAttribute('d'),{reducedMotion:'user'});
