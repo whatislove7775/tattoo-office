@@ -1018,3 +1018,5 @@ a>.ui-icon {flex:none;}
 .space-picker .office-select::after {transform:translateY(-70%) rotate(45deg);}
 .space-picker .office-select[aria-expanded="true"]::after {transform:translateY(-30%) rotate(225deg);}
 @media(prefers-reduced-motion:reduce) {.office-select::after {transition:none;}}
+
+.office-feature .receipt,:root[data-theme="dark"] .office-feature .receipt {background:transparent;border:0;border-radius:0;box-shadow:none;}
