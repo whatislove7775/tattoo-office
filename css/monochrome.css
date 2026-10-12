@@ -1081,3 +1081,9 @@ a>.ui-icon {flex:none;}
 @media(max-width:900px) {
   body[data-page] #stage>.stage__inner>div:has(#admin-auth-form) {display:flex;flex-direction:column;flex:1 0 auto;}
 }
+
+/* Mobile browser canvas stays white around the site's own themed surfaces. */
+@media(max-width:900px) {
+  :root,:root[data-theme="dark"] {background:#fff;color-scheme:light;}
+  .mobile-menu-open .rail .login {background:var(--panel);}
+}

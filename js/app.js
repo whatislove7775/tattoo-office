@@ -193,7 +193,7 @@
     toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta)
-      meta.setAttribute("content", theme === "dark" ? "#171717" : "#ffffff");
+      meta.setAttribute("content", theme === "dark" && global.innerWidth > 900 ? "#171717" : "#ffffff");
   }
 
   /* ---------------------------- форма шапки -------------------------------- */
@@ -281,7 +281,7 @@
     var path = document.getElementById("menuShapePath");
     if (global.innerWidth <= 900) {
       if (!menu.offsetWidth || !menu.offsetHeight) return;
-      var joined = document.body.dataset.page !== "admin";
+      var joined = getComputedStyle(document.getElementById("loginPanel")).display !== "none";
       path.setAttribute("d", mobilePanelPath(menu, joined, false));
       document.getElementById("loginPanel").style.top = (menu.getBoundingClientRect().bottom - 1) + "px";
       return;
