@@ -375,8 +375,15 @@
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
+  function updateMobileEdge() {
+    if (global.innerWidth > 900) { pageScroller.style.removeProperty("--page-top"); return; }
+    var rect = pageScroller.getBoundingClientRect();
+    pageScroller.style.setProperty("--page-top", Math.max(0, 44 - rect.top) + "px");
+  }
+
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
+    updateMobileEdge();
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
@@ -486,6 +493,8 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
+    global.addEventListener("scroll", updateMobileEdge, { passive: true });
+    if (global.visualViewport) global.visualViewport.addEventListener("resize", updateMobileEdge);
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
     scrollObserver.observe(stageInner);
