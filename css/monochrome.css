@@ -378,7 +378,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .desktop-shortcut svg { display:block;width:19px;height:19px;fill:currentColor; }
 .polaroid,.polaroid *,.polaroid.is-dragging,.drift--static .polaroid { cursor:pointer!important; }
 @media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
-  .brand__controls { position:fixed;left:calc(3vw + 46px);right:auto;top:8px; }
+  .brand__controls { position:absolute;left:calc(46px - 46vw);right:auto;top:8px; }
 }
 
 .office-picker--space { padding:6px; }
