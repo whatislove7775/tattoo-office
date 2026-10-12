@@ -15,9 +15,12 @@
   var stageInner = view;
   var pageScroller = document.getElementById("pageScroller");
   var currentCleanup = null;
-  // Yandex's in-app scroll timeline can use a different range from the viewport.
-  // Its native chrome needs no additional clipping, unlike Telegram/Safari.
-  document.documentElement.dataset.browser = /YaBrowser|YaApp|Yowser/i.test(navigator.userAgent) ? "yandex" : "default";
+  // Telegram appends a Safari-like UA. Its injected native bridge identifies it.
+  var telegramBrowser = !!(global.webkit?.messageHandlers?.contentInterface && global.webkit?.messageHandlers?.performAction);
+  var browserUA = navigator.userAgent;
+  document.documentElement.dataset.browser = /YaBrowser|YaApp|Yowser/i.test(browserUA) ? "yandex"
+    : telegramBrowser ? "telegram"
+    : /Version\/[\d.]+.*Safari\//i.test(browserUA) ? "safari" : "default";
 
   /* ------------------------------ маршруты -------------------------------- */
   var ROUTES = [
