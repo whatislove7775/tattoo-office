@@ -1136,3 +1136,10 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .office-feature .field input,.office-feature .field textarea {font-size:16px;scroll-margin-block:110px;}
   .mobile-menu-open .menu__list {overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
 }
+
+.rent-slider__hit-area {display:none;}
+@media(max-width:900px) {
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:min(76vw,360px);overflow:visible;}
+  .rent-slider__hit-area {display:block;position:absolute;inset:-12px;z-index:1;touch-action:pan-y pinch-zoom;}
+  .site-bottom .rent-slider__label {inset:0 8px 0 58px;font-size:clamp(14px,3.7vw,17px);}
+}

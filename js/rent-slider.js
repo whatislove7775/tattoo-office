@@ -72,8 +72,9 @@
     finish();
   });
   track.addEventListener("pointercancel", () => { pointer = null; reset(); });
-  track.addEventListener("lostpointercapture", () => {
-    if (pointer !== null) { pointer = null; reset(); }
+  track.addEventListener("lostpointercapture", event => {
+    // Touch starts with implicit capture on the thumb; transferring it is not cancellation.
+    if (event.target === track && event.pointerId === pointer && pointer !== null) { pointer = null; reset(); }
   });
   track.addEventListener("dragstart", event => event.preventDefault());
   thumb.addEventListener("click", event => event.preventDefault());
