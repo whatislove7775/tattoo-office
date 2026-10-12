@@ -1139,9 +1139,9 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .rent-slider,.rent-slider__thumb,.rent-slider__hit-area {touch-action:auto;}
 }
 
-/* Keep the viewport steady when a held swipe reaches either end of the document. */
+/* Let the browser provide its native elastic movement at document edges. */
 @media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
-  html,body {overscroll-behavior-y:none;}
+  html,body {overscroll-behavior-y:auto;}
 }
 
 /* Compact monochrome switch: invert the capsule and knob with the theme. */
@@ -1240,7 +1240,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .brand__logo img {width:calc(var(--rail-width) - 110px);}
   .find-lead,.showcase-head {display:block;}
   .find-lead .office-select,.showcase-head .office-select {width:100%;max-width:100%;margin-top:16px;}
-  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:var(--rail-width);}
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:calc(var(--rail-width) * .68);}
   .site-bottom .rent-slider__label {font-size:11px;}
   .site-bottom .foot {padding-right:42px;}
   .foot__links {grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:6px 10px;}
@@ -1286,4 +1286,15 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .master-profile__facts .master__age {white-space:nowrap;}
   .master-profile__facts .master__exp {grid-column:1/-1;font-size:12px;}
   .master-profile .master__bio {margin-top:8px;}
+}
+
+/* Share the lower profile row: facts under the photo, booking beside them. */
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+  .master-profile {grid-template-rows:max-content minmax(0,1fr) auto;row-gap:10px;min-height:0;}
+  .master-profile__copy {display:contents;}
+  .master-profile .master__photo {grid-column:1;grid-row:1/3;}
+  .master-profile .master__name {grid-column:2;grid-row:1;}
+  .master-profile .master__bio {grid-column:2;grid-row:2;margin:0;}
+  .master-profile__facts {position:static;grid-column:1;grid-row:3;width:auto;margin-top:1px;align-self:start;}
+  .master-profile__action {grid-column:2;grid-row:3;margin:0;align-self:start;}
 }
