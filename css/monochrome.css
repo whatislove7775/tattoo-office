@@ -1094,3 +1094,10 @@ a>.ui-icon {flex:none;}
   :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
   .header::before {background:#fff;}
 }
+
+/* An opaque fixed edge also covers content extended beneath mobile browser chrome. */
+@media(max-width:900px) {
+  .header {height:44px;background-color:#fff;isolation:isolate;}
+  .header__shape {height:22.5vw;}
+  .header::before {position:absolute;inset:auto 0 100%;height:100vh;background:#fff;z-index:0;pointer-events:none;}
+}

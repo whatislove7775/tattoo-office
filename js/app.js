@@ -360,7 +360,7 @@
     var w = element.offsetWidth, h = element.offsetHeight, r = 17;
     var top = rect.top + (inDocument ? global.scrollY : 0);
     var notch = Math.min(w - r * 2, global.innerWidth * .49 - rect.left - 12);
-    var depth = Math.max(r * 2, document.getElementById("siteHeader").clientHeight + 12 - top);
+    var depth = Math.max(r * 2, global.innerWidth * .225 + 12 - top);
     element.style.setProperty("--mobile-menu-notch-depth", depth + "px");
     var bottom = joined ? `V${h} H0 V${r}` : `V${h-r} Q${w},${h} ${w-r},${h} H${r} Q0,${h} 0,${h-r} V${r}`;
     return `M${r},0 H${notch-r} Q${notch},0 ${notch},${r} V${depth-r} Q${notch},${depth} ${notch+r},${depth} H${w-r} Q${w},${depth} ${w},${depth+r} ${bottom} Q0,0 ${r},0 Z`;
