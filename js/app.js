@@ -375,8 +375,16 @@
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
+  // Geometry only: CSS follows native root scroll without a JS scroll handler.
+  function updateBrowserEdgeGeometry() {
+    if (global.innerWidth > 900) { pageScroller.style.removeProperty("--browser-edge-travel"); return; }
+    var scroller = document.scrollingElement;
+    pageScroller.style.setProperty("--browser-edge-travel", Math.max(0, scroller.scrollHeight - scroller.clientHeight) + "px");
+  }
+
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
+    updateBrowserEdgeGeometry();
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
@@ -486,6 +494,7 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
+    if (global.visualViewport) global.visualViewport.addEventListener("resize", updateBrowserEdgeGeometry);
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
     scrollObserver.observe(stageInner);

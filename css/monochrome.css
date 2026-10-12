@@ -1164,7 +1164,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   html {height:auto;overflow-y:auto;overflow-x:clip;background:var(--browser-canvas);}
   body {height:auto;min-height:100dvh;overflow-y:visible;overflow-x:clip;background:var(--browser-canvas);}
   body::before {display:none;}
-  /* Native document scrolling; no moving masks or clipping boundaries. */
+  /* Native document scrolling is preserved. */
   .page-scroller {display:flex;flex-direction:column;position:relative;min-height:100dvh;overflow:visible;clip-path:none;background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;}
   :root[data-theme="dark"] .page-scroller {background-image:url("../assets/pattern-dark.svg");}
   body[data-page] #stage {margin-top:54px;}
@@ -1185,7 +1185,6 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 /* Keep the opaque header in its own stable layer instead of masking the page. */
 @media(max-width:900px) {
-  .page-scroller {clip-path:none!important;mask:none!important;animation:none!important;}
   .header {transform:translateZ(0);backface-visibility:hidden;}
   .header__shape,:root[data-theme="dark"] .header__shape {filter:none;transform:translateZ(0);backface-visibility:hidden;}
 }
@@ -1195,4 +1194,16 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 @media(max-width:900px) {
   .header {position:sticky;top:0;flex:none;margin-bottom:-44px;background:transparent;transform:none;}
   .header::before {position:absolute;inset:auto 0 17px;height:calc(100lvh + 27px);background:var(--browser-canvas);}
+}
+
+/* Clip only above the viewport, not below the header. Its opaque 44px height
+   hides paint latency instead of exposing a white gap beneath its lower edge. */
+@media(max-width:900px) {
+  @supports(animation-timeline:scroll(root block)) {
+    .page-scroller {clip-path:inset(0);animation:browser-canvas-edge linear both!important;animation-timeline:scroll(root block)!important;}
+  }
+}
+@keyframes browser-canvas-edge {
+  from {clip-path:inset(0 0 0);}
+  to {clip-path:inset(var(--browser-edge-travel,0px) 0 0);}
 }
