@@ -1124,3 +1124,15 @@ a>.ui-icon {flex:none;}
   :root[data-theme="dark"] .header__shape path {fill:var(--browser-canvas);}
   .header::after {background:var(--browser-canvas);}
 }
+
+/* Site-wide native scrolling: only explicit horizontal controls claim horizontal gestures. */
+html {scroll-behavior:auto;}
+body:has(dialog[open]) {overflow:hidden;}
+dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.table-wrap,.schedule-scroll {touch-action:pan-x pan-y pinch-zoom;overscroll-behavior-x:contain;}
+@media(max-width:900px) {
+  html {scroll-padding-top:calc(22.5vw + 12px);scroll-padding-bottom:100px;}
+  .portrait,.drift:not(.drift--static) .polaroid,.drift--static .polaroid,.rent-slider,.rent-slider__thumb,#studio-model,.photo-viewer__stage {touch-action:pan-y pinch-zoom;}
+  .office-feature .field input,.office-feature .field textarea {font-size:16px;scroll-margin-block:110px;}
+  .mobile-menu-open .menu__list {overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+}

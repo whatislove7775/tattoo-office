@@ -1,6 +1,6 @@
 (function (global) {
   "use strict";
-  var photos = [], index = 0, startX = 0;
+  var photos = [], index = 0, startX = null, startY = 0;
   var dialog = document.createElement("dialog");
   dialog.className = "photo-viewer";
   dialog.setAttribute("aria-label", "Просмотр фотографий");
@@ -37,11 +37,15 @@
     if (event.key === "ArrowRight") { event.preventDefault(); show(index + 1); }
   });
   var swipeSurface=dialog.querySelector(".photo-viewer__stage");
-  swipeSurface.addEventListener("touchstart", function (event) { startX = event.changedTouches[0].screenX; }, {passive:true});
+  swipeSurface.addEventListener("touchstart", function (event) { if(event.touches.length!==1){startX=null;return;}startX = event.touches[0].screenX;startY=event.touches[0].screenY; }, {passive:true});
   swipeSurface.addEventListener("touchend", function (event) {
+    if(startX===null)return;
     var diff = event.changedTouches[0].screenX - startX;
-    if (Math.abs(diff) > 45) show(index + (diff < 0 ? 1 : -1));
+    var vertical = event.changedTouches[0].screenY - startY;
+    startX=null;
+    if (!event.touches.length && Math.abs(diff) > 45 && Math.abs(diff) > Math.abs(vertical)*1.25) show(index + (diff < 0 ? 1 : -1));
   }, {passive:true});
+  swipeSurface.addEventListener("touchcancel", function(){startX=null;}, {passive:true});
   global.PhotoViewer = {
     open: function (list, at) {
       photos = list.filter(function (photo) { return photo && photo.src; });

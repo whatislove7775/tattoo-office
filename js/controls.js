@@ -25,7 +25,7 @@
       wrapper.append(toggle);
       const reveal=()=>{const show=input.type==='password';input.type=show?'text':'password';toggle.dataset.visible=String(show);toggle.setAttribute('aria-label',show?'Скрыть пароль':'Показать пароль');};
       let pointerAction=false;
-      toggle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();pointerAction=true;reveal();});
+      toggle.addEventListener('pointerdown',event=>{if(event.button!==0||event.pointerType==='touch'||event.pointerType==='pen')return;event.preventDefault();pointerAction=true;reveal();});
       toggle.addEventListener('click',event=>{event.preventDefault();if(pointerAction){pointerAction=false;return;}reveal();});
       toggle.addEventListener('pointercancel',()=>{pointerAction=false;});
       toggle.addEventListener('keydown',()=>{pointerAction=false;});

@@ -61,9 +61,9 @@ window.StudioModel = (() => {
     const observer=new IntersectionObserver(entries=>{active=entries[0].isIntersecting;if(active)draw();else cancelAnimationFrame(frame);});observer.observe(canvas);
     const distance=()=>{const [a,b]=[...pointers.values()];return Math.hypot(a.x-b.x,a.y-b.y);};
     const down=e=>{dragging=true;userMoved=true;last={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,last);if(pointers.size===2)pinchDistance=distance();canvas.setPointerCapture(e.pointerId);};
-    const move=e=>{if(!pointers.has(e.pointerId))return;const point={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,point);if(pointers.size===2){const next=distance();if(pinchDistance)zoom=clamp(zoom*next/pinchDistance,.65,2.2);pinchDistance=next;return;}if(!dragging||!last)return;yaw-=(e.clientX-last.x)*.008;pitch=clamp(pitch-(e.clientY-last.y)*.006,.26,1.1);last=point;};
+    const move=e=>{if(!pointers.has(e.pointerId))return;if(e.pointerType==='touch'&&pointers.size===1&&Math.abs(e.clientY-last.y)>Math.abs(e.clientX-last.x))return;const point={x:e.clientX,y:e.clientY};pointers.set(e.pointerId,point);if(pointers.size===2){const next=distance();if(pinchDistance)zoom=clamp(zoom*next/pinchDistance,.65,2.2);pinchDistance=next;return;}if(!dragging||!last)return;yaw-=(e.clientX-last.x)*.008;pitch=clamp(pitch-(e.clientY-last.y)*.006,.26,1.1);last=point;};
     const up=e=>{pointers.delete(e.pointerId);pinchDistance=0;dragging=pointers.size>0;last=dragging?[...pointers.values()][0]:null;};
-    const wheel=e=>{e.preventDefault();userMoved=true;zoom=clamp(zoom*(e.deltaY>0?.9:1.1),.65,2.2);};
+    const wheel=e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();userMoved=true;zoom=clamp(zoom*(e.deltaY>0?.9:1.1),.65,2.2);};
     canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('wheel',wheel,{passive:false});
     const controls=canvas.closest('.model-viewer');
     controls?.querySelectorAll('[data-model-control]').forEach(button=>button.onclick=()=>{userMoved=true;switch(button.dataset.modelControl){case 'left':yaw-=.28;break;case 'right':yaw+=.28;break;case 'in':zoom=clamp(zoom*1.18,.65,2.2);break;case 'out':zoom=clamp(zoom/1.18,.65,2.2);break;default:yaw=-.64;pitch=.61;zoom=1;userMoved=false;}});

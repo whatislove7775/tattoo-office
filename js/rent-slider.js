@@ -5,6 +5,8 @@
   let progress = 0;
   let pointer = null;
   let origin = 0;
+  let originY = 0;
+  let horizontal = false;
   let starting = 0;
   let complete = false;
   let suppressClickUntil = 0;
@@ -33,13 +35,25 @@
     if (event.button !== 0 || complete) return;
     pointer = event.pointerId;
     origin = event.clientX;
+    originY = event.clientY;
     starting = progress;
-    track.classList.add("is-dragging");
-    track.setPointerCapture(pointer);
-    event.preventDefault();
+    horizontal = event.pointerType === "mouse";
+    if (horizontal) {
+      track.classList.add("is-dragging");
+      track.setPointerCapture(pointer);
+      event.preventDefault();
+    }
   });
   track.addEventListener("pointermove", event => {
     if (pointer !== event.pointerId) return;
+    if (!horizontal) {
+      const dx = event.clientX - origin, dy = event.clientY - originY;
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { pointer = null; reset(); return; }
+      if (Math.abs(dx) < 8) return;
+      horizontal = true;
+      track.classList.add("is-dragging");
+      track.setPointerCapture(pointer);
+    }
     setProgress(starting + (event.clientX - origin) / travel());
     if (event.pointerType === "mouse" && progress >= .85) {
       const captured = pointer;
@@ -51,6 +65,7 @@
   });
   track.addEventListener("pointerup", event => {
     if (pointer !== event.pointerId) return;
+    if (!horizontal) { pointer = null; reset(); return; }
     setProgress(starting + (event.clientX - origin) / travel());
     pointer = null;
     if (progress > .05) suppressClickUntil = Date.now() + 500;
