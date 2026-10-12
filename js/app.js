@@ -373,8 +373,32 @@
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
+  // One mobile clipping boundary for every routed page, including booking and admin.
+  var pageClipFrame = 0;
+  function updatePageClip() {
+    if (global.innerWidth > 900) {
+      view.style.removeProperty('--page-clip-top');
+      view.style.removeProperty('--page-clip-bottom');
+      return;
+    }
+    var viewportTop = global.visualViewport ? global.visualViewport.offsetTop : 0;
+    var rect = view.getBoundingClientRect();
+    var viewportHeight = global.visualViewport ? global.visualViewport.height : global.innerHeight;
+    var top = Math.max(0, 44 + viewportTop - rect.top);
+    var bottom = Math.max(0, rect.bottom - viewportTop - viewportHeight);
+    view.style.setProperty('--page-clip-top', top + 'px');
+    view.style.setProperty('--page-clip-bottom', bottom + 'px');
+  }
+  function schedulePageClip() {
+    if (!pageClipFrame) pageClipFrame = requestAnimationFrame(function () {
+      pageClipFrame = 0;
+      updatePageClip();
+    });
+  }
+
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
+    updatePageClip();
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
@@ -484,6 +508,11 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
+    global.addEventListener("scroll", schedulePageClip, { passive: true });
+    if (global.visualViewport) {
+      global.visualViewport.addEventListener("scroll", schedulePageClip, { passive: true });
+      global.visualViewport.addEventListener("resize", schedulePageClip);
+    }
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
     scrollObserver.observe(stageInner);
