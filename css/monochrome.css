@@ -1215,3 +1215,9 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body::before {display:block;content:"";position:fixed;inset:27px 0 -100lvh;z-index:-1;pointer-events:none;background:var(--bg) url("../assets/pattern.svg") 0 -27px / 200px 200px;}
   :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
 }
+
+/* Lock the viewport, not the sticky header's ancestor, when an overlay opens. */
+@media(max-width:900px) {
+  html:has(body.mobile-menu-open,dialog[open],.modal:not([hidden])) {overflow-y:hidden;}
+  body.mobile-menu-open,body:has(dialog[open],.modal:not([hidden])) {overflow-y:visible;overflow-x:clip;}
+}
