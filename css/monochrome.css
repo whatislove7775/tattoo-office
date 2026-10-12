@@ -1276,3 +1276,14 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body:has(.photo-viewer[open]) {background-color:#111;}
   body:has(.photo-viewer[open])::after {display:none;}
 }
+
+.master-profile__facts {display:grid;grid-template-columns:max-content 1fr;column-gap:22px;color:var(--ink-2);font-size:15px;}
+.master-profile__facts .master__city {grid-column:1/-1;}
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+  .master-profile {position:relative;min-height:200px;}
+  .master-profile__facts {position:absolute;left:0;top:154px;width:108px;display:grid;grid-template-columns:max-content max-content;gap:3px 6px;font-size:12px;line-height:1.5;}
+  .master-profile__facts .master__city {grid-column:auto;margin:0;font-size:12px;white-space:nowrap;}
+  .master-profile__facts .master__age {white-space:nowrap;}
+  .master-profile__facts .master__exp {grid-column:1/-1;font-size:12px;}
+  .master-profile .master__bio {margin-top:8px;}
+}

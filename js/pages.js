@@ -111,10 +111,10 @@
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
                  '<div class="master__name">' + esc(name) + '</div>' +
-                 '<div class="master__city">' + esc(pick(m.city)) + '</div>' +
-                 '<div class="master__meta">' +
-                   '<span>' + m.age + ' ' + esc(t('master.age')) + '</span>' +
-                   '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
+                 '<div class="master-profile__facts">' +
+                   '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
+                   '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' +
+                   '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
                  '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p></div>' +
