@@ -1087,3 +1087,10 @@ a>.ui-icon {flex:none;}
   :root,:root[data-theme="dark"] {background:#fff;color-scheme:light;}
   .mobile-menu-open .rail .login {background:var(--panel);}
 }
+/* The browser samples the body canvas; keep the wallpaper on its own layer. */
+@media(max-width:900px) {
+  body,:root[data-theme="dark"] body {background:#fff;isolation:isolate;}
+  body::before {content:"";position:fixed;inset:44px 0 env(safe-area-inset-bottom,0px);z-index:-1;pointer-events:none;background:var(--bg) url("../assets/pattern.svg") 0 -44px / 200px 200px;}
+  :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
+  .header::before {background:#fff;}
+}
