@@ -1200,10 +1200,18 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
    hides paint latency instead of exposing a white gap beneath its lower edge. */
 @media(max-width:900px) {
   @supports(animation-timeline:scroll(root block)) {
-    .page-scroller {clip-path:inset(0);animation:browser-canvas-edge linear both!important;animation-timeline:scroll(root block)!important;}
+    .page-scroller {clip-path:inset(20px 0 0);animation:browser-canvas-edge linear both!important;animation-timeline:scroll(root block)!important;}
   }
 }
 @keyframes browser-canvas-edge {
-  from {clip-path:inset(0 0 0);}
-  to {clip-path:inset(var(--browser-edge-travel,0px) 0 0);}
+  from {clip-path:inset(20px 0 0);}
+  to {clip-path:inset(calc(var(--browser-edge-travel,0px) + 20px) 0 0);}
+}
+
+/* Reserve 20px under the solid header for asynchronous WebKit scrolling.
+   A stationary wallpaper underlay keeps its rounded corners filled if paint lags. */
+@media(max-width:900px) {
+  body {position:relative;isolation:isolate;}
+  body::before {display:block;content:"";position:fixed;inset:27px 0 -100lvh;z-index:-1;pointer-events:none;background:var(--bg) url("../assets/pattern.svg") 0 -27px / 200px 200px;}
+  :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
 }
