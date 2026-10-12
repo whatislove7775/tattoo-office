@@ -1166,7 +1166,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body::before {display:none;}
   /* The document owns scrolling so mobile browser toolbars can collapse.
      Clip the wallpaper and every routed page together, with no separate masks. */
-  .page-scroller {display:flex;flex-direction:column;position:relative;min-height:100dvh;overflow:visible;clip-path:inset(var(--page-top,44px) 0 0);background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;}
+  .page-scroller {display:flex;flex-direction:column;position:relative;min-height:100dvh;overflow:visible;clip-path:none;background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;}
   :root[data-theme="dark"] .page-scroller {background-image:url("../assets/pattern-dark.svg");}
   body[data-page] #stage {margin-top:54px;}
   body:has(dialog[open],.modal:not([hidden])),body.mobile-menu-open {overflow:hidden;}
@@ -1174,3 +1174,20 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body:has(.photo-viewer[open]) {background:#111;}
   .photo-viewer::backdrop {inset:-2px;background:#111d;}
 }
+
+@media(max-width:900px) {
+  .brand__controls {top:0;height:44px;align-items:center;}
+  /* Tie the edge directly to native document scroll, never a scroll event callback. */
+  @supports(animation-timeline:scroll(root block)) {
+    .page-scroller {clip-path:inset(44px 0 0);animation:mobile-browser-edge linear both!important;animation-timeline:scroll(root block)!important;}
+  }
+}
+@keyframes mobile-browser-edge {
+  from {clip-path:inset(44px 0 0);}
+  to {clip-path:inset(calc(44px + var(--edge-travel,0px)) 0 0);}
+}
+
+/* Alert strokes follow the text color; heading icons scale with the label. */
+.help-alert svg {stroke-width:2.2;}
+.has-help>.help-alert {font-size:inherit;color:inherit;--alert-size:clamp(20px,.75em,32px);width:calc(var(--alert-size) + 6px);height:calc(var(--alert-size) + 6px);}
+.has-help>.help-alert svg {width:var(--alert-size);height:var(--alert-size);}
