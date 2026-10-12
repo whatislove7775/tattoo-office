@@ -1113,3 +1113,9 @@ a>.ui-icon {flex:none;}
 @media(max-width:900px) {
   #driftBox {clip-path:inset(var(--drift-clip-top,0px) 0 0);}
 }
+@media(max-width:900px) {
+  /* Cover only the SVG's top stroke, keeping the shaped lower outline. */
+  .header::after {content:"";position:absolute;inset:-1px 0 auto;height:2px;background:var(--panel);z-index:1;pointer-events:none;}
+  /* A finger scrolls the page; the browser cancels activation after a swipe. */
+  .drift:not(.drift--static) .polaroid,.drift--static .polaroid {touch-action:pan-y pinch-zoom;-webkit-touch-callout:none;}
+}
