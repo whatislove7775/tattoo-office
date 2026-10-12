@@ -319,7 +319,7 @@
 @media (max-width:1100px) {
   .find-cards{grid-template-columns:1fr;grid-template-rows:auto}
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .office-feature .window-head{min-height:48px;padding:6px 9px;gap:5px}
   .office-feature .window-head h1{font-size:14px}
   .office-feature .window-head .ios-back{display:inline-flex;position:absolute;z-index:2;top:66px;left:18px;max-width:calc(100vw - 70px)}

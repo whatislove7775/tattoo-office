@@ -3,7 +3,7 @@
    ========================================================================= */
 (function (global) {
   "use strict";
-  var mobileLayoutQuery = global.matchMedia("(max-width:700px), (max-width:1100px) and (orientation:portrait)");
+  var mobileLayoutQuery = global.matchMedia("(max-width:700px)");
   global.isMobileLayout = function () { return mobileLayoutQuery.matches; };
 
   var t = global.t;

@@ -47,7 +47,7 @@ body { height:auto;min-height:100svh;overflow-y:auto;overflow-x:clip; }
 .foot__links { color:var(--ink-2);font-size:12px; }
 .foot__copy { font-size:12px;font-weight:500; }
 .foot__mark { opacity:.55; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body { display:grid;grid-template-columns:minmax(0,1fr) var(--rail-width);column-gap:32px;padding:100px 24px 24px clamp(24px,3vw,54px);align-items:start; }
   .stage,.stage--bare { grid-column:1;position:relative;inset:auto;width:auto;height:auto;min-height:calc(100svh - 134px);margin:0;overflow:visible; }
   .stage__inner { position:relative;inset:auto;height:auto;overflow:visible; }
@@ -124,7 +124,7 @@ body { height:auto;min-height:100svh;overflow-y:auto;overflow-x:clip; }
 .photo-viewer .ui-icon { pointer-events:none; }
 body:has(.photo-viewer[open]) { overflow:hidden; }
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .stage:not(.stage--bare)::before,.stage:not(.stage--bare)::after { display:none; }
   .stage:not(.stage--bare)>.stage__shape { display:block;position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;filter:drop-shadow(0 7px 10px #00000018); }
   .stage__shape path,.mobile-menu-open .menu__shape path { fill:var(--panel);stroke:none; }
@@ -215,7 +215,7 @@ button:has(>.ui-icon),a.chrome:has(>.ui-icon),.chrome:has(>.ui-icon),.back-btn:h
 #dialog .field input,#dialog .office-select { min-height:50px;border-radius:14px;padding:12px 16px;font-size:16px; }
 #dialog input[type="date"] { padding-right:50px; }
 #dialog button[type="submit"] { margin-top:8px;margin-bottom:4px;width:100%; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page] .office-feature .window>.window-head { align-items:center; }
   .office-feature .window-head h1 { padding-top:0; }
   .mobile-menu-open .rail .menu,.mobile-menu-open .rail .login { width:min(76vw,300px); }
@@ -261,7 +261,7 @@ body[data-page="admin"] .site-bottom .rent-slider { display:none; }
 .rules-full[open] summary>span { transform:rotate(45deg); }
 .rules-full__text { white-space:pre-wrap;line-height:1.7;font-size:15px;color:var(--ink-2);max-width:780px;margin:22px 0 16px; }
 .rules-full small { color:var(--ink-3);font-size:11px; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page="safety"] .office-feature .window>.window-head { width:46%;gap:8px; }
   body[data-page="safety"] .window-head h1 { font-size:16px;line-height:1.2; }
   .rules-intro { margin:10px 0 26px; }
@@ -285,7 +285,7 @@ body[data-page="feedback"] .office-feature .window { display:flex;flex-direction
 .office-feature .auth-form { margin-bottom:0; }
 .interior-dossier { display:flex;flex-direction:column; }
 .interior-dossier .chrome { margin-top:auto; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .brand__controls .theme,.theme__track { width:52px; }
   :root[data-theme="dark"] .theme__knob { transform:translateX(26px); }
   body[data-page="feedback"] .office-feature .window { min-height:calc(100svh - 115px); }
@@ -299,7 +299,7 @@ body[data-page="feedback"] .office-feature .window { display:flex;flex-direction
 .foot__copy { display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:16px;font-size:11px;font-weight:400;line-height:1.4; }
 .foot__copy span { margin-left:auto; }
 .foot__mark { top:18px;right:18px;transform:none;width:28px;height:28px; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .site-bottom .foot { padding:18px 54px 18px 18px; }
   .foot__links { display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:10px 12px;font-size:11px; }
   .foot__copy { gap:5px 12px;margin-top:16px;font-size:10px; }
@@ -310,16 +310,16 @@ body[data-page="feedback"] .office-feature .window { display:flex;flex-direction
 .office-feature #feedback-form textarea { flex:1;min-height:150px; }
 
 body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(-1 * var(--rent-lift,0px))); }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page="masters"] .site-bottom .rent-slider { transform:translate(-50%,calc(-1 * var(--rent-lift,0px))); }
   body[data-page="masters"] .site-bottom { padding-bottom:env(safe-area-inset-bottom);padding-top:70px; }
 }
 
 /* Keep the first panel's top margin inside the page background. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) { body { display:flow-root; } }
+@media (max-width:700px) { body { display:flow-root; } }
 
 .section-head:has(.crumbs)>a.master-back[href="#/masters"] { display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .section-head:has(.crumbs) { grid-template-areas:"crumbs crumbs" "tabs back";grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 8px; }
   .section-head:has(.crumbs) .tabs { width:auto;max-width:100%;gap:2px; }
   .section-head:has(.crumbs) .tab { padding:8px 9px;font-size:14px;gap:5px; }
@@ -331,7 +331,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .space-picker .office-select { display:flex;align-items:center;justify-content:space-between;gap:18px;width:250px;max-width:100%;min-height:42px;padding:10px 14px;border:1px solid var(--panel-edge);border-radius:14px;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);font-size:14px;line-height:1.3; }
 .space-picker .office-select::after { content:"";position:static;width:7px;height:7px;flex:none;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg); }
 :root[data-theme="dark"] .space-picker .office-select { background:var(--control-fill);border:1px solid var(--panel-edge);box-shadow:var(--control-shadow);color:var(--ink); }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .site-bottom .foot,body[data-page="masters"] .site-bottom .foot { position:fixed;right:24px;bottom:24px;width:var(--rail-width);z-index:35;display:block;padding:18px 48px 18px 18px; }
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { position:fixed;right:24px;bottom:calc(42px + var(--desktop-foot-height,125px));width:var(--rail-width);z-index:35;transform:none; }
   .site-bottom .foot .foot__links { display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:9px 10px;font-size:11px; }
@@ -349,11 +349,11 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .office-feature .find-card a { margin-top:auto;padding-top:16px; }
 .office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"] { border-color:#333;background:var(--action-fill);box-shadow:inset 0 1px #ffffff40,0 3px 8px #0002;color:#fff;text-shadow:0 1px #0005; }
 .office-feature .interior-dossier .chrome { display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) { .office-feature .interior-dossier { min-height:330px; } }
+@media (max-width:700px) { .office-feature .interior-dossier { min-height:330px; } }
 .office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"],.office-feature .rules-booking .chrome { background-clip:border-box;border-color:#292929;box-shadow:0 3px 8px #0002; }
 
 .rules-full summary,.rules-full summary>span { font-weight:700; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { width:calc(var(--rail-width) * .68); }
   .site-bottom .rent-slider__label { inset-inline-start:62px;inset-inline-end:7px;font-size:clamp(13px,1.1vw,16px); }
 }
@@ -367,7 +367,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .rail .login__links { display:flex;flex-direction:row;align-items:center;gap:6px;margin:0;white-space:nowrap;color:var(--ink-2);font-weight:700; }
 .rail .login__links a { font-size:clamp(10px,.8vw,12px);font-weight:700;color:var(--ink-2); }
 .rail .login__links>span { font-size:11px; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) { .rail .login__links a { font-size:12px; } }
+@media (max-width:700px) { .rail .login__links a { font-size:12px; } }
 
 .polaroid__photo { display:block;position:relative; }
 .desktop-shortcut { position:absolute;left:0;bottom:0;display:grid;place-items:center;width:21px;height:21px;border:1px solid #a8a8a8;border-radius:3px;background:linear-gradient(#fff,#ededed);box-shadow:0 1px 3px #0003;color:#202020;pointer-events:none; }
@@ -377,7 +377,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .desktop-shortcut { width:23px;height:23px;bottom:-1px;border-radius:2px;background:linear-gradient(#fff,#eee);color:#555; }
 .desktop-shortcut svg { display:block;width:19px;height:19px;fill:currentColor; }
 .polaroid,.polaroid *,.polaroid.is-dragging,.drift--static .polaroid { cursor:pointer!important; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .brand__controls { position:absolute;left:calc(46px - 46vw);right:auto;top:8px; }
 }
 
@@ -385,7 +385,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .office-picker--space>button { margin:0;width:100%;box-sizing:border-box; }
 .model-controls { justify-content:center; }
 .rent-slider__thumb .ui-icon { pointer-events:none; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) { .site-bottom .rent-slider { cursor:pointer; } }
+@media (min-width:701px) { .site-bottom .rent-slider { cursor:pointer; } }
 
 /* Controls keep their full border and sufficient room for text. */
 .office-feature .form-actions .back-btn { flex:none;width:auto;min-width:max-content;max-width:none;padding:12px 18px;white-space:nowrap;line-height:1.25; }
@@ -401,15 +401,15 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .quantity-control button .ui-icon { width:16px;height:16px; }
 .quantity-control button:disabled { opacity:.3; }
 .quantity-control:focus-within { outline:2px solid var(--ink-3);outline-offset:2px; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .menu__title,body.admin-session .menu__title { position:absolute;left:0;top:0;width:32%;height:66px;padding:0;margin:0;display:grid;place-items:center;line-height:1; }
 }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .menu,body.admin-session .menu { padding:14px 20px 17px calc(32% + 20px); }
   .menu__list { margin-left:0;min-width:0; }
 }
 
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .menu,body.admin-session .menu { padding-left:calc(var(--menu-tab-width,115px) + 20px); }
   .menu__title,body.admin-session .menu__title { width:var(--menu-tab-width,115px); }
   body.admin-session .menu__list { max-height:max(160px,calc(100dvh - 395px));overflow-y:auto;padding-right:2px; }
@@ -425,7 +425,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 .office-feature .auth-form--role .auth-switch { margin:0;text-align:center;font-size:11px; }
 .auth-role-actions { display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:auto;padding-top:36px; }
 .office-feature .auth-role-actions button[type="submit"] { width:78%;min-height:42px;margin:0; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .office-feature .auth-form--role { min-height:calc(100svh - 190px);margin-top:24px; }
   .auth-illustration { grid-template-columns:minmax(0,1fr) 90px; }
 }
@@ -462,7 +462,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
 .view-enter { animation:officePageIn .2s ease-out both; }
 .office-feature>.window { animation:officePageIn .2s ease-out both; }
 @keyframes officePageIn { from { opacity:0;transform:translateY(4px); } to { opacity:1;transform:none; } }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page="master"] .section-head .crumbs__current { display:none; }
   body[data-page="master"] .section-head:has(.crumbs) .crumbs {min-height:0;}
   body[data-page="master"] .section-head { margin-bottom:18px;row-gap:24px; }
@@ -486,7 +486,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
   .office-feature .booking-review { padding:18px; }
 }
 @media (prefers-reduced-motion:reduce) { .view-enter,.office-feature>.window { animation:none; } }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) { body.admin-session .menu__list { margin-left:0; } }
+@media (min-width:701px) { body.admin-session .menu__list { margin-left:0; } }
 
 /* Admin sections: compact content and a rail that reserves space for the footer. */
 body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
@@ -510,13 +510,13 @@ body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
 .schedule-free { color:var(--muted);font-size:11px; }
 .admin-content .schedule .busy { background:#333;color:#fff; }
 .admin-content .schedule .closed { background:var(--panel-2);color:var(--muted); }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body.admin-session .rail { position:fixed;right:24px;top:194px;width:var(--rail-width);margin:0;height:calc(100dvh - 236px - var(--desktop-foot-height,125px));min-height:0; }
   body.admin-session .rail .menu { flex:1;min-height:0;display:flex;flex-direction:column; }
   body.admin-session .menu__list { min-height:0;max-height:none;overflow-y:auto; }
   body.admin-session .rail .login { flex:none;margin:0; }
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .admin-section-head { flex-wrap:wrap;gap:12px; }
   .admin-section-head .admin-section-title { font-size:22px; }
   .admin-content .admin-tools .chrome { flex:1;min-width:max-content; }
@@ -525,7 +525,7 @@ body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
 
 #dialog .close,.modal__x { display:grid;place-items:center;padding:0;line-height:1; }
 #dialog .close .ui-icon,.modal__x .ui-icon { display:block;width:18px;height:18px;margin:0;flex:none; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) { body.admin-session .stage { min-height:0; } }
+@media (min-width:701px) { body.admin-session .stage { min-height:0; } }
 /* Login images share the same column and edges as the fields. */
 .auth-form--role .auth-illustration { width:100%;grid-template-columns:minmax(0,1fr);gap:8px; }
 .auth-form--role .auth-illustration .auth-photo { width:100%;justify-self:center; }
@@ -534,8 +534,8 @@ body.admin-session .office-feature .window { min-height:0;padding-bottom:32px; }
 .office-feature .auth-form--role { min-height:0; }
 .auth-form--role .auth-role-actions { margin-top:24px;padding-top:0; }
 body[data-page="login"] .office-feature .window { min-height:0;padding-bottom:32px; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) { body[data-page="login"] .stage { min-height:0; } }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (min-width:701px) { body[data-page="login"] .stage { min-height:0; } }
+@media (max-width:700px) {
   .office-feature .auth-form--role { min-height:0; }
   .auth-form--role .auth-caption { justify-self:start;text-align:left;font-size:11px; }
 }
@@ -544,12 +544,12 @@ body[data-page="login"] .office-feature .window { min-height:0;padding-bottom:32
 body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { display:flex;flex-direction:column; }
 body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head { flex:none; }
 .office-feature .window>.auth-form { margin-left:auto;margin-right:auto; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body[data-page] .stage:has(.auth-form:not(#feedback-form)) { min-height:calc(100svh - 134px); }
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { min-height:calc(100svh - 196px); }
   .office-feature .window>.auth-form { flex:none;margin-top:auto;margin-bottom:auto; }
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) { min-height:0; }
   .office-feature .window>.auth-form { margin-top:20px;margin-bottom:0; }
 }
@@ -564,7 +564,7 @@ body[data-page="booking"] .office-feature .window { min-height:0;padding-bottom:
 .booking-grid>div:first-child { display:flex;flex-direction:column;min-width:0; }
 .booking-grid>div:first-child>.form-actions { margin-top:auto;padding-top:30px; }
 #booking-error:empty { display:none; }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) { body[data-page="booking"] .stage { min-height:0; } }
+@media (min-width:701px) { body[data-page="booking"] .stage { min-height:0; } }
 
 .office-feature .booking-grid--review { grid-template-columns:minmax(0,1fr); }
 .booking-review__total { display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:22px;font-size:18px; }
@@ -586,7 +586,7 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 .office-feature .find-card h3 { font-size:20px;font-weight:500;line-height:1.3;margin:8px 0 6px; }
 .office-feature .find-card p { font-size:13px;line-height:1.5; }
 .office-feature .find-card h3 a { margin:0;padding:0;color:inherit; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .office-feature .find-cards { grid-template-columns:1fr;gap:10px; }
   .office-feature .find-card { padding:16px 18px; }
   .office-feature .find-card h3 { font-size:18px; }
@@ -597,7 +597,7 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 .office-feature .interior-dossier h3 { font-size:26px;line-height:1.2;letter-spacing:-.025em; }
 .office-feature .interior-dossier p { font-size:14px;line-height:1.55;margin:0; }
 .office-feature .interior-dossier .chrome { min-height:44px;padding:12px 16px;font-size:14px;line-height:1.3; }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .find-lead .space-picker { display:block;margin-top:18px; }
   .find-lead .space-picker .office-select { width:100%;max-width:100%; }
   .office-feature .interior-dossier { padding:20px;gap:16px; }
@@ -632,7 +632,7 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 }
 @keyframes officePopupIn {from{opacity:0;translate:0 5px;}to{opacity:1;translate:0 0;}}
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) { body[data-page="masters"] .site-bottom .rent-slider {bottom:calc(max(12px,env(safe-area-inset-bottom)) + 8px);} }
+@media (max-width:700px) { body[data-page="masters"] .site-bottom .rent-slider {bottom:calc(max(12px,env(safe-area-inset-bottom)) + 8px);} }
 
 /* Reserve arrow space even for a long office name. */
 .space-picker .office-select {position:relative;display:block;width:min(100%,340px);padding-inline:14px 44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
@@ -689,7 +689,7 @@ button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!import
 :root[data-theme="dark"] .quantity-control input[type="number"] {background:transparent;border:0;}
 :root[data-theme="dark"] .office-feature .choice:not(.selected),:root[data-theme="dark"] .office-feature .time:not(.selected),:root[data-theme="dark"] .office-feature .calendar button:not(.selected) {background:var(--control-fill);border-color:var(--panel-edge);color:var(--ink);box-shadow:var(--control-shadow);}
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {.mobile-menu-open .menu__title,body.admin-session.mobile-menu-open .menu__title {display:none!important;}}
+@media (max-width:700px) {.mobile-menu-open .menu__title,body.admin-session.mobile-menu-open .menu__title {display:none!important;}}
 .password-toggle {z-index:1;}
 .password-toggle svg {pointer-events:none;}
 :root[data-theme="dark"] {background:var(--bg);}
@@ -720,12 +720,12 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 .password-toggle:active,.password-toggle:focus:not(:focus-visible) {transform:none;translate:none;scale:1;box-shadow:none!important;}
 
 /* Authentication panels end on the same baseline as the desktop footer. */
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(100svh - 124px);}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(100svh - 186px);}
 }
 /* The desktop admin workspace shares the footer baseline and rail width. */
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body.admin-session[data-page="admin"] .stage:not(.stage--bare) {min-height:calc(100svh - 124px)!important;}
   body.admin-session .rail .login {width:100%;align-self:stretch;box-sizing:border-box;}
   body.admin-session .rail .who__name {font-size:clamp(15px,1.35vw,19px);}
@@ -735,7 +735,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 /* Solid button edges in every interaction state, without a white inset ring. */
 .office-feature .chrome,#dialog .chrome,.btn,.office-feature .back-btn {background-clip:border-box;box-shadow:0 3px 8px #00000018!important;}
 /* The whole desktop rail follows its content. Only the document scrolls. */
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body {min-height:max(100svh,calc(var(--desktop-footer-bottom,0px) + 24px));}
   .rail,body.admin-session .rail {position:absolute;right:24px;top:194px;width:var(--rail-width);height:auto;min-height:0;margin:0;}
   .rail .menu,body.admin-session .rail .menu {flex:none;height:auto;min-height:0;}
@@ -750,11 +750,11 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   body[data-page] .stage:has(.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px));}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - 162px);}
 }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form)) {padding-bottom:0;}
   body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.window-head {margin-bottom:24px;}
 }
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body[data-page] .stage:not(.stage--bare) {min-height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px))!important;}
   .stage--bare .stage__inner {height:calc(var(--desktop-footer-bottom,calc(100svh - 24px)) - var(--desktop-stage-top,100px));}
   .rail .login.login--user,body.admin-session .rail .login.login--user {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;}
@@ -765,12 +765,12 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 }
 .master-profile__action small {display:block;margin-top:10px;font-size:12px;}
 .login__master {display:block;width:100%;white-space:nowrap;text-align:center;text-decoration:none;font-size:15px;line-height:1.4;color:var(--ink);}
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .rail .login.login--guest {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;min-height:58px;display:flex;align-items:center;}
   .rail .login__master {font-size:clamp(13px,1.1vw,16px);}
 }
 /* Desktop chrome stays in the viewport; content scrolls inside its panel. */
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body {height:100dvh;min-height:100dvh;overflow:hidden;}
   body[data-page] #stage {position:fixed;top:var(--desktop-stage-top,100px);left:clamp(24px,3vw,54px);right:calc(var(--rail-width) + 56px);bottom:24px;width:auto;height:auto;min-height:0!important;}
   body[data-page] #stage>.stage__inner {position:absolute;inset:0;height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;}
@@ -837,7 +837,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 .office-feature .walking-route {margin:24px 0;padding:22px;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel-2);}
 .walking-route ol {margin:14px 0;padding-left:22px;display:grid;gap:10px;font-size:14px;line-height:1.6;}
 .walking-route p {font-size:12px;color:var(--ink-2);margin:12px 0 0;line-height:1.5;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body {display:flex;flex-direction:column;min-height:100dvh;}
   #stage,.rail {flex:none;}
   .site-bottom,body[data-page="masters"] .site-bottom {flex:none;margin-top:auto;padding-top:18px;margin-bottom:max(14px,env(safe-area-inset-bottom));padding-bottom:0;}
@@ -860,7 +860,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 .help-tooltip[hidden] {display:none!important;}
 
 /* Every mobile content panel takes the available space before the footer. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page] #stage {flex:1 0 auto;min-height:0!important;margin-bottom:0;display:flex;flex-direction:column;}
   body[data-page] #stage>.stage__inner {flex:1 0 auto;min-height:0;height:auto;display:flex;flex-direction:column;}
   body[data-page] #office-view {flex:1 0 auto;display:flex;flex-direction:column;}
@@ -895,7 +895,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 }
 /* The schedule grows with every hour; only horizontal scrolling is local. */
 .office-feature .schedule-scroll {max-height:none;height:auto;overflow-x:auto;overflow-y:hidden;}
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   body:has(.schedule-scroll) {height:auto;overflow-y:auto;}
   body[data-page]:has(.schedule-scroll) #stage {position:relative;inset:auto;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 24px)!important;height:auto;}
   body[data-page]:has(.schedule-scroll) #stage>.stage__inner {position:relative;inset:auto;height:auto;overflow:visible;}
@@ -906,7 +906,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 
 /* Compact studio links occupy the free corner of the mobile navigation. */
 .menu__studio {display:none;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .mobile-menu-open .menu__studio {position:absolute;z-index:2;right:12px;top:calc(var(--mobile-menu-notch-depth,46px) + 7px);display:flex;flex-direction:column;gap:4px;}
   .menu__studio a {display:block;min-width:94px;padding:5px 8px;border:1px solid var(--panel-edge);border-radius:10px;background:var(--control-fill);color:var(--ink);font-size:12px;line-height:1.2;text-align:center;text-decoration:none;white-space:nowrap;}
 }
@@ -924,9 +924,9 @@ a>.ui-icon {flex:none;}
 
 .section-head .crumbs {display:inline-flex;align-items:center;gap:8px;}
 .section-head .crumbs>.bullet {width:20px;height:20px;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {.section-head .crumbs>.bullet {width:18px;height:18px;}}
+@media (max-width:700px) {.section-head .crumbs>.bullet {width:18px;height:18px;}}
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .menu__studio {align-items:stretch;}
   .menu__studio a {display:flex;align-items:center;justify-content:center;gap:4px;width:106px;min-width:106px;min-height:28px;}
   .menu__studio a.menu__club {background:#171717;border-color:#171717;color:#fff;}
@@ -1029,12 +1029,12 @@ a>.ui-icon {flex:none;}
 .admin-content .admin-profile form>button[type="submit"] {align-self:flex-start;min-width:0;width:auto;max-width:100%;white-space:nowrap;margin-top:6px;padding:12px 20px;}
 @media (max-width:730px) {.admin-content .admin-profile {grid-template-columns:minmax(0,1fr);gap:18px;}}
 
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .brand {height:auto;padding:28px;align-items:center;}
   .brand__logo img {display:block;}
 }
 
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .rail,body.admin-session .rail {top:calc(var(--desktop-brand-height,176px) + 18px);}
 }
 
@@ -1052,12 +1052,12 @@ a>.ui-icon {flex:none;}
 .office-initial,:root[data-theme="dark"] .office-initial {color:#000;}
 
 /* Booking details use the available desktop space beside the event. */
-@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
+@media (min-width:701px) {
   .office-feature .cabinet .cabinet-notification--booking {grid-template-columns:100px minmax(0,1.2fr) minmax(230px,1fr);align-items:center;column-gap:24px;}
   .cabinet-notification--booking .notification-details {justify-self:end;max-width:100%;}
   .cabinet-notification--booking .receipt-link {text-align:left;white-space:normal;}
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .cabinet-notification--booking .notification-photo {grid-row:1 / span 2;}
   .cabinet-notification--booking .notification-details {grid-column:2;}
   .office-feature .cabinet .cabinet-notification--booking {row-gap:0;}
@@ -1073,45 +1073,45 @@ a>.ui-icon {flex:none;}
 :root[data-theme="dark"] .office-feature .tabs button,:root[data-theme="dark"] .office-feature .steps li.active b,:root[data-theme="dark"] #dialog button[type="submit"],:root[data-theme="dark"] .office-feature button[type="submit"] {box-shadow:0 3px 8px #0003!important;}
 :root[data-theme="dark"] .office-initial {box-shadow:0 3px 8px #0002;}
 /* Keep the mobile admin sign-in group centered inside its panel. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .office-feature .window>#admin-auth-form {margin: auto; padding-block:24px; text-align:center;}
   #admin-auth-form .has-help {justify-content:center;}
   #admin-auth-form .field>span {text-align:center;}
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body[data-page] #stage>.stage__inner>div:has(#admin-auth-form) {display:flex;flex-direction:column;flex:1 0 auto;}
 }
 
 /* Mobile browser canvas stays white around the site's own themed surfaces. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   :root,:root[data-theme="dark"] {background:#fff;color-scheme:light;}
   .mobile-menu-open .rail .login {background:var(--panel);}
 }
 /* An opaque fixed edge also covers content extended beneath mobile browser chrome. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .header {height:44px;background-color:#fff;isolation:isolate;}
   .header__shape {height:22.5vw;}
   .header::before {position:absolute;inset:auto 0 100%;height:100vh;background:#fff;z-index:0;pointer-events:none;}
 }
 
 /* Browser edge layers follow the selected theme, including rounded header corners. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   :root {--browser-canvas:#fff;background:var(--browser-canvas);color-scheme:light;}
   :root[data-theme="dark"] {--browser-canvas:#000;background:var(--browser-canvas);color-scheme:dark;}
   .header,.header::before {background-color:var(--browser-canvas);}
 }
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   #view {clip-path:none;}
 }
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   /* Cover only the SVG's top stroke, keeping the shaped lower outline. */
   .header::after {content:"";position:absolute;inset:-1px 0 auto;height:2px;background:var(--panel);z-index:1;pointer-events:none;}
   /* A finger scrolls the page; the browser cancels activation after a swipe. */
   .drift:not(.drift--static) .polaroid,.drift--static .polaroid {touch-action:pan-y pinch-zoom;-webkit-touch-callout:none;}
 }
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   :root[data-theme="dark"] .header__shape path {fill:var(--browser-canvas);}
   .header::after {background:var(--browser-canvas);}
 }
@@ -1121,7 +1121,7 @@ html {scroll-behavior:auto;}
 body:has(dialog[open]) {overflow:hidden;}
 dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .table-wrap,.schedule-scroll {touch-action:pan-x pan-y pinch-zoom;overscroll-behavior-x:contain;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   html {scroll-padding-top:calc(22.5vw + 12px);scroll-padding-bottom:100px;}
   .portrait,.drift:not(.drift--static) .polaroid,.drift--static .polaroid,.rent-slider,.rent-slider__thumb,#studio-model,.photo-viewer__stage {touch-action:pan-y pinch-zoom;}
   .office-feature .field input,.office-feature .field textarea {font-size:16px;scroll-margin-block:110px;}
@@ -1129,18 +1129,18 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 }
 
 .rent-slider__hit-area {display:none;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:min(76vw,360px);overflow:visible;}
   .rent-slider__hit-area {display:block;position:absolute;inset:-28px;z-index:1;touch-action:pan-y pinch-zoom;}
   .site-bottom .rent-slider__label {inset:0 8px 0 58px;font-size:clamp(14px,3.7vw,17px);}
 }
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .rent-slider,.rent-slider__thumb,.rent-slider__hit-area {touch-action:auto;}
 }
 
 /* Let the browser provide its native elastic movement at document edges. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   html,body {overscroll-behavior-y:auto;}
 }
 
@@ -1157,7 +1157,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .theme:focus-visible .theme__track {filter:none;box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--ink);}
 @media (prefers-reduced-motion:reduce) {.theme__track,.theme__knob {transition:none!important;}}
 .page-scroller {display:contents;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .brand__controls .theme,.theme__track {width:44px;height:22px;}
   .theme__knob,:root[data-theme="dark"] .theme__knob {width:16px;height:16px;}
   :root[data-theme="dark"] .theme__knob {transform:translateX(22px);}
@@ -1174,7 +1174,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .photo-viewer::backdrop {inset:-2px;background:#111d;}
 }
 
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .brand__controls {top:0;height:44px;align-items:center;}
 }
 
@@ -1184,21 +1184,21 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .has-help>.help-alert svg {width:var(--alert-size);height:var(--alert-size);}
 
 /* Keep the opaque header in its own stable layer instead of masking the page. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .header {transform:translateZ(0);backface-visibility:hidden;}
   .header__shape,:root[data-theme="dark"] .header__shape {filter:none;transform:translateZ(0);backface-visibility:hidden;}
 }
 
 /* Keep the header in the document's paint tree for translucent in-app chrome.
    Its negative margin preserves the page's existing vertical positions. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .header {position:sticky;top:0;flex:none;margin-bottom:-44px;background:transparent;transform:none;}
   .header::before {position:absolute;inset:auto 0 17px;height:calc(100lvh + 27px);background:var(--browser-canvas);}
 }
 
 /* Clip only above the viewport, not below the header. Its opaque 44px height
    hides paint latency instead of exposing a white gap beneath its lower edge. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   @supports(animation-timeline:scroll(root block)) {
     .page-scroller {clip-path:inset(20px 0 0);animation:browser-canvas-edge linear both!important;animation-timeline:scroll(root block)!important;}
   }
@@ -1210,14 +1210,14 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 /* Reserve 20px under the solid header for asynchronous WebKit scrolling.
    A stationary wallpaper underlay keeps its rounded corners filled if paint lags. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body {position:relative;isolation:isolate;}
   body::before {display:block;content:"";position:fixed;inset:27px 0 -100lvh;z-index:-1;pointer-events:none;background:var(--bg) url("../assets/pattern.svg") 0 -27px / 200px 200px;}
   :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
 }
 
 /* Lock the viewport, not the sticky header's ancestor, when an overlay opens. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   html:has(body.mobile-menu-open,dialog[open],.modal:not([hidden])) {overflow-y:hidden;}
   body.mobile-menu-open,body:has(dialog[open],.modal:not([hidden])) {overflow-y:visible;overflow-x:clip;}
 }
@@ -1226,17 +1226,17 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .help-alert,.has-help>.help-alert,.office-feature .help-alert,#dialog .help-alert {color:var(--ink-3)!important;}
 :root body :focus,:root body :focus-visible,#dialog :focus,#dialog :focus-visible {outline:none!important;outline-offset:0!important;}
 .theme:focus-visible .theme__track,.rent-slider__thumb:focus-visible {box-shadow:none!important;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .brand__logo,.brand__logo * {user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;}
   :root:is([data-browser="yandex"],[data-browser="safari"]) .page-scroller {animation:none!important;clip-path:none!important;}
   .page-scroller {padding-bottom:0;}
 }
-@media (min-width:701px) and (max-width:1100px) and (orientation:landscape) {
+@media (min-width:701px) and (max-width:1100px) {
   :root {--rail-width:clamp(250px,32vw,330px);}
   .brand {padding:22px;width:var(--rail-width);gap:12px;}
   .brand__logo img {width:clamp(170px,22vw,230px);}
 }
-@media (min-width:701px) and (max-width:1100px) and (orientation:landscape) {
+@media (min-width:701px) and (max-width:1100px) {
   .brand__logo img {width:calc(var(--rail-width) - 110px);}
   .find-lead,.showcase-head {display:block;}
   .find-lead .office-select,.showcase-head .office-select {width:100%;max-width:100%;margin-top:16px;}
@@ -1250,7 +1250,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 /* Paint the browser canvas itself, instead of adding empty document height.
    The upper half stays solid for the header; the lower canvas repeats wallpaper. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   :root,:root[data-theme="dark"] {
     background-color:var(--browser-canvas);
     background-image:linear-gradient(var(--browser-canvas),var(--browser-canvas)),url("../assets/pattern.svg");
@@ -1267,7 +1267,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .office-feature .empty:not(:first-child),.table-wrap+.empty {margin-block-start:16px;}
 
 /* WebKit derives its under-page color from BODY, not its background image. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   body {--under-page-color:#f4f4f2;background-color:var(--under-page-color);}
   :root[data-theme="dark"] body {--under-page-color:#1b1b1e;background-color:var(--under-page-color);}
   /* Border-image overhang is ink overflow: it does not add scrollable height. */
@@ -1279,7 +1279,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 .master-profile__facts {display:grid;grid-template-columns:max-content 1fr;column-gap:22px;color:var(--ink-2);font-size:15px;}
 .master-profile__facts .master__city {grid-column:1/-1;}
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .master-profile {position:relative;min-height:200px;}
   .master-profile__facts {position:absolute;left:0;top:154px;width:108px;display:grid;grid-template-columns:max-content max-content;gap:3px 6px;font-size:12px;line-height:1.5;}
   .master-profile__facts .master__city {grid-column:auto;margin:0;font-size:12px;white-space:nowrap;}
@@ -1289,7 +1289,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 }
 
 /* Share the lower profile row: facts under the photo, booking beside them. */
-@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
+@media (max-width:700px) {
   .master-profile {grid-template-rows:max-content minmax(0,1fr) auto;row-gap:10px;min-height:0;}
   .master-profile__copy {display:contents;}
   .master-profile .master__photo {grid-column:1;grid-row:1/3;}
@@ -1300,10 +1300,52 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 }
 
 /* Landscape tablets need the whole content panel for paired gallery cards. */
-@media (min-width:701px) and (max-width:1100px) and (orientation:landscape) {
+@media (min-width:701px) and (max-width:1100px) {
   .master {grid-template-columns:minmax(0,1fr);}
   .master-profile {display:grid;grid-template-columns:minmax(140px,35%) minmax(0,1fr);gap:22px;}
   .master-profile .master__photo {width:100%;}
   .master-profile .master__name {margin-top:0;}
   .master .works {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0;}
 }
+
+/* Compact desktop proportions on tablets, in either orientation. */
+@media (min-width:701px) and (max-width:1366px) {
+  :root {--rail-width:clamp(220px,28vw,330px);}
+  .brand {width:var(--rail-width);padding:22px;gap:12px;}
+  .brand__logo img {width:calc(var(--rail-width) - 110px);}
+  .rail,body.admin-session .rail {right:20px;top:var(--desktop-menu-top,154px);}
+  body[data-page] #stage {left:24px;right:calc(var(--rail-width) + 48px);}
+  .site-bottom .foot,body[data-page="masters"] .site-bottom .foot,
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {right:20px;}
+  .master {grid-template-columns:minmax(0,1fr);}
+  .master-profile {display:grid;grid-template-columns:minmax(110px,35%) minmax(0,1fr);gap:18px;}
+  .master-profile .master__photo {width:100%;}
+  .master-profile .master__name {margin-top:0;}
+  .master .works {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0;}
+  .office-feature .window {padding:24px;}
+  .office-feature .find-cards {grid-template-columns:1fr;}
+  .office-feature .form-grid,.office-feature .booking-layout {grid-template-columns:minmax(0,1fr);}
+  .office-feature .cabinet .summary-cards {grid-template-columns:repeat(2,minmax(0,1fr));}
+  .office-feature .cabinet .summary-cards .stat:last-child {grid-column:1/-1;}
+  .office-feature .cabinet .tabs {flex-wrap:wrap;gap:12px 18px;}
+  .office-feature .interior-dossier {display:block;}
+  .office-feature .interior-dossier .chrome {margin-top:16px;}
+  .office-feature .find-bottom {flex-wrap:wrap;gap:16px;}
+}
+.cabinet-heading h2 {margin-top:0;}
+.cabinet-email {overflow-wrap:anywhere;text-transform:none;}
+@media (min-width:701px) and (max-width:1366px) {
+  :root {--rail-width:clamp(250px,28vw,330px);}
+  .rail .login.login--user,.rail .login.login--guest,
+  body.admin-session .rail .login.login--user,
+  .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:var(--rail-width);}
+  .site-bottom .rent-slider__label {font-size:11px;}
+  .stage:not(.stage--bare)>.stage__inner {padding:24px;}
+  .office-feature .window {padding:16px;}
+}
+@media (min-width:701px) and (max-width:1366px) {
+  .site-bottom .foot {padding:14px 32px 14px 14px;}
+  .foot__links {grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:6px 8px;}
+  .foot__links a {font-size:9px;white-space:normal;overflow-wrap:normal;}
+}
+.cabinet-email code {font:inherit;}
