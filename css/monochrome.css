@@ -1105,7 +1105,7 @@ a>.ui-icon {flex:none;}
 /* Browser edge layers follow the selected theme, including rounded header corners. */
 @media(max-width:900px) {
   :root {--browser-canvas:#fff;background:var(--browser-canvas);color-scheme:light;}
-  :root[data-theme="dark"] {--browser-canvas:var(--bg);background:var(--browser-canvas);color-scheme:dark;}
+  :root[data-theme="dark"] {--browser-canvas:#000;background:var(--browser-canvas);color-scheme:dark;}
   body,:root[data-theme="dark"] body {background-color:var(--browser-canvas);}
   .header,.header::before {background-color:var(--browser-canvas);}
 }
@@ -1118,4 +1118,9 @@ a>.ui-icon {flex:none;}
   .header::after {content:"";position:absolute;inset:-1px 0 auto;height:2px;background:var(--panel);z-index:1;pointer-events:none;}
   /* A finger scrolls the page; the browser cancels activation after a swipe. */
   .drift:not(.drift--static) .polaroid,.drift--static .polaroid {touch-action:pan-y pinch-zoom;-webkit-touch-callout:none;}
+}
+
+@media(max-width:900px) {
+  :root[data-theme="dark"] .header__shape path {fill:var(--browser-canvas);}
+  .header::after {background:var(--browser-canvas);}
 }

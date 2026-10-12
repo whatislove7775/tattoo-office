@@ -193,7 +193,7 @@
     toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta)
-      meta.setAttribute("content", theme === "dark" ? "#181818" : "#ffffff");
+      meta.setAttribute("content", theme === "dark" ? (global.innerWidth <= 900 ? "#000000" : "#181818") : "#ffffff");
   }
 
   /* ---------------------------- форма шапки -------------------------------- */
