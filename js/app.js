@@ -11,6 +11,7 @@
 
   var view = document.getElementById("view");
   var stageInner = view;
+  var pageScroller = document.getElementById("pageScroller");
   var currentCleanup = null;
 
   /* ------------------------------ маршруты -------------------------------- */
@@ -107,6 +108,7 @@
       );
 
     stageInner.scrollTop = 0;
+    pageScroller.scrollTop = 0;
     global.scrollTo(0, 0);
     paintMenu(found ? found.route.nav : null);
     paintMenuShape();
@@ -358,7 +360,7 @@
   function mobilePanelPath(element, joined, inDocument) {
     var rect = element.getBoundingClientRect();
     var w = element.offsetWidth, h = element.offsetHeight, r = 17;
-    var top = rect.top + (inDocument ? global.scrollY : 0);
+    var top = rect.top + (inDocument ? global.scrollY + pageScroller.scrollTop : 0);
     var notch = Math.min(w - r * 2, global.innerWidth * .49 - rect.left - 12);
     var depth = Math.max(r * 2, global.innerWidth * .225 + 12 - top);
     element.style.setProperty("--mobile-menu-notch-depth", depth + "px");
@@ -373,42 +375,8 @@
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
-  // One mobile clipping boundary for every routed page, including booking and admin.
-  var pageClipFrame = 0;
-  function updatePageClip() {
-    if (global.innerWidth > 900) {
-      view.style.removeProperty('--page-clip-top');
-      view.style.removeProperty('--page-clip-bottom');
-      document.body.style.removeProperty('--wallpaper-clip-top');
-      return;
-    }
-    // Browser toolbar/rubber-band offsets are not an extra header height.
-    var viewportTop = global.visualViewport && global.visualViewport.scale > 1 ? global.visualViewport.offsetTop : 0;
-    var rect = view.getBoundingClientRect();
-    var scroller = document.scrollingElement;
-    var maximumScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    var boundedScroll = Math.max(0, Math.min(global.scrollY, maximumScroll));
-    var bounce = global.scrollY - boundedScroll;
-    var viewTop = rect.top + bounce;
-    var viewBottom = rect.bottom + bounce;
-    var viewportHeight = global.visualViewport ? global.visualViewport.height : global.innerHeight;
-    var top = Math.max(0, 44 + viewportTop - viewTop);
-    var bottom = document.body.dataset.page === "masters" ? 0 : Math.max(0, viewBottom - viewportTop - viewportHeight);
-    view.style.setProperty('--page-clip-top', top + 'px');
-    view.style.setProperty('--page-clip-bottom', bottom + 'px');
-    var wallpaperTop = Math.max(0, 44 + viewportTop - document.body.getBoundingClientRect().top - bounce);
-    document.body.style.setProperty('--wallpaper-clip-top', wallpaperTop + 'px');
-  }
-  function schedulePageClip() {
-    if (!pageClipFrame) pageClipFrame = requestAnimationFrame(function () {
-      pageClipFrame = 0;
-      updatePageClip();
-    });
-  }
-
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
-    updatePageClip();
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
@@ -518,11 +486,6 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
-    global.addEventListener("scroll", schedulePageClip, { passive: true });
-    if (global.visualViewport) {
-      global.visualViewport.addEventListener("scroll", schedulePageClip, { passive: true });
-      global.visualViewport.addEventListener("resize", schedulePageClip);
-    }
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
     scrollObserver.observe(stageInner);

@@ -58,12 +58,13 @@
 
     <div class="brand__controls">
       <button class="theme" id="themeToggle" type="button" title="" aria-label="Включить тёмную тему" aria-pressed="false" data-sfx="toggle">
-        <span class="theme__track" aria-hidden="true"><span class="theme__knob"></span><svg class="ui-icon theme__sun"><use href="#ui-sun"></use></svg><svg class="ui-icon theme__moon"><use href="#ui-moon"></use></svg></span>
+        <span class="theme__track" aria-hidden="true"><span class="theme__knob"></span></span>
       </button>
     </div>
   </div>
 </div>
 
+<div class="page-scroller" id="pageScroller">
 <!-- ============ основная сцена ============ -->
 <main class="stage panel" id="stage" tabindex="-1">
   <svg class="stage__shape" aria-hidden="true" focusable="false"><path id="stageShapePath"></path></svg>
@@ -98,6 +99,8 @@
     <img class="foot__mark" src="assets/mark.svg" alt="">
   </footer>
 </div>
+
+</div><!-- pageScroller -->
 
 <!-- декоративный скролл-бар в стиле 2010-х -->
 <div class="deco-scroll" aria-hidden="true" hidden><div class="deco-scroll__thumb" id="decoThumb"></div></div>

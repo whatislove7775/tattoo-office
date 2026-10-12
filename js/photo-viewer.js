@@ -7,6 +7,12 @@
   dialog.innerHTML = '<div class="photo-viewer__bar"><span class="photo-viewer__caption"></span><button type="button" class="photo-viewer__close" aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="#ui-close"></use></svg></button></div><div class="photo-viewer__stage"><button type="button" class="photo-viewer__prev" aria-label="Предыдущая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><img alt=""><button type="button" class="photo-viewer__next" aria-label="Следующая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></div><div class="photo-viewer__foot"><span class="photo-viewer__count"></span><div class="photo-viewer__dots"></div></div>';
   document.body.append(dialog);
   var image = dialog.querySelector("img");
+  var themeColor = document.querySelector('meta[name="theme-color"]');
+  var previousThemeColor;
+  dialog.addEventListener("close", function () {
+    if (themeColor && previousThemeColor != null) themeColor.content = previousThemeColor;
+    previousThemeColor = null;
+  });
   function show(next) {
     index = (next + photos.length) % photos.length;
     var photo = photos[index];
@@ -51,7 +57,10 @@
       photos = list.filter(function (photo) { return photo && photo.src; });
       if (!photos.length) return;
       show(at || 0);
-      if (!dialog.open) dialog.showModal();
+      if (!dialog.open) {
+        if (themeColor) { previousThemeColor = themeColor.content; themeColor.content = "#111111"; }
+        dialog.showModal();
+      }
     }
   };
 })(window);

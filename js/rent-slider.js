@@ -147,6 +147,7 @@
   }
   function scheduleDock() { if (!dockFrame) dockFrame = requestAnimationFrame(dock); }
   window.addEventListener('scroll', scheduleDock, {passive:true});
+  document.getElementById('pageScroller')?.addEventListener('scroll', scheduleDock, {passive:true});
   window.addEventListener('resize', scheduleDock);
   window.addEventListener('hashchange', scheduleDock);
   new ResizeObserver(scheduleDock).observe(document.body);

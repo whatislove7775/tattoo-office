@@ -1102,7 +1102,7 @@ a>.ui-icon {flex:none;}
 }
 
 @media(max-width:900px) {
-  #view {clip-path:inset(var(--page-clip-top,0px) 0 var(--page-clip-bottom,0px));}
+  #view {clip-path:none;}
 }
 @media(max-width:900px) {
   /* Cover only the SVG's top stroke, keeping the shaped lower outline. */
@@ -1135,14 +1135,6 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .site-bottom .rent-slider__label {inset:0 8px 0 58px;font-size:clamp(14px,3.7vw,17px);}
 }
 
-/* Keep the upper browser canvas solid; let the document wallpaper continue below. */
-@media(max-width:900px) {
-  :root,body,:root[data-theme="dark"],:root[data-theme="dark"] body {background:var(--browser-canvas);}
-  body {position:relative;isolation:isolate;}
-  body::before {content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;clip-path:inset(var(--wallpaper-clip-top,44px) 0 0);}
-  :root[data-theme="dark"] body::before {background-image:url("../assets/pattern-dark.svg");}
-}
-
 @media(max-width:900px) {
   .rent-slider,.rent-slider__thumb,.rent-slider__hit-area {touch-action:auto;}
 }
@@ -1150,4 +1142,31 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 /* Keep the viewport steady when a held swipe reaches either end of the document. */
 @media(max-width:900px) {
   html,body {overscroll-behavior-y:none;}
+}
+
+/* Flat theme switch, matching the capsule reference in both themes. */
+.brand__controls .theme,.theme__track {width:60px;height:28px;}
+.theme__track,:root[data-theme="dark"] .theme__track {border:0;background:#000;box-shadow:none;overflow:hidden;}
+.theme__track::after {display:none;}
+.theme__knob,:root[data-theme="dark"] .theme__knob {top:3px;left:3px;width:22px;height:22px;border:0;background:#e3e3e3;box-shadow:none;transform:translateX(0);}
+:root[data-theme="dark"] .theme__knob {transform:translateX(32px);}
+.theme:focus-visible .theme__track {box-shadow:0 0 0 3px var(--panel),0 0 0 5px var(--ink);}
+.page-scroller {display:contents;}
+@media(max-width:900px) {
+  .brand__controls .theme,.theme__track {width:52px;height:26px;}
+  .theme__knob,:root[data-theme="dark"] .theme__knob {width:20px;height:20px;}
+  :root[data-theme="dark"] .theme__knob {transform:translateX(26px);}
+  html,body {height:100%;overflow:hidden;background:var(--browser-canvas);}
+  body {height:100dvh;min-height:0;}
+  body::before {display:none;}
+  /* A compositor-owned scroll boundary cannot lag behind a fast finger swipe.
+     Extend below the viewport so cards continue beneath floating browser controls. */
+  .page-scroller {display:flex;flex-direction:column;position:fixed;inset:44px 0 -100px;overflow-x:hidden;overflow-y:auto;padding-bottom:100px;box-sizing:border-box;overscroll-behavior-y:none;touch-action:pan-y pinch-zoom;-webkit-overflow-scrolling:touch;scroll-padding:calc(22.5vw - 32px) 0 120px;background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;}
+  :root[data-theme="dark"] .page-scroller {background-image:url("../assets/pattern-dark.svg");}
+  body[data-page] #stage {margin-top:10px;}
+  body:has(dialog[open],.modal:not([hidden])),body.mobile-menu-open {overflow:hidden;}
+  body:has(dialog[open],.modal:not([hidden])) .page-scroller,body.mobile-menu-open .page-scroller {overflow-y:hidden;}
+  :root:has(.photo-viewer[open]) {--browser-canvas:#111;background:#111;color-scheme:dark;}
+  body:has(.photo-viewer[open]) {background:#111;}
+  .photo-viewer::backdrop {inset:-2px;background:#111d;}
 }
