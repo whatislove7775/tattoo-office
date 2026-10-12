@@ -1145,7 +1145,7 @@ dialog img {
     height: 19vw;
   }
 }
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-width:1100px) and (orientation:portrait) {
   body {
     padding: 0 14px;
   }
@@ -1426,7 +1426,7 @@ dialog img {
     scroll-behavior: auto !important;
   }
 }
-@media (min-width: 701px) and (max-height: 800px) {
+@media (min-width: 701px) and (max-height: 800px) and (orientation:landscape), (min-width:1101px) and (max-height: 800px) {
   .rail-note {
     display: none;
   }

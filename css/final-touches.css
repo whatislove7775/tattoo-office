@@ -1,15 +1,15 @@
-@media (min-width:701px) {
+@media (min-width:701px) and (orientation:landscape), (min-width:1101px) {
   :root { --rail-right:24px; --rail-width:clamp(350px,25vw,460px); }
   .menu__title { left:0; width:32%; text-align:center; }
   .rail .rent-slider { width:76%; }
 }
-@media (max-width:700px) {
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
   .drift:not(.drift--static) .polaroid { left:0; top:0; animation:none; }
   .drift:not(.drift--static) { height:350vw; min-height:0; }
 }
 .deco-scroll { display:none!important; }
 .rent-slider__label { font-size:clamp(14px,1vw,17px); }
-@media(max-width:700px) { .rent-slider__label { font-size:clamp(16px,4vw,19px); } }
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) { .rent-slider__label { font-size:clamp(16px,4vw,19px); } }
 .brand__controls .theme,.theme__track { width:62px;height:32px; }
 .theme__track { border-color:#aaa; background:linear-gradient(#eee,#c9c9c9); box-shadow:inset 0 1px 2px #0003,0 1px #fff8; }
 .theme__track::after { inset:2px; }
@@ -17,7 +17,7 @@
 .theme__sun,.theme__moon { width:15px;height:15px;top:8px; }
 .theme__sun { left:8px; } .theme__moon { right:8px; }
 :root[data-theme="dark"] .theme__knob { transform:translateX(29px); }
-@media(max-width:700px) {
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
   .brand__controls .theme,.theme__track { width:54px;height:29px; }
   .theme__knob { width:21px;height:21px; }
   .theme__sun,.theme__moon { width:14px;height:14px;top:7px; }
@@ -77,7 +77,7 @@
 .service-pending>div { display:flex;flex-wrap:wrap;gap:10px; }
 .service-pending .chrome { display:inline-flex;align-items:center;justify-content:center;min-height:42px;margin:0; }
 .foot__copy { padding-right:24px; }
-@media(max-width:700px) {
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
   .brand-story,.club-page { grid-template-columns:1fr; }
   .brand-story img,.club-page img { height:290px;order:-1; }
   .brand-story__copy,.club-page>div { padding:24px; }
@@ -94,7 +94,7 @@
   .club-rates__table>div { grid-template-columns:1.15fr 1fr 1fr;gap:5px;padding:12px 8px;font-size:12px; }
   .club-rates__table>div:first-child { font-size:11px; }
 }
-@media(max-width:700px) {
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
   .header { position:fixed; }
   .stage { margin-bottom:180px; }
   .rail { position:fixed;inset:auto 0 0;width:100%;height:auto;margin:0;padding:7px 3.5vw max(9px,env(safe-area-inset-bottom));gap:9px;z-index:35;pointer-events:none; }

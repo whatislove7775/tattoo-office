@@ -316,10 +316,10 @@
 .menu__item:last-child{border-bottom:0}
 .menu__item[aria-current="true"] .menu__link{color:var(--ios-label);font-weight:700}
 
-@media(max-width:1100px){
+@media (max-width:1100px) {
   .find-cards{grid-template-columns:1fr;grid-template-rows:auto}
 }
-@media(max-width:700px){
+@media (max-width:700px), (max-width:1100px) and (orientation:portrait) {
   .office-feature .window-head{min-height:48px;padding:6px 9px;gap:5px}
   .office-feature .window-head h1{font-size:14px}
   .office-feature .window-head .ios-back{display:inline-flex;position:absolute;z-index:2;top:66px;left:18px;max-width:calc(100vw - 70px)}
@@ -335,4 +335,4 @@
   .office-feature .admin-tools .chrome{flex:none}
   .section-head>a[href="#/masters"]{position:absolute;top:65px;right:17px;max-width:81px;white-space:nowrap;overflow:hidden}
 }
-@media(prefers-reduced-motion:reduce){.modal__window,.modal__backdrop{animation:none}}
+@media (prefers-reduced-motion:reduce) {.modal__window,.modal__backdrop{animation:none}}

@@ -308,7 +308,7 @@ function mountMasters() {
     el.onpointerdown = (e) => {
       moved = false;
       if (
-        innerWidth <= 700 ||
+        window.isMobileLayout() ||
         e.pointerType !== "mouse" ||
         board.classList.contains("list") ||
         e.button !== 0
