@@ -1101,3 +1101,11 @@ a>.ui-icon {flex:none;}
   .header__shape {height:22.5vw;}
   .header::before {position:absolute;inset:auto 0 100%;height:100vh;background:#fff;z-index:0;pointer-events:none;}
 }
+
+/* Browser edge layers follow the selected theme, including rounded header corners. */
+@media(max-width:900px) {
+  :root {--browser-canvas:#fff;background:var(--browser-canvas);color-scheme:light;}
+  :root[data-theme="dark"] {--browser-canvas:var(--bg);background:var(--browser-canvas);color-scheme:dark;}
+  body,:root[data-theme="dark"] body {background-color:var(--browser-canvas);}
+  .header,.header::before {background-color:var(--browser-canvas);}
+}
