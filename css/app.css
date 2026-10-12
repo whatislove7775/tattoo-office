@@ -84,7 +84,7 @@ body {
 :root[data-theme="dark"] body { background-image: url("../assets/pattern-dark.svg"); }
 
 /* на мобильных страница скроллится целиком */
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   body { overflow: auto; }
 }
 
@@ -925,7 +925,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
   .stage { width: calc(100% - 410px); top: 72px; height: calc(100% - 96px); }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   body { background-size: 130px 130px; }
   /* цельная форма из SVG — только для широкого экрана; в узкой колонке
      возвращаемся к двум простым плашкам друг под другом */

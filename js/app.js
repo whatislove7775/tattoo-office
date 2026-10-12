@@ -13,6 +13,9 @@
   var stageInner = view;
   var pageScroller = document.getElementById("pageScroller");
   var currentCleanup = null;
+  // Yandex's in-app scroll timeline can use a different range from the viewport.
+  // Its native chrome needs no additional clipping, unlike Telegram/Safari.
+  document.documentElement.dataset.browser = /YaBrowser|YaApp|Yowser/i.test(navigator.userAgent) ? "yandex" : "default";
 
   /* ------------------------------ маршруты -------------------------------- */
   var ROUTES = [
@@ -195,7 +198,7 @@
     toggle.setAttribute("aria-label", theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему");
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta)
-      meta.setAttribute("content", theme === "dark" ? (global.innerWidth <= 900 ? "#000000" : "#181818") : "#ffffff");
+      meta.setAttribute("content", theme === "dark" ? (global.innerWidth <= 700 ? "#000000" : "#181818") : "#ffffff");
   }
 
   /* ---------------------------- форма шапки -------------------------------- */
@@ -214,7 +217,7 @@
       return;
     }
 
-    if (global.innerWidth <= 900) {
+    if (global.innerWidth <= 700) {
       var width = header.clientWidth, split = width * .49, bottom = width * .225, top = 44, rad = 17;
       path.setAttribute("d", `M0,0 H${width} V${bottom-rad} Q${width},${bottom} ${width-rad},${bottom} H${split+rad} Q${split},${bottom} ${split},${bottom-rad} V${top+rad} Q${split},${top} ${split-rad},${top} H${rad} Q0,${top} 0,${top-rad} Z`);
       return;
@@ -281,7 +284,7 @@
   function paintMenuShape() {
     var menu = document.getElementById("menu");
     var path = document.getElementById("menuShapePath");
-    if (global.innerWidth <= 900) {
+    if (global.innerWidth <= 700) {
       if (!menu.offsetWidth || !menu.offsetHeight) return;
       var joined = getComputedStyle(document.getElementById("loginPanel")).display !== "none";
       path.setAttribute("d", mobilePanelPath(menu, joined, false));
@@ -371,13 +374,13 @@
   function paintStageShape() {
     var stage = document.getElementById("stage");
     var path = document.getElementById("stageShapePath");
-    if (global.innerWidth > 900 || stage.classList.contains("stage--bare")) { path.removeAttribute("d"); return; }
+    if (global.innerWidth > 700 || stage.classList.contains("stage--bare")) { path.removeAttribute("d"); return; }
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
   // Geometry only: CSS follows native root scroll without a JS scroll handler.
   function updateBrowserEdgeGeometry() {
-    if (global.innerWidth > 900) { pageScroller.style.removeProperty("--browser-edge-travel"); return; }
+    if (global.innerWidth > 700) { pageScroller.style.removeProperty("--browser-edge-travel"); return; }
     var scroller = document.scrollingElement;
     pageScroller.style.setProperty("--browser-edge-travel", Math.max(0, scroller.scrollHeight - scroller.clientHeight) + "px");
   }

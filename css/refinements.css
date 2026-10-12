@@ -3,7 +3,7 @@
   --rail-width: clamp(290px, 21.6vw, 385px);
   --rail-right: clamp(32px, 3.3vw, 59px);
 }
-@media (min-width: 901px) {
+@media (min-width: 701px) {
   .header {
     height: 176px;
   }
@@ -387,7 +387,7 @@ dialog .close {
 :root[data-theme="dark"] .rail .login {
   background: linear-gradient(#393939, #242424);
 }
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   .rent-place {
     display: block;
     text-align: center;
@@ -423,7 +423,7 @@ dialog .close {
     font-size: 16px;
   }
 }
-@media (min-width: 901px) {
+@media (min-width: 701px) {
   .login__row {
     display: block;
   }
@@ -544,7 +544,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 :root[data-theme="dark"] .office-feature .receipt,
 :root[data-theme="dark"] .office-feature .note-paper { color: var(--ink); background: linear-gradient(var(--panel),var(--panel-2)); }
 .mobile-menu-toggle { display: none; }
-@media(max-width:900px) {
+@media(max-width:700px) {
   body { overflow: auto; background-size: auto, 280px 280px; }
   .header { position: absolute; top: 0; left: 0; width: 100%; height: 22.5vw; z-index: 40; }
   .header__shape { display: block; filter: drop-shadow(0 6px 6px #0002); }
@@ -615,13 +615,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .polaroid:nth-child(10) { left: 21%; top: 288vw; }
   #dialog { max-width: calc(100vw - 24px); padding: 24px 18px; border-radius: 24px; }
 }
-@media(max-width:900px) {
+@media(max-width:700px) {
   .fringe { pointer-events: none; }
   .mobile-menu-toggle { z-index: 10; }
   .view-enter { animation: none; }
 }
 .mobile-menu-toggle { pointer-events: auto; }
-@media(max-width:900px) {
+@media(max-width:700px) {
   .stage { inset: auto; height: auto; }
   .stage__inner { inset: auto; width: auto; height: auto; max-height: none; }
   .menu__list { display: block; }
@@ -632,11 +632,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .mobile-menu-open .mobile-menu-toggle span:nth-child(3) { transform: rotate(-45deg); }
   .office-feature .auth-image { padding: 0; border: 0; }
 }
-@media(max-width:900px) {
+@media(max-width:700px) {
   .stage:not(.stage--bare)::before { height: auto; }
   .mobile-menu-toggle span { transition: none; }
 }
-@media(max-width:900px) {
+@media(max-width:700px) {
   .mobile-menu-open .rail .menu, .mobile-menu-open .rail .login { width: max(46vw,185px); padding-left: 14px; padding-right: 14px; }
   .mobile-menu-open .menu__item { height: 33px; gap: 9px; }
   .mobile-menu-open .menu__link { font-size: 15px; }
@@ -647,14 +647,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .mobile-menu-open .office-initial { width: 32px; height: 32px; font-size: 18px; }
   .mobile-menu-open .who__name { font-size: 15px; }
 }
-@media(max-width:900px) {
+@media(max-width:700px) {
   .office-feature .stamps { grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; }
   .office-feature .stamp { min-width: 0; width: 100%; height: auto; padding: 0; font-size: 16px; transform: none; }
   .office-feature .summary-cards { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .office-feature .row { flex-wrap: wrap; }
 }
 /* Portraits keep the mobile collage while gently drifting in place. */
-@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+@media (max-width: 700px) and (prefers-reduced-motion: no-preference) {
   .drift--static .polaroid { will-change: transform; animation: mobile-card-drift 10s ease-in-out infinite alternate; }
   .drift--static .polaroid:nth-child(3n + 1) { animation-duration: 8.5s; animation-delay: -3s; }
   .drift--static .polaroid:nth-child(3n + 2) { animation-duration: 11.5s; animation-delay: -7s; animation-direction: alternate-reverse; }
@@ -668,7 +668,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 }
 /* Keep a master profile's title, portfolio controls and return link separate. */
 .work { margin: 0; min-width: 0; }
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   .section-head:has(.crumbs) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -714,6 +714,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
   .work__img { display: block; width: 100%; height: auto; }
   .mobile-menu-toggle { appearance: none; box-shadow: none; }
 }
-@media (max-width: 900px) and (pointer: coarse) {
+@media (max-width: 700px) and (pointer: coarse) {
   .mobile-menu-toggle:focus-visible { outline: none; }
 }

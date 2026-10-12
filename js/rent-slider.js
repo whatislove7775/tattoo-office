@@ -120,7 +120,7 @@
   thumb.addEventListener("click", event => event.preventDefault());
   // A mouse click is an equivalent desktop action; dragging remains available.
   track.addEventListener("click", () => {
-    if (innerWidth > 900 && Date.now() > suppressClickUntil && !complete) window.location.hash = "#/booking";
+    if (innerWidth > 700 && Date.now() > suppressClickUntil && !complete) window.location.hash = "#/booking";
   });
   thumb.addEventListener("keydown", event => {
     if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setProgress(1); finish(); }
@@ -137,7 +137,7 @@
   function dock() {
     dockFrame = 0;
     if (footer) track.style.setProperty('--desktop-foot-height', footer.offsetHeight + 'px');
-    if (innerWidth > 900 || document.body.dataset.page !== 'masters' || !footer) {
+    if (innerWidth > 700 || document.body.dataset.page !== 'masters' || !footer) {
       track.style.removeProperty('--rent-lift');
       return;
     }

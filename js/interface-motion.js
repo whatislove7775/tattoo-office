@@ -62,7 +62,7 @@ function scheduleRailLayout(){
   if(railLayoutFrame) return;
   railLayoutFrame=requestAnimationFrame(()=>{
     railLayoutFrame=0;
-    if(innerWidth<=900) return;
+    if(innerWidth<=700) return;
     const rail=document.querySelector('.rail'),footer=document.querySelector('.site-bottom .foot'),rent=document.querySelector('.site-bottom .rent-slider');
     if(!rail || !footer) return;
     const rentVisible=rent && getComputedStyle(rent).display!=='none';
