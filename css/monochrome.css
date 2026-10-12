@@ -1189,3 +1189,10 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .header {transform:translateZ(0);backface-visibility:hidden;}
   .header__shape,:root[data-theme="dark"] .header__shape {filter:none;transform:translateZ(0);backface-visibility:hidden;}
 }
+
+/* Keep the header in the document's paint tree for translucent in-app chrome.
+   Its negative margin preserves the page's existing vertical positions. */
+@media(max-width:900px) {
+  .header {position:sticky;top:0;flex:none;margin-bottom:-44px;background:transparent;transform:none;}
+  .header::before {position:absolute;inset:auto 0 17px;height:calc(100lvh + 27px);background:var(--browser-canvas);}
+}
