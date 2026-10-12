@@ -375,16 +375,8 @@
     path.setAttribute("d", mobilePanelPath(stage, false, true));
   }
 
-  // Only layout changes update the travel distance. Scrolling is handled by CSS.
-  function updateMobileGeometry() {
-    if (global.innerWidth > 900) { pageScroller.style.removeProperty("--edge-travel"); return; }
-    var scroller = document.scrollingElement;
-    pageScroller.style.setProperty("--edge-travel", Math.max(0, scroller.scrollHeight - scroller.clientHeight) + "px");
-  }
-
   /* ------------------------- декоративный скролл -------------------------- */
   function updateThumb() {
-    updateMobileGeometry();
     var thumb = document.getElementById("decoThumb");
     var track = thumb.parentElement;
     var max = stageInner.scrollHeight - stageInner.clientHeight;
@@ -494,7 +486,6 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
-    if (global.visualViewport) global.visualViewport.addEventListener("resize", updateMobileGeometry);
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
     scrollObserver.observe(stageInner);
