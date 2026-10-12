@@ -733,7 +733,7 @@ async function cabinetPage() {
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
-    body = `<form id="profile-form"><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
+    body = `<form id="profile-form"><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
       "accent",
       "Обложка личного дела",
       [

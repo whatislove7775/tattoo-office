@@ -1298,3 +1298,12 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .master-profile__facts {position:static;grid-column:1;grid-row:3;width:auto;margin-top:1px;align-self:start;}
   .master-profile__action {grid-column:2;grid-row:3;margin:0;align-self:start;}
 }
+
+/* Landscape tablets need the whole content panel for paired gallery cards. */
+@media (min-width:701px) and (max-width:1100px) and (orientation:landscape) {
+  .master {grid-template-columns:minmax(0,1fr);}
+  .master-profile {display:grid;grid-template-columns:minmax(140px,35%) minmax(0,1fr);gap:22px;}
+  .master-profile .master__photo {width:100%;}
+  .master-profile .master__name {margin-top:0;}
+  .master .works {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0;}
+}
