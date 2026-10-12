@@ -72,6 +72,36 @@
         root.__cleanup = function () { drift.stop(); };
       }
 
+      // Clip the moving cards before Safari extends page content under its toolbar.
+      var clipFrame = 0;
+      function updateClip() {
+        clipFrame = 0;
+        var viewportTop = global.visualViewport ? global.visualViewport.offsetTop : 0;
+        var top = Math.max(0, 44 + viewportTop - box.getBoundingClientRect().top);
+        box.style.setProperty('--drift-clip-top', top + 'px');
+      }
+      function scheduleClip() {
+        if (!clipFrame) clipFrame = requestAnimationFrame(updateClip);
+      }
+      global.addEventListener('scroll', scheduleClip, { passive: true });
+      global.addEventListener('resize', scheduleClip);
+      if (global.visualViewport) {
+        global.visualViewport.addEventListener('scroll', scheduleClip, { passive: true });
+        global.visualViewport.addEventListener('resize', scheduleClip);
+      }
+      updateClip();
+      var stopDrift = root.__cleanup;
+      root.__cleanup = function () {
+        if (stopDrift) stopDrift();
+        cancelAnimationFrame(clipFrame);
+        global.removeEventListener('scroll', scheduleClip);
+        global.removeEventListener('resize', scheduleClip);
+        if (global.visualViewport) {
+          global.visualViewport.removeEventListener('scroll', scheduleClip);
+          global.visualViewport.removeEventListener('resize', scheduleClip);
+        }
+      };
+
       box.addEventListener('click', function (e) {
         var card = e.target.closest('.polaroid');
         /* если карточку тащили — это был не клик, профиль не открываем */

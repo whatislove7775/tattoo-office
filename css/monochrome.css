@@ -1109,3 +1109,7 @@ a>.ui-icon {flex:none;}
   body,:root[data-theme="dark"] body {background-color:var(--browser-canvas);}
   .header,.header::before {background-color:var(--browser-canvas);}
 }
+
+@media(max-width:900px) {
+  #driftBox {clip-path:inset(var(--drift-clip-top,0px) 0 0);}
+}
