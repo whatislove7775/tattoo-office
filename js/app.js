@@ -379,6 +379,7 @@
     if (global.innerWidth > 900) {
       view.style.removeProperty('--page-clip-top');
       view.style.removeProperty('--page-clip-bottom');
+      document.body.style.removeProperty('--wallpaper-clip-top');
       return;
     }
     // Browser toolbar/rubber-band offsets are not an extra header height.
@@ -392,9 +393,11 @@
     var viewBottom = rect.bottom + bounce;
     var viewportHeight = global.visualViewport ? global.visualViewport.height : global.innerHeight;
     var top = Math.max(0, 44 + viewportTop - viewTop);
-    var bottom = Math.max(0, viewBottom - viewportTop - viewportHeight);
+    var bottom = document.body.dataset.page === "masters" ? 0 : Math.max(0, viewBottom - viewportTop - viewportHeight);
     view.style.setProperty('--page-clip-top', top + 'px');
     view.style.setProperty('--page-clip-bottom', bottom + 'px');
+    var wallpaperTop = Math.max(0, 44 + viewportTop - document.body.getBoundingClientRect().top - bounce);
+    document.body.style.setProperty('--wallpaper-clip-top', wallpaperTop + 'px');
   }
   function schedulePageClip() {
     if (!pageClipFrame) pageClipFrame = requestAnimationFrame(function () {
