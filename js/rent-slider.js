@@ -4,6 +4,7 @@
   if (!track || !thumb) return;
   let progress = 0;
   let pointer = null;
+  let touch = null;
   let origin = 0;
   let originY = 0;
   let horizontal = false;
@@ -19,6 +20,9 @@
     thumb.setAttribute("aria-valuetext", progress >= .85 ? "Отпустите для бронирования" : "Перетащите вправо");
   }
   function reset() {
+    pointer = null;
+    touch = null;
+    horizontal = false;
     complete = false;
     track.classList.remove("is-dragging");
     setProgress(0);
@@ -31,8 +35,44 @@
       window.setTimeout(reset, 400);
     } else reset();
   }
+  // Touch Events let us accept diagonal drags before native scrolling claims the gesture.
+  track.addEventListener("touchstart", event => {
+    if (complete) return;
+    if (event.touches.length !== 1) { touch = null; reset(); return; }
+    const point = event.touches[0];
+    touch = { id: point.identifier, x: point.clientX, y: point.clientY, axis: "pending", starting: progress };
+  }, { passive: true });
+  track.addEventListener("touchmove", event => {
+    if (!touch) return;
+    if (event.touches.length !== 1) { touch = null; reset(); return; }
+    const point = [...event.touches].find(point => point.identifier === touch.id);
+    if (!point) return;
+    const dx = point.clientX - touch.x, dy = point.clientY - touch.y;
+    if (touch.axis === "pending") {
+      if (dx >= 4 && Math.abs(dy) <= dx * 3) touch.axis = "slide";
+      else if (Math.abs(dy) >= 8 && Math.abs(dy) > Math.max(dx, 0) * 3) { touch = null; reset(); return; }
+      else return;
+    }
+    if (!event.cancelable) { touch = null; reset(); return; }
+    event.preventDefault();
+    track.classList.add("is-dragging");
+    setProgress(touch.starting + dx / (travel() * .7));
+  }, { passive: false });
+  track.addEventListener("touchend", event => {
+    if (!touch) return;
+    const point = [...event.changedTouches].find(point => point.identifier === touch.id);
+    if (!point) return;
+    const gesture = touch;
+    touch = null;
+    if (gesture.axis !== "slide" || event.touches.length) { reset(); return; }
+    if (event.cancelable) event.preventDefault();
+    setProgress(gesture.starting + (point.clientX - gesture.x) / (travel() * .7));
+    suppressClickUntil = Date.now() + 500;
+    finish();
+  }, { passive: false });
+  track.addEventListener("touchcancel", () => { touch = null; reset(); }, { passive: true });
   track.addEventListener("pointerdown", event => {
-    if (event.button !== 0 || complete) return;
+    if (event.pointerType === "touch" || event.button !== 0 || complete) return;
     pointer = event.pointerId;
     origin = event.clientX;
     originY = event.clientY;
@@ -71,7 +111,7 @@
     if (progress > .05) suppressClickUntil = Date.now() + 500;
     finish();
   });
-  track.addEventListener("pointercancel", () => { pointer = null; reset(); });
+  track.addEventListener("pointercancel", event => { if (event.pointerType === "touch") return; pointer = null; reset(); });
   track.addEventListener("lostpointercapture", event => {
     // Touch starts with implicit capture on the thumb; transferring it is not cancellation.
     if (event.target === track && event.pointerId === pointer && pointer !== null) { pointer = null; reset(); }

@@ -381,11 +381,18 @@
       view.style.removeProperty('--page-clip-bottom');
       return;
     }
-    var viewportTop = global.visualViewport ? global.visualViewport.offsetTop : 0;
+    // Browser toolbar/rubber-band offsets are not an extra header height.
+    var viewportTop = global.visualViewport && global.visualViewport.scale > 1 ? global.visualViewport.offsetTop : 0;
     var rect = view.getBoundingClientRect();
+    var scroller = document.scrollingElement;
+    var maximumScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    var boundedScroll = Math.max(0, Math.min(global.scrollY, maximumScroll));
+    var bounce = global.scrollY - boundedScroll;
+    var viewTop = rect.top + bounce;
+    var viewBottom = rect.bottom + bounce;
     var viewportHeight = global.visualViewport ? global.visualViewport.height : global.innerHeight;
-    var top = Math.max(0, 44 + viewportTop - rect.top);
-    var bottom = Math.max(0, rect.bottom - viewportTop - viewportHeight);
+    var top = Math.max(0, 44 + viewportTop - viewTop);
+    var bottom = Math.max(0, viewBottom - viewportTop - viewportHeight);
     view.style.setProperty('--page-clip-top', top + 'px');
     view.style.setProperty('--page-clip-bottom', bottom + 'px');
   }

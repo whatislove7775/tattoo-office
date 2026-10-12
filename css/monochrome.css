@@ -1131,7 +1131,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .rent-slider__hit-area {display:none;}
 @media(max-width:900px) {
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:min(76vw,360px);overflow:visible;}
-  .rent-slider__hit-area {display:block;position:absolute;inset:-12px;z-index:1;touch-action:pan-y pinch-zoom;}
+  .rent-slider__hit-area {display:block;position:absolute;inset:-28px;z-index:1;touch-action:pan-y pinch-zoom;}
   .site-bottom .rent-slider__label {inset:0 8px 0 58px;font-size:clamp(14px,3.7vw,17px);}
 }
 
@@ -1139,4 +1139,13 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 @media(max-width:900px) {
   :root,body {background:var(--bg) url("../assets/pattern.svg") 0 0 / 200px 200px;}
   :root[data-theme="dark"],:root[data-theme="dark"] body {background:var(--bg) url("../assets/pattern-dark.svg") 0 0 / 200px 200px;}
+}
+
+@media(max-width:900px) {
+  .rent-slider,.rent-slider__thumb,.rent-slider__hit-area {touch-action:auto;}
+}
+
+/* Keep the viewport steady when a held swipe reaches either end of the document. */
+@media(max-width:900px) {
+  html,body {overscroll-behavior-y:none;}
 }
