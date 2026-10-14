@@ -83,6 +83,19 @@ export const defaults = {
     resident: { 3: 160000, 6: 300000, 12: 420000 },
     guest: { 3: 200000, 6: 350000, 12: 500000 },
   },
+  // Студии по городам. Тарифы Санкт-Петербурга — в rates (как раньше),
+  // у остальных городов свои rates внутри cities.<id>.
+  cities: {
+    spb: { open: true, address: "Санкт-Петербург, ул. Кирочная, 24" },
+    msk: {
+      open: false,
+      address: "",
+      rates: {
+        resident: { 3: 160000, 6: 300000, 12: 420000 },
+        guest: { 3: 200000, 6: 350000, 12: 500000 },
+      },
+    },
+  },
   rules:
     "Работайте одноразовыми расходниками. Подготовьте и обработайте рабочее место до и после сеанса. Соблюдайте согласованное время и уважайте соседей. Полный регламент студия опубликует перед запуском.",
   rulesVersion: "draft-1",
@@ -93,3 +106,24 @@ export const defaults = {
   vat: null,
   legalApproved: false,
 };
+
+export const CITY_IDS = ["spb", "msk"];
+export const CITY_NAMES = { spb: "Санкт-Петербург", msk: "Москва" };
+export function validCity(id) {
+  if (!CITY_IDS.includes(id)) fail("Неизвестный город");
+  return id;
+}
+// Настройки, сохранённые до появления городов, дополняются значениями по умолчанию.
+export function withCities(s) {
+  const cities = {};
+  for (const id of CITY_IDS)
+    cities[id] = { ...defaults.cities[id], ...(s.cities?.[id] || {}) };
+  if (!s.cities?.spb?.address && s.address) cities.spb.address = s.address;
+  return { ...s, cities };
+}
+export function cityRates(s, city) {
+  return city === "spb" ? s.rates : s.cities?.[city]?.rates || s.rates;
+}
+export function cityOpen(s, city) {
+  return !!withCities(s).cities[city]?.open;
+}

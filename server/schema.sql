@@ -36,3 +36,6 @@ UPDATE users SET account_type='admin' WHERE role='admin';
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_account ON users(email,account_type);
 CREATE TABLE IF NOT EXISTS password_resets(token text PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id),expires_at timestamptz NOT NULL);
+
+-- Two studios: each workspace belongs to a city (existing places are in Saint Petersburg).
+ALTER TABLE resources ADD COLUMN IF NOT EXISTS city text NOT NULL DEFAULT 'spb';

@@ -1362,7 +1362,76 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
     background:var(--panel);
     border:1px solid #c5c5c5;
     border-radius:22px;
-    box-shadow:0 10px 16px #00000008,0 1px 3px #0000000d;
+    box-shadow:0 8px 16px rgba(0,0,0,.11),0 1px 3px rgba(0,0,0,.06);
   }
   :root[data-theme="dark"] .rail .login {border-color:var(--panel-edge);}
+  /* Тень меню — как у шапки (0 18px 34px), но с меньшим радиусом распространения. */
+  .menu__shape {filter:drop-shadow(0 8px 16px rgba(0,0,0,.11)) drop-shadow(0 1px 3px rgba(0,0,0,.06));}
+  :root[data-theme="dark"] .menu__shape {filter:drop-shadow(0 8px 16px rgba(0,0,0,.45)) drop-shadow(0 1px 3px rgba(0,0,0,.3));}
+  :root[data-theme="dark"] .rail .login {box-shadow:0 8px 16px rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.3)!important;}
 }
+
+/* Private Club: цены участников, фото, «Как попасть». */
+.club-offer {display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.75fr);gap:clamp(20px,3vw,48px);align-items:start;margin-top:22px;}
+.club-offer h2 {margin:0 0 22px;font-size:clamp(20px,1.8vw,28px);font-weight:400;line-height:1.2;letter-spacing:-.01em;}
+.club-offer__photo {display:block;width:100%;aspect-ratio:1128/1190;height:auto;object-fit:cover;border-radius:0;margin-top:8px;}
+.club-prices {overflow:hidden;border:1px solid var(--panel-edge);border-radius:14px;background:var(--panel);box-shadow:0 1px 3px #0000000d;}
+.club-prices__row {display:grid;grid-template-columns:1.25fr 1fr 1fr;align-items:center;gap:10px;padding:16px 20px;border-top:1px solid var(--line,#e5e5e5);font-size:clamp(13px,1vw,15px);}
+.club-prices__row>:not(:first-child) {text-align:center;}
+.club-prices__row--head {border-top:0;padding-block:14px;background:linear-gradient(#fafafa,#ececec);font-size:clamp(12px,.9vw,14px);}
+.club-prices__row--head b {font-weight:600;}
+.club-prices__row>b {font-weight:600;}
+.club-prices__old {position:relative;justify-self:center;text-decoration:none;color:var(--ink);font-weight:600;}
+.club-prices__old::after {content:"";position:absolute;left:-8%;right:-8%;top:50%;height:2px;border-radius:2px;background:#e3261b;transform:rotate(-10deg);}
+.club-join {margin-top:clamp(28px,4vw,56px);}
+.club-join h3 {margin:0 0 20px;font-size:clamp(20px,1.8vw,28px);font-weight:400;line-height:1.2;}
+:root[data-theme="dark"] .club-prices__row--head {background:linear-gradient(#2e2e2e,#262626);}
+@media (max-width:700px) {
+  .club-offer {grid-template-columns:1fr;}
+  .club-offer__photo {order:-1;max-height:340px;}
+  .club-prices__row {padding:13px 12px;grid-template-columns:1.2fr 1fr 1fr;}
+}
+
+/* Выбор офиса — такой же «бабл», как карточки «Адрес / Время / Связь»:
+   серая карточка со скруглением 18px, подпись капсом сверху, значение ниже. */
+.office-feature .space-picker {position:relative;display:block;width:min(100%,320px);box-sizing:border-box;padding:0;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel-2);white-space:normal;}
+.office-feature .space-picker__label {position:absolute;left:20px;top:14px;z-index:1;font-size:10px;line-height:1.4;letter-spacing:.08em;color:var(--muted);pointer-events:none;}
+.office-feature .space-picker .office-select,
+:root[data-theme="dark"] .office-feature .space-picker .office-select {position:relative;display:block;width:100%;max-width:none;min-height:0;margin:0;padding:34px 44px 14px 20px;border:0;border-radius:17px;background:transparent;box-shadow:none;color:var(--ink);font-size:20px;font-weight:500;line-height:1.3;text-align:left;text-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.office-feature .space-picker .office-select::after {right:20px;top:58%;}
+.office-feature .space-picker:has(.office-select:focus-visible) {border-color:var(--ink-3);}
+.find-lead .space-picker {align-self:flex-end;}
+.office-feature .find-bottom {justify-content:flex-end;}
+.office-picker--space,.office-picker--space>button {border-radius:0;}
+.office-picker--space {border-radius:18px!important;}
+.office-picker__note {margin-left:8px;font-size:12px;font-style:normal;color:var(--muted);}
+.office-picker--space>button:not(:disabled) {color:var(--ink)!important;}
+.office-picker--space>button:disabled {opacity:1;color:var(--ink-3)!important;cursor:default;}
+@media (max-width:700px) {
+  .office-feature .space-picker {width:100%;}
+}
+
+/* Аренда: выбор города перед бронированием. */
+.city-choice {display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:min(56vh,520px);padding:24px 0 48px;text-align:center;}
+.city-choice h2 {margin:0 0 34px;font-size:clamp(20px,1.8vw,28px);font-weight:400;line-height:1.25;}
+.city-choice__list {display:flex;flex-direction:column;align-items:center;gap:22px;}
+.city-choice__row {position:relative;display:flex;align-items:center;}
+.city-choice__btn {width:clamp(200px,17vw,240px);min-height:66px;padding:12px 20px;border:1px solid #b9b9b9;border-radius:14px;background:linear-gradient(#fff,#f2f2f2);box-shadow:inset 0 1px #fff,0 2px 6px #0000002e;color:var(--ink);font:inherit;font-size:clamp(17px,1.4vw,21px);cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;}
+.city-choice__btn:hover:not(:disabled) {box-shadow:inset 0 1px #fff,0 4px 10px #00000033;}
+.city-choice__btn:active:not(:disabled) {transform:translateY(1px);box-shadow:inset 0 1px 3px #0002;}
+.city-choice__btn:focus-visible {outline:2px solid var(--ink-2);outline-offset:3px;}
+.city-choice__btn:disabled {border-color:#e2e2e2;background:#f7f7f7;box-shadow:none;color:#9a9a9a;cursor:default;}
+.city-choice__soon {position:absolute;left:calc(100% + 18px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;text-align:left;white-space:nowrap;color:#9a9a9a;}
+.city-choice__soon b {font-size:clamp(17px,1.4vw,21px);font-weight:400;line-height:1.1;}
+.city-choice__soon small {font-size:11px;}
+:root[data-theme="dark"] .city-choice__btn {border-color:var(--panel-edge);background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);}
+:root[data-theme="dark"] .city-choice__btn:disabled {background:var(--panel-2);box-shadow:none;color:var(--ink-3);}
+@media (max-width:700px) {
+  .city-choice {min-height:0;padding:28px 0 36px;}
+  .city-choice__row {flex-direction:column;}
+  .city-choice__soon {position:static;transform:none;align-items:center;text-align:center;margin-top:8px;}
+}
+/* Админка: вкладки городов. */
+.admin-city-tabs {margin:4px 0 14px;}
+.admin-city-tabs button[aria-selected="true"] {color:var(--ink)!important;text-shadow:none!important;}
+.city-choice__btn:disabled {opacity:1;}

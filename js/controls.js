@@ -51,7 +51,7 @@
       const label=select.closest('label')?.querySelector('span')?.textContent||select.getAttribute('aria-label')||select.name||'Выбрать';
       const sync=()=>{button.textContent=select.selectedOptions[0]?.textContent||'Выбрать';button.setAttribute('aria-label',label+': '+button.textContent);button.disabled=select.disabled;};sync();select.after(button);select.addEventListener('change',sync);
       button.addEventListener('click',()=>open(button,popup=>{popup.setAttribute('role','listbox');popup.setAttribute('aria-label',label);
-        [...select.options].forEach(option=>{const item=document.createElement('button');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(option.selected));item.textContent=option.textContent;item.disabled=option.disabled;popup.append(item);item.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));close();button.focus();};});
+        [...select.options].forEach(option=>{const item=document.createElement('button');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(option.selected));item.textContent=option.textContent;if(option.dataset.note){const note=document.createElement('small');note.className='office-picker__note';note.textContent=option.dataset.note;item.append(note);}item.disabled=option.disabled;popup.append(item);item.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));close();button.focus();};});
       }));
       select.form?.addEventListener('reset',()=>setTimeout(sync));
     });

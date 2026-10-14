@@ -58,6 +58,7 @@ let me = null,
   adminTab = "home",
   cabTab = "bookings";
 let draft = {
+  city: null,
   step: 0,
   date: addDate(today(), 1),
   duration: 3,
@@ -65,6 +66,14 @@ let draft = {
   resourceId: null,
   extras: [],
 };
+// Студии по городам: названия, статус «открыта для записи», тарифы.
+const CITY_IDS = ["spb", "msk"],
+  CITY_LABELS = { spb: "Санкт-Петербург", msk: "Москва" };
+const cityInfo = (id) => pub.settings.cities?.[id] || { open: id === "spb", address: id === "spb" ? pub.settings.address : "" };
+const cityRatesOf = (id, s = pub.settings) => (id && id !== "spb" && s.cities?.[id]?.rates) || s.rates;
+const roleRates = () => cityRatesOf(draft.city)[me?.role === "resident" ? "resident" : "guest"];
+const resourceCity = (r) => r?.city || "spb";
+let adminCity = "spb";
 let month = draft.date.slice(0, 7),
   availability = null,
   bookingResult = null;
@@ -408,12 +417,16 @@ function mountMaster(id) {
   );
   gallery("tattoo");
 }
+// Выбор офиса: Санкт-Петербург работает, Москва пока строится (*soon).
+function officePicker() {
+  return `<label class="space-picker"><span class="space-picker__label">ОФИС</span><select id="space-picker" aria-label="Выбрать офис"><option value="spb">Санкт-Петербург</option><option value="msk" disabled data-note="*soon">Москва</option></select></label>`;
+}
 function interiorPage() {
   const configured = pub.content.find((c) => c.id === "interior")?.data;
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
   return win(
     "Interior",
-    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать пространство"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div>
+    `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div>${officePicker()}</div>
     <div class="interior-showcase"><section class="model-viewer" aria-label="Интерактивная 3D-модель студии"><canvas id="studio-model" role="img" aria-label="Объёмная модель студии. Горизонтальный жест — поворот. Кнопки плюс и минус — масштаб."></canvas><div class="model-controls"><div><button type="button" data-model-control="left" aria-label="Повернуть влево">‹</button><button type="button" data-model-control="right" aria-label="Повернуть вправо">›</button><button type="button" data-model-control="out" aria-label="Уменьшить">−</button><button type="button" data-model-control="in" aria-label="Увеличить">+</button><button type="button" data-model-control="reset" aria-label="Исходный вид">⟲</button></div></div></section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
     <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
@@ -428,13 +441,13 @@ function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
   const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div><label class="space-picker"><select id="space-picker" aria-label="Выбрать офис"><option value="main">Tattoo Office · Санкт-Петербург</option></select></label></div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map-v6.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div>${officePicker()}</div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map-v6.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
 
 2. У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».
 
 3. Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.
 
-Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article></div></div><div class="find-bottom"><span>Сначала — встреча. Потом — всё остальное.</span><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article></div></div><div class="find-bottom"><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -461,8 +474,10 @@ function aboutPage() {
 }
 function clubPage() {
   const rates = pub.settings.rates;
-  const priceRows = [3, 6, 12].map((hours) => `<div><span>${hours === 12 ? "от 6 до 12 часов" : `до ${hours} часов`}</span><b>${money(rates.guest[hours])}</b><b>${money(rates.resident[hours])}</b></div>`).join("");
-  return win("Private Club",`<div class="club-page"><div><h2>Свои в офисе.</h2><p>Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.</p><p>Как попасть? Работать в Tattoo Office. Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><a class="chrome" href="#/signup">Начать работать в офисе →</a></div><img src="assets/interior/1.jpg" alt="Рабочее пространство Tattoo Office"></div><div class="club-rates"><h3>Аренда рабочего места</h3><div class="club-rates__table"><div><span>Время</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div></div>`);
+  const priceRows = [3, 6, 12].map((hours) => `<div class="club-prices__row"><span>${hours === 12 ? "От 6 до 12 часов" : `До ${hours} часов`}</span><s class="club-prices__old">${money(rates.guest[hours])}</s><b>${money(rates.resident[hours])}</b></div>`).join("");
+  return win("Tattoo Office Private Club",`<p data-help data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
+
+Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><div class="club-offer"><div class="club-offer__prices"><h2>Специальные цены для участников клуба!</h2><div class="club-prices"><div class="club-prices__row club-prices__row--head"><span>Время сеанса</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div></div><img class="club-offer__photo" src="assets/club/private-club.jpg" alt="Мастер Tattoo Office Private Club"></div><div class="club-join"><h3>Как попасть? — Работать в Tattoo Office!</h3><a class="chrome" href="#/signup">Начать работать в офисе →</a></div>`);
 }
 function authPage(signup) {
   const role = location.hash.split('/')[2] === 'customer' ? 'customer' : 'master';
@@ -525,14 +540,14 @@ function mountAuth(signup) {
 const bookingDeposit = () => me?.loyalty?.freeNext ? 0 : me?.role === "resident" && me.depositWaived ? 0 : pub.settings.deposit;
 function receipt() {
   const s = pub.settings,
-    rate = me?.loyalty?.freeNext ? 0 : s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
+    rate = me?.loyalty?.freeNext ? 0 : roleRates()[draft.duration],
     extras = draft.extras.reduce(
       (a, x) =>
         a + (pub.catalog.find((c) => c.id === x.id)?.price || 0) * x.qty,
       0,
     ),
     r = pub.resources.find((x) => x.id === draft.resourceId);
-  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
+  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Город</span><span>${esc(CITY_LABELS[draft.city] || "не выбран")}</span></div><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
 }
 function calendarHTML() {
   const [y, m] = month.split("-").map(Number),
@@ -547,16 +562,26 @@ function calendarHTML() {
     },
   ).join("")}</div>`;
 }
+function cityChoicePage() {
+  return win(
+    "Rent a workspace",
+    `<div class="city-choice"><h2>В каком городе Вы хотите арендовать рабочее место?</h2><div class="city-choice__list">${CITY_IDS.map((id) => {
+      const open = cityInfo(id).open;
+      return `<div class="city-choice__row"><button type="button" class="city-choice__btn" data-city="${id}" ${open ? "" : 'disabled aria-describedby="city-soon-' + id + '"'}>${CITY_LABELS[id]}</button>${open ? "" : `<span class="city-choice__soon" id="city-soon-${id}"><b>*soon</b><small>We are building a new office</small></span>`}</div>`;
+    }).join("")}</div></div>`,
+  );
+}
 function bookingPage() {
+  if (!draft.city) return cityChoicePage();
   const s = pub.settings,
     steps = ["Дата и тариф", "Время и место", "Всё для сеанса", "Проверка"];
   let body = "";
   if (draft.step === 0)
-    body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(s.rates[me?.role === "resident" ? "resident" : "guest"][h])}</em></button>`).join("")}</div>`;
+    body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(roleRates()[h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
     body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span></button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div><div class="choices">${pub.resources
-      .filter((x) => x.active)
+      .filter((x) => x.active && resourceCity(x) === draft.city)
       .map(
         (r) =>
           `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="assets/interior/${[1,4,4,2][pub.resources.indexOf(r)%4]}.jpg" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span class="resource-choice__state" aria-hidden="true">${draft.resourceId === r.id ? '<svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>' : ""}</span></button>`,
@@ -566,20 +591,32 @@ function bookingPage() {
   if (draft.step === 2)
     body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
-    const rate =
-        s.rates[me?.role === "resident" ? "resident" : "guest"][draft.duration],
+    const rate = roleRates()[draft.duration],
       extra = draft.extras.reduce(
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
-    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid${draft.step === 3 ? " booking-grid--review" : ""}"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← Назад" : "← В офис"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${draft.step === 3 ? "" : receipt()}</div>`,
+    `${testNote()}<ol class="steps">${steps.map((x, i) => `<li class="${i === draft.step ? "active" : ""}"><b>${i + 1}</b>${x}</li>`).join("")}</ol><div class="booking-grid${draft.step === 3 ? " booking-grid--review" : ""}"><div>${body}<div class="form-actions"><button class="back-btn" id="booking-back">${draft.step ? "← Назад" : "← Город"}</button><button class="chrome" id="booking-next" ${draft.step === 3 && !me ? "disabled" : ""}>${draft.step === 3 ? "Подтвердить" : "Далее"} →</button></div><p id="booking-error" class="form-error" role="alert"></p></div>${draft.step === 3 ? "" : receipt()}</div>`,
   );
 }
 async function mountBooking() {
+  if (!draft.city) {
+    $$("[data-city]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          draft.city = b.dataset.city;
+          draft.step = 0;
+          draft.hour = null;
+          draft.resourceId = null;
+          render();
+        }),
+    );
+    return;
+  }
   if (draft.step === 0) {
     $("#prev-month").onclick = () => {
       const d = new Date(month + "-15");
@@ -650,8 +687,12 @@ async function mountBooking() {
   $("#booking-back").onclick = () => {
     if (draft.step) {
       draft.step--;
-      render();
-    } else go("masters");
+    } else {
+      draft.city = null;
+      draft.hour = null;
+      draft.resourceId = null;
+    }
+    render();
   };
   $("#booking-next").onclick = async (e) => {
     const b = e.currentTarget;
@@ -787,7 +828,7 @@ function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 function mountCabinet() {
   if (!me) {
@@ -848,6 +889,8 @@ function mountCabinet() {
 }
 let adminData,
   adminDate = today();
+const cityTabs = () =>
+  `<div class="tabs admin-city-tabs" role="tablist" aria-label="Студия">${CITY_IDS.map((id) => `<button type="button" role="tab" data-admin-city="${id}" aria-selected="${id === adminCity}">${CITY_LABELS[id]}${cityInfo(id).open ? "" : " · скоро"}</button>`).join("")}</div>`;
 const table = (heads, rows) =>
   `<div class="table-wrap"><table><thead><tr>${heads.map((x) => `<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>${!rows.length ? '<div class="empty">Пока пусто.</div>' : ""}`;
 async function adminPage() {
@@ -876,15 +919,19 @@ async function adminPage() {
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
-    const resources = a.resources.filter((r) => r.active),
+    const cityResources = a.resources.filter((r) => resourceCity(r) === adminCity),
+      cityIds = new Set(cityResources.map((r) => r.id)),
+      resources = cityResources.filter((r) => r.active),
+      inactive = cityResources.filter((r) => !r.active),
       bookings = a.bookings.filter(
         (b) =>
+          cityIds.has(b.resource_id) &&
           new Intl.DateTimeFormat("sv-SE", {
             timeZone: "Europe/Moscow",
           }).format(new Date(b.starts_at)) === adminDate &&
           !["cancelled", "expired"].includes(b.status),
       );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div><p class="small muted">Санкт-Петербург · занято ${bookings.length} записей · ${resources.length} мест</p><div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
+    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div>${cityTabs()}<p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте первое кнопкой «+ Рабочее место».</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
       { length: s.closeHour - s.openHour },
       (_, i) => {
         const h = s.openHour + i,
@@ -914,7 +961,7 @@ async function adminPage() {
       },
      ).join("")}</div></div><h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
       ["Период", "Причина", ""],
-      a.blocks.map(
+      a.blocks.filter((b) => !b.resource_id || cityIds.has(b.resource_id)).map(
         (b) =>
           `<tr><td>${dateLabel(b.starts_at)} ${timeLabel(b.starts_at)} — ${dateLabel(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td>${b.external ? '<span class="muted">Изменить в Google Calendar</span>' : `<button data-delete-block="${b.id}">Открыть</button>`}</td></tr>`,
       ),
@@ -925,7 +972,7 @@ async function adminPage() {
       ["Сеанс", "Мастер / место", "Сумма", "Статус", "Действие"],
       a.bookings.map(
         (b) =>
-          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
+          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
     );
   if (adminTab === "users")
@@ -979,7 +1026,7 @@ async function adminPage() {
         ),
     )}`;
   if (adminTab === "settings")
-    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("address", "Адрес", s.address)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div></fieldset><fieldset class="admin-group"><legend>Тарифы и бронирование</legend><p data-help class="small muted">Новые цены применяются к новым записям. Тариф существующей брони сохраняется.</p><div class="form-grid">${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, s.rates[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (вкладка «Расписание») и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -1087,6 +1134,13 @@ function mountAdmin() {
   }
   onForm("#admin-profile-form", async d => { await api("/me", "PATCH", {name:d.name}); await refresh(); notify("Профиль сохранён"); render(); });
   onForm("#admin-password-form", async d => { await api("/me/password", "POST", d); await refresh(); go("admin/login"); notify("Пароль изменён. Войдите заново."); });
+  $$("[data-admin-city]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        adminCity = b.dataset.adminCity;
+        render();
+      }),
+  );
   $$("[data-admintab]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -1154,7 +1208,7 @@ function mountAdmin() {
   const resourceForm = (r) =>
     dialogForm(
       r ? "Рабочее место" : "Новое рабочее место",
-      `${field("name", "Название", r?.name || "", "text", "required")}${field("calendarId", "Google Calendar ID", r?.calendar_id || "")}<label class="check"><input name="active" type="checkbox" ${r?.active !== false ? "checked" : ""}> Принимать записи</label>`,
+      `${field("name", "Название", r?.name || "", "text", "required")}${select("city", "Город", CITY_IDS.map((id) => [id, CITY_LABELS[id]]), r ? resourceCity(r) : adminCity)}${field("calendarId", "Google Calendar ID", r?.calendar_id || "")}<label class="check"><input name="active" type="checkbox" ${r?.active !== false ? "checked" : ""}> Принимать записи</label>`,
       (d) =>
         api("/admin/resources", "POST", {
           ...d,
@@ -1172,7 +1226,7 @@ function mountAdmin() {
     $("#add-block").onclick = () =>
       dialogForm(
         "Закрыть время",
-        `${select("resourceId", "Рабочее место", [["", "Все места"], ...a.resources.map((r) => [r.id, r.name])], "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T10:00", "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", adminDate + "T22:00", "datetime-local", "required")}${field("reason", "Причина", "", "text", "required")}`,
+        `${select("resourceId", "Рабочее место", [["", "Все места во всех городах"], ...a.resources.map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name])], "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T10:00", "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", adminDate + "T22:00", "datetime-local", "required")}${field("reason", "Причина", "", "text", "required")}`,
         (d) =>
           api("/admin/blocks", "POST", {
             ...d,
@@ -1214,7 +1268,7 @@ function mountAdmin() {
         )}${select(
           "resourceId",
           "Место",
-          a.resources.filter((r) => r.active).map((r) => [r.id, r.name]),
+          a.resources.filter((r) => r.active).map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name]),
           "",
         )}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется.</p>`,
         (d) =>
@@ -1357,9 +1411,13 @@ function mountAdmin() {
     for (const r of ["resident", "guest"])
       for (const h of [3, 6, 12])
         rates[r][h] = Math.round(Number(d[r + "_" + h]) * 100);
+    const { cityAddress, cityOpen, ...rest } = d,
+      city = { open: cityOpen === "on", address: cityAddress || "" };
+    if (adminCity !== "spb") city.rates = rates;
     await api("/admin/settings", "PATCH", {
-      ...d,
-      rates,
+      ...rest,
+      ...(adminCity === "spb" ? { rates } : {}),
+      cities: { [adminCity]: city },
       openHour: Number(d.openHour),
       closeHour: Number(d.closeHour),
       deposit: Math.round(Number(d.deposit) * 100),
@@ -1420,9 +1478,9 @@ async function render() {
         break;
       case "booking":
         if (me) me.loyalty = (await api("/bookings")).loyalty;
-        if (draft.step === 1)
+        if (draft.city && draft.step === 1)
           availability = await api(
-            `/availability?date=${draft.date}&duration=${draft.duration}`,
+            `/availability?date=${draft.date}&duration=${draft.duration}&city=${draft.city}`,
           );
         html = bookingPage();
         mount = mountBooking;

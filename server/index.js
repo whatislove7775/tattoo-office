@@ -22,6 +22,10 @@ import {
   validPassword,
   slot,
   verifyHmac,
+  validCity,
+  withCities,
+  cityRates,
+  cityOpen,
 } from "./domain.js";
 const root = fileURLToPath(new URL("../", import.meta.url));
 export async function createApp(db) {
@@ -37,7 +41,7 @@ export async function createApp(db) {
   );
   const one = async (q, s, p = []) => (await q.query(s, p)).rows[0];
   const settings = async (q = db) =>
-    (await one(q, "SELECT data FROM settings WHERE id=1")).data;
+    withCities((await one(q, "SELECT data FROM settings WHERE id=1")).data);
   const audit = (q, actor, action, details = {}) =>
     q.query("INSERT INTO audit VALUES($1,$2,$3,$4,now())", [
       uuid(),
@@ -278,7 +282,7 @@ export async function createApp(db) {
     res.json({
       settings: s,
       resources: (
-        await db.query("SELECT id,name,active FROM resources ORDER BY name")
+        await db.query("SELECT id,name,active,city FROM resources ORDER BY name")
       ).rows,
       catalog: (
         await db.query(
@@ -431,7 +435,8 @@ export async function createApp(db) {
   app.get("/api/availability", async (req, res) => {
     const s = await settings(),
       date = String(req.query.date || ""),
-      duration = Number(req.query.duration || 3);
+      duration = Number(req.query.duration || 3),
+      city = validCity(String(req.query.city || "spb"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || ![3, 6, 12].includes(duration))
       fail("Проверьте дату и тариф");
     try { await refreshCalendarBusy(db); } catch { fail("Не удалось проверить календарь студии. Попробуйте немного позже",503); }
@@ -440,7 +445,8 @@ export async function createApp(db) {
       await expire(q);
       const resources = (
           await q.query(
-            "SELECT id,name FROM resources WHERE active=true ORDER BY name",
+            "SELECT id,name FROM resources WHERE active=true AND city=$1 ORDER BY name",
+            [city],
           )
         ).rows,
         result = [];
@@ -488,6 +494,9 @@ export async function createApp(db) {
         );
       if (!r || !(await available(q, r.id, start, end)))
         fail("Это место уже занято. Выберите другое время", 409);
+      if (!manual && !cityOpen(s, r.city))
+        fail("Студия в этом городе пока не открыта для записи", 409);
+      const rates = cityRates(s, r.city)[u.role];
       const extras = [];
       if (!Array.isArray(req.body.extras) || req.body.extras.length > 30)
         fail("Проверьте доп. опции");
@@ -523,7 +532,7 @@ export async function createApp(db) {
         });
       }
       const bonus = await loyalty(q, u.id);
-      const rate = bonus.freeNext ? 0 : s.rates[u.role][duration],
+      const rate = bonus.freeNext ? 0 : rates[duration],
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
         cash = u.role === "resident" && u.deposit_waived,
         deposit = cash || bonus.freeNext ? 0 : Math.min(s.deposit, total),
@@ -551,7 +560,8 @@ export async function createApp(db) {
         JSON.stringify({
           cancelHours: s.cancelHours,
           lateCancellation: s.lateCancellation,
-          rates: s.rates[u.role],
+          rates,
+          city: r.city,
           rulesVersion: s.rulesVersion,
           paymentMethod: cash ? "cash" : "online",
           loyaltyFree: bonus.freeNext,
@@ -767,6 +777,31 @@ export async function createApp(db) {
             integer(req.body.rates[r]?.[h], s.deposit, 100000000, "Тариф");
         s.rates = req.body.rates;
       }
+      if (req.body.cities !== undefined) {
+        if (typeof req.body.cities !== "object" || !req.body.cities)
+          fail("Проверьте города");
+        const cities = { ...s.cities };
+        for (const [id, c] of Object.entries(req.body.cities)) {
+          validCity(id);
+          const next = { ...cities[id] };
+          if (c.open !== undefined) {
+            if (typeof c.open !== "boolean") fail("Проверьте статус студии");
+            next.open = c.open;
+          }
+          if (c.address !== undefined)
+            next.address = String(c.address).slice(0, 300);
+          if (c.rates !== undefined) {
+            if (id === "spb") fail("Тарифы Санкт-Петербурга передаются в rates");
+            for (const r of ["resident", "guest"])
+              for (const h of [3, 6, 12])
+                integer(c.rates[r]?.[h], s.deposit, 100000000, "Тариф");
+            next.rates = c.rates;
+          }
+          cities[id] = next;
+        }
+        s.cities = cities;
+        if (cities.spb.address) s.address = cities.spb.address;
+      }
       if (req.body.lateCancellation !== undefined) {
         if (!["review", "retain"].includes(req.body.lateCancellation))
           fail("Правило отмены");
@@ -850,20 +885,22 @@ export async function createApp(db) {
   });
   app.post("/api/admin/resources", roles("admin"), async (req, res) => {
     const id = req.body.id || uuid(),
-      name = String(req.body.name || "").trim();
+      name = String(req.body.name || "").trim(),
+      city = validCity(String(req.body.city || "spb"));
     if (!name || name.length > 100) fail("Название места");
     await db.transaction(async (q) => {
       await lock(q);
       await q.query(
-        "INSERT INTO resources(id,name,active,calendar_id) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4",
+        "INSERT INTO resources(id,name,active,calendar_id,city) VALUES($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4,city=$5",
         [
           id,
           name,
           req.body.active !== false,
           String(req.body.calendarId || ""),
+          city,
         ],
       );
-      await audit(q, req.user.id, "resource.save", { id });
+      await audit(q, req.user.id, "resource.save", { id, city });
     });
     res.json({ id });
   });
