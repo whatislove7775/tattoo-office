@@ -1506,7 +1506,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Записка в офис.</h2><p data-help class="small muted">Вопрос, идея или что-то пошло не так? Сообщение увидит команда студии. Если нужен ответ, оставьте способ связи. Не указывайте медицинские или платёжные данные.${!me ? " Можно написать без аккаунта." : ""}</p>${textarea("message", "Ваше сообщение")}<button class="chrome" type="submit">Отправить записку →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Как Tattoo Office стать лучше?</h2><p data-help class="small muted">Пожалуйста, оставьте свой искренний честный комментарий, который поможет нам стать лучше. Ваше анонимное сообщение увидит команда студии. Мы изучим вашу идею/предложение/замечание.\n\nЕсли нужен ответ, оставьте способ связи.\n\nС любовью и заботой, ваш T.Office</p>${textarea("message", "Ваше мнение формирует наш путь. Поделитесь им.")}<button class="chrome" type="submit">Отправить анонимно →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
         );
         mount = () => {
           if (path[0] === "book") {
@@ -1517,7 +1517,7 @@ async function render() {
           onForm("#feedback-form", async (d, f) => {
             await api("/feedback", "POST", d);
             f.reset();
-            notify("Записка передана команде студии");
+            notify("Сообщение передано команде студии");
           });
         };
         break;
