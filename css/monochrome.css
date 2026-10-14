@@ -1353,15 +1353,16 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 /* Окна на переднем плане (десктоп и планшет).
    Тень шапки (ABOUT + логотип) уходит под основные окна: сцена с разделами,
    меню и панель входа лежат выше шапки и не затеняются ею сверху.
-   Панель входа — чисто белая, без градиента и рамки, со скруглением как у меню
+   Панель входа — чисто белая, без градиента, с тонкой серой рамкой и со скруглением как у меню
    (дуга r=26 в menuShapePath визуально равна border-radius ≈ 22px). */
 @media (min-width:701px) {
   #stage,.rail {z-index:46;}
   .rail .login,.rail .login.login--guest,.rail .login.login--user,
   body.admin-session .rail .login,body.admin-session .rail .login.login--user {
     background:var(--panel);
-    border:0;
+    border:1px solid #c5c5c5;
     border-radius:22px;
     box-shadow:0 10px 16px #00000008,0 1px 3px #0000000d;
   }
+  :root[data-theme="dark"] .rail .login {border-color:var(--panel-edge);}
 }

@@ -1506,7 +1506,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Как Tattoo Office стать лучше?</h2><p data-help class="small muted">Пожалуйста, оставьте свой искренний честный комментарий, который поможет нам стать лучше. Ваше анонимное сообщение увидит команда студии. Мы изучим вашу идею/предложение/замечание.\n\nЕсли нужен ответ, оставьте способ связи.\n\nС любовью и заботой, ваш T.Office</p>${textarea("message", "Ваше мнение формирует наш путь. Поделитесь им.")}<button class="chrome" type="submit">Отправить анонимно →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Как Tattoo Office стать лучше?</h2><p data-help class="small muted">Пожалуйста, оставьте свой искренний честный комментарий, который поможет нам стать лучше. Ваше анонимное сообщение увидит команда студии. Мы изучим вашу идею/предложение/замечание.\n\nЕсли нужен ответ, оставьте способ связи.\n\nС любовью и заботой, ваш T.Office ❤️</p>${textarea("message", "Ваше мнение формирует наш путь. Поделитесь им.")}<button class="chrome" type="submit">Отправить анонимно →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
         );
         mount = () => {
           if (path[0] === "book") {
