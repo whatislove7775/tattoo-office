@@ -1725,9 +1725,12 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 .ranking-podium[data-ranking-place="1"] {--podium-tone:#967015;}
 .ranking-podium[data-ranking-place="2"] {--podium-tone:#66788e;}
 .ranking-podium[data-ranking-place="3"] {--podium-tone:#a46a43;}
-.ranking-list--compact>.ranking-podium .ranking-row {padding-inline:14px;background:color-mix(in srgb,var(--podium-tone) 12%,var(--panel));box-shadow:inset 3px 0 var(--podium-tone);}
+body[data-page="ranking"] #stage {container-type:inline-size;}
+.ranking-list--compact>.ranking-podium .ranking-row {position:relative;isolation:isolate;padding-inline:14px;background:transparent;box-shadow:none;border-bottom-color:transparent;}
+.ranking-list--compact>.ranking-podium .ranking-row::before {content:"";position:absolute;z-index:-1;pointer-events:none;top:0;bottom:-1px;left:calc((100% - 100cqw)/2);width:100cqw;box-sizing:border-box;background:linear-gradient(110deg,color-mix(in srgb,var(--podium-tone) 22%,var(--panel)),color-mix(in srgb,var(--podium-tone) 6%,var(--panel)) 52%,color-mix(in srgb,var(--podium-tone) 16%,var(--panel)));box-shadow:inset 3px 0 var(--podium-tone);border-bottom:1px solid var(--panel-edge);}
 .ranking-list--compact>.ranking-podium .ranking-position {color:var(--podium-tone);font-weight:600;}
-.ranking-list--compact>.ranking-podium a.ranking-row:hover {background:color-mix(in srgb,var(--podium-tone) 19%,var(--panel));}
+.ranking-list--compact>.ranking-podium a.ranking-row:hover {background:transparent;}
+.ranking-list--compact>.ranking-podium a.ranking-row:hover::before {background:linear-gradient(110deg,color-mix(in srgb,var(--podium-tone) 28%,var(--panel)),color-mix(in srgb,var(--podium-tone) 10%,var(--panel)) 52%,color-mix(in srgb,var(--podium-tone) 22%,var(--panel)));}
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="1"] {--podium-tone:#e0bf68;}
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="2"] {--podium-tone:#b8c7d9;}
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="3"] {--podium-tone:#d6a07b;}
