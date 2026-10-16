@@ -747,7 +747,12 @@ async function paymentPage(id) {
 async function rankingPage() {
   const data = await api("/ranking");
   const crown = document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Рейтинг мастеров", `<div class="ranking-heading"><span>Мастер</span><span>Сеансы</span></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li class="ranking-row ${m.resident ? 'ranking-row--resident' : ''}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" loading="lazy">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span><span class="ranking-resident ${m.resident ? 'is-resident' : ''}">${m.resident ? 'резидент' : 'нерезидент'}</span></div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`);
+  return win("Рейтинг мастеров", `<div class="ranking-heading"><span>Сеансы</span></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li><a href="#/profile/${encodeURIComponent(m.id)}" class="ranking-row ${m.resident ? 'ranking-row--resident' : ''}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" loading="lazy">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+}
+async function registeredProfilePage(id) {
+  const {master:m}=await api("/masters/"+encodeURIComponent(id));
+  const crown=document.querySelector("#clubCrownPath").getAttribute("d");
+  return win("Профиль мастера", `<article class="registered-profile"><div class="registered-profile__avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="${esc(m.name)}">`:`<span>${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</div><div><div class="registered-profile__title"><h2>${esc(m.name)}</h2>${m.resident?`<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><path d="${esc(crown)}"/></svg>`:""}</div>${m.city?`<p class="muted">${esc(m.city)}</p>`:""}${m.resident?'<span class="ranking-resident is-resident">резидент</span>':""}${m.specialty?`<p>${esc(m.specialty)}</p>`:""}${m.bio?`<p class="registered-profile__bio">${esc(m.bio)}</p>`:""}<p class="small muted">Завершённых сеансов: ${m.completed}</p></div></article>`, "ranking");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -1481,6 +1486,9 @@ async function render() {
       return;
     }
     switch (path[0]) {
+      case "profile":
+        html = await registeredProfilePage(path[1]);
+        break;
       case "ranking":
         html = await rankingPage();
         break;

@@ -32,6 +32,12 @@ test('ranking uses registered masters, completed work, a 5% resident bonus and p
     assert.equal(result.masters[2].bookings,2);assert.equal(result.masters[2].completed,2);
     assert.equal(result.masters[1].resident,true);assert.equal(result.masters[3].score,0);
     assert.ok(result.masters.every(m=>!('email' in m)&&!('profile' in m)&&!('password' in m)));
+    const profile=await fetch(origin+'/api/masters/'+ids.Resident);
+    assert.equal(profile.status,200);
+    const publicData=(await profile.json()).master;
+    assert.equal(publicData.name,'Resident');assert.equal(publicData.completed,2);
+    assert.ok(!('email' in publicData)&&!('profile' in publicData)&&!('password' in publicData));
+    for(const id of [ids.Inactive,ids.Customer,ids.Admin,'not-a-uuid'])assert.equal((await fetch(origin+'/api/masters/'+id)).status,404);
     const token='ranking-test-token';await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '1 day')",[hashToken(token),ids.Resident]);
     const update=async profile=>fetch(origin+'/api/me',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:'office_session='+token},body:JSON.stringify({name:'Resident',profile})});
     const avatar='data:image/jpeg;base64,/9j/2Q==';

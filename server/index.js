@@ -1,4 +1,4 @@
-import { masterRanking } from "./ranking.js";
+import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
 import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
@@ -298,6 +298,11 @@ export async function createApp(db) {
         !!process.env.TELEGRAM_CLIENT_SECRET,
       paymentEnabled: yookassaEnabled(),
     });
+  });
+  app.get("/api/masters/:id", async (req,res) => {
+    const master=await registeredMasterProfile(db,req.params.id);
+    if(!master)fail("Мастер не найден",404);
+    res.set("Cache-Control","no-store").json({master});
   });
   app.get("/api/ranking", async (req,res) => {
     res.set("Cache-Control", "no-store");

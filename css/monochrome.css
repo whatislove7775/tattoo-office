@@ -1533,3 +1533,30 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
  .club-offer__frame {height:340px;}
  .profile-avatar-picker {padding:14px;gap:12px;}
 }
+
+/* Keep the ranking launcher above the full-screen stage so it receives clicks. */
+.ranking-launch {z-index:56;pointer-events:auto;}
+.mobile-menu-open .ranking-launch {visibility:hidden;}
+.ranking-launch>* {pointer-events:none;}
+.ranking-heading {justify-content:flex-end;padding-left:0;}
+.ranking-list--compact {border-radius:16px;overflow:hidden;}
+a.ranking-row {color:var(--ink);text-decoration:none;cursor:pointer;}
+a.ranking-row:hover {background:color-mix(in srgb,var(--ink) 7%,transparent);}
+body[data-page="ranking"] #stage,body[data-page="profile"] #stage {border-radius:30px;overflow:hidden;}
+body[data-page="ranking"] .office-feature>.window,body[data-page="profile"] .office-feature>.window {border-radius:24px;overflow:hidden;}
+.registered-profile {display:grid;grid-template-columns:140px minmax(0,1fr);gap:28px;max-width:650px;align-items:start;}
+.registered-profile__avatar {display:grid;place-items:center;aspect-ratio:1;border-radius:22px;overflow:hidden;background:var(--control-fill);font-size:36px;color:var(--ink-2);}
+.registered-profile__avatar img {width:100%;height:100%;object-fit:cover;}
+.registered-profile__title {display:flex;align-items:center;gap:10px;}
+.registered-profile__title h2 {margin:0;overflow-wrap:anywhere;}
+.registered-profile__bio {white-space:pre-line;line-height:1.6;}
+@media (max-width:700px) {
+ body[data-page="ranking"] #stage,body[data-page="profile"] #stage {overflow:visible;border-radius:0;}
+ .registered-profile {grid-template-columns:82px minmax(0,1fr);gap:16px;}
+ .registered-profile__avatar {border-radius:16px;font-size:26px;}
+ .registered-profile__title h2 {font-size:20px;}
+}
+@media (max-width:700px) {
+ body:is([data-page="ranking"],[data-page="profile"]) .window-head {flex-wrap:wrap;gap:10px;}
+ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {margin-left:0;}
+}
