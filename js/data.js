@@ -250,7 +250,7 @@
     mapUrl: 'https://yandex.ru/maps/'
   };
 
-  MASTERS.forEach(function(master,index) { master.resident = index < Math.floor(MASTERS.length / 2); });
+  MASTERS.forEach(function(master,index) { master.resident = Boolean(master.photo); });
 
   global.DATA = {
     masters: MASTERS,
