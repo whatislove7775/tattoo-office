@@ -29,7 +29,7 @@
     if(!src)return '<span class="master-placeholder '+(cls||'')+'" role="img" aria-label="'+esc(label)+'">'+esc(String(label||'').trim().split(/\s+/).slice(0,2).map(function(n){return n[0];}).join(''))+'</span>';
     var responsive=global.PhotoSources && global.PhotoSources[src];
     var sizes=cls==='polaroid__img'?'(max-width:700px) 32vw, 240px':cls==='master__photo'?'(max-width:700px) 25vw, 280px':'(max-width:700px) 43vw, 400px';
-    var sources=responsive?' srcset="'+esc(responsive.srcset)+'" sizes="'+sizes+'" width="'+responsive.width+'" height="'+responsive.height+'"':'';
+    var sources=responsive?' srcset="'+esc(responsive.srcset)+'" sizes="'+sizes+'"':'';
     return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(label || '') + '"' +
            sources + ' decoding="async" loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
            (kind ? ' data-kind="' + esc(kind) + '"' : '') +
