@@ -1702,3 +1702,8 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
   .document-details dt {font-size:12px;}
   .rules-full__text.legal-document {scroll-margin-top:100px;}
 }
+.office-feature .find-cards .find-bottom {align-self:end;width:100%;}
+.office-feature .find-cards .find-bottom .chrome {width:100%;box-sizing:border-box;}
+@media (min-width:1101px) {
+  .office-feature .find-cards {grid-template-rows:auto auto auto minmax(0,1fr);align-content:stretch;}
+}
