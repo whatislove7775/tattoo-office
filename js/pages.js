@@ -17,6 +17,11 @@
     } catch (_) { return ''; }
   }
 
+  function ageLabel(age) {
+    if(global.I18N.get()==='en')return age+' '+(age===1?'year':'years');
+    return age+' '+({one:'год',few:'года',many:'лет',other:'лет'}[new Intl.PluralRules('ru').select(age)]);
+  }
+
   /* ------------------------------ хелперы --------------------------------- */
   function esc(s) {
     return String(s == null ? '' : s)
@@ -56,7 +61,7 @@
                '</button>';
       }).join('');
 
-      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Рейтинг мастеров</span></a>';
+      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Топ мастеров</span></a>';
     },
 
     mount: function (root) {
@@ -117,7 +122,7 @@
                  '<div class="master__name"><span>' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
-                   (m.age ? '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' : '') +
+                   (m.age ? '<span class="master__age">' + esc(ageLabel(m.age)) + '</span>' : '') +
                    (pick(m.exp) ? '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' : '') +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +

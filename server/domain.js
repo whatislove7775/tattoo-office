@@ -1,3 +1,4 @@
+import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import {
   scryptSync,
   randomBytes,
@@ -96,9 +97,8 @@ export const defaults = {
       },
     },
   },
-  rules:
-    "Работайте одноразовыми расходниками. Подготовьте и обработайте рабочее место до и после сеанса. Соблюдайте согласованное время и уважайте соседей. Полный регламент студия опубликует перед запуском.",
-  rulesVersion: "draft-1",
+  rules: studioRules,
+  rulesVersion: studioRulesVersion,
   privacy: legalSamples.privacy,
   offer: legalSamples.offer,
   consent: legalSamples.consent,

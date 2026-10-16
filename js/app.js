@@ -15,6 +15,13 @@
   var stageInner = view;
   var pageScroller = document.getElementById("pageScroller");
   var currentCleanup = null;
+  function placeRankingLaunch() {
+    var badge = document.querySelector('.ranking-launch');
+    if (!badge) return;
+    var bottom = document.querySelector('.site-bottom');
+    if (mobileLayoutQuery.matches && bottom) bottom.prepend(badge);
+    else document.body.append(badge);
+  }
   // Telegram appends a Safari-like UA. Its injected native bridge identifies it.
   var telegramBrowser = !!(global.webkit?.messageHandlers?.contentInterface && global.webkit?.messageHandlers?.performAction);
   var browserUA = navigator.userAgent;
@@ -108,7 +115,7 @@
     view.innerHTML = '<div class="view-enter">' + page.html(params) + "</div>";
     var root = view.firstElementChild;
     var rankingLaunch = root.querySelector(".ranking-launch");
-    if (rankingLaunch) document.body.append(rankingLaunch);
+    if (rankingLaunch) { document.body.append(rankingLaunch); placeRankingLaunch(); }
     if (page.mount) page.mount(root, params);
     if (root.__cleanup) currentCleanup = root.__cleanup;
 
@@ -515,6 +522,7 @@
     new MutationObserver(updateThumb).observe(view, { childList: true, subtree: true, characterData: true });
     view.addEventListener("load", updateThumb, true);
     mobileLayoutQuery.addEventListener("change", function () {
+      placeRankingLaunch();
       applyTheme(document.documentElement.getAttribute("data-theme"));
       paintHeaderShape(); paintMenuShape(); paintStageShape(); updateThumb();
     });

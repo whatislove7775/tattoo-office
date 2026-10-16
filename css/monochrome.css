@@ -255,7 +255,7 @@ body[data-page="admin"] .site-bottom .rent-slider { display:none; }
 .rules-booking p { color:var(--ink-2);font-size:13px;line-height:1.55; }
 .rules-booking .chrome { display:flex;width:100%;margin-top:22px;background:var(--action-fill);color:#fff;border-color:#333; }
 .rules-full { border-top:1px solid var(--panel-edge);margin-top:32px;padding:20px 0; }
-.rules-full summary { list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:16px; }
+.rules-full summary { list-style:none;cursor:pointer;display:flex;justify-content:flex-start;align-items:center;gap:12px;font-size:16px; }
 .rules-full summary::-webkit-details-marker { display:none; }
 .rules-full summary>span { font-size:25px;font-weight:300; }
 .rules-full[open] summary>span { transform:rotate(45deg); }
@@ -1630,3 +1630,50 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 @media (max-width:700px) {.ranking-tools {gap:10px;}.office-feature .ranking-tools .field input {font-size:16px;}}
 
 .profile-gallery #gallery-save {margin-top:18px;}
+
+.office-feature .find-cards .find-bottom {margin-top:4px;padding-top:0;border-top:0;justify-content:flex-start;align-items:flex-start;}
+
+/* Explicit upload actions replace invisible native file inputs over the panel. */
+.file-upload-zone {border:1px dashed var(--panel-edge);transition:background .16s,border-color .16s,box-shadow .16s;cursor:pointer;}
+.file-upload-zone:hover,.file-upload-zone.is-choosing {border-color:var(--ink-3);background:color-mix(in srgb,var(--ink) 3%,var(--panel));}
+.file-upload-zone.is-dragover {border-style:solid;border-color:var(--ink-2);background:color-mix(in srgb,var(--ink) 7%,var(--panel));box-shadow:inset 0 0 0 1px var(--ink-3);}
+.file-upload-zone.is-loading {cursor:progress;opacity:.75;}
+.file-upload-zone.has-error,.gallery-status.is-error {color:var(--ink-2);}
+.file-upload-copy {min-width:0;flex:1;}
+.file-upload-status {display:block;font-size:12px;line-height:1.4;color:var(--ink-2);margin-top:8px;}
+.file-upload-status:empty {display:none;}
+.profile-avatar-picker #avatar-choose {flex:none;font-size:13px;min-height:38px;padding:8px 14px;}
+.profile-avatar-picker input[type=file][hidden],.gallery-dropzone input[hidden] {display:none;}
+.gallery-dropzone {display:flex;align-items:center;gap:16px;padding:20px;border-radius:18px;margin-top:18px;background:var(--panel-2);}
+.gallery-dropzone>span {flex:1;min-width:0;}
+.gallery-dropzone b {display:block;font-size:14px;font-weight:500;}
+.gallery-dropzone small {display:block;font-size:12px;color:var(--ink-3);line-height:1.4;margin-top:5px;}
+.upload-symbol {width:26px;height:26px;flex:none;fill:none;stroke:var(--ink-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.gallery-dropzone .chrome {flex:none;font-size:13px;}
+.profile-gallery--tab {margin:0;padding:0;border:0;}
+@media (max-width:700px) {
+ .profile-avatar-picker {display:grid;grid-template-columns:56px minmax(0,1fr);}
+ .profile-avatar-preview {width:56px;height:56px;}
+ .profile-avatar-picker #avatar-choose {grid-column:2;justify-self:start;}
+ .gallery-dropzone {display:grid;grid-template-columns:24px minmax(0,1fr);padding:16px;gap:12px;}
+ .gallery-dropzone .chrome {grid-column:2;justify-self:start;}
+}
+
+.polaroid__cap .profile-resident-crown {filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 2px 1px #000);}
+
+/* Keep status labels and account actions optically centred. */
+.ranking-meta .ranking-resident {display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:23px;padding:4px 9px;line-height:1;}
+.who .menu-logout {align-self:center;display:flex;align-items:center;justify-content:center;padding:0;margin-block:0;min-height:0;line-height:1;}
+.field--money {position:relative;}
+.office-feature .field--money input {padding-right:38px;appearance:textfield;-moz-appearance:textfield;}
+.field--money input::-webkit-inner-spin-button,.field--money input::-webkit-outer-spin-button {-webkit-appearance:none;margin:0;}
+.field--money .field__currency {position:absolute;right:16px;bottom:13px;pointer-events:none;color:var(--ink-3);line-height:20px;}
+@media (max-width:700px) {
+  .site-bottom .ranking-launch.chrome {position:static;align-self:flex-start;flex:none;margin:0 0 82px;max-width:100%;transform:none;}
+}
+@media (min-width:701px) {
+  body[data-page="club"] #office-view>.window:has(>.club-offer) {display:flex;flex-direction:column;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 76px)!important;}
+  .club-offer {flex:1;}
+  .club-offer__prices .club-join {margin-top:auto;padding-top:24px;}
+  .club-offer__prices .club-prices {margin-bottom:26px;}
+}

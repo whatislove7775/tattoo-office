@@ -1,3 +1,4 @@
+import {ageFromBirthDate} from "./profile-age.js";
 import {readFile} from 'node:fs/promises';
 const catalog=JSON.parse(await readFile(new URL('./master-catalog.json',import.meta.url),'utf8'));
 export const catalogIds=new Set(catalog.map(m=>m.id));
@@ -24,7 +25,7 @@ export async function masterDirectory(db,{period='all'}={}) {
     return {...base,id:base.id||u.id,name:u.name,resident,active:u.active,registered:true,
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
-      age:Number.isInteger(p.age)?p.age:base.age||null,exp:text(p.experience,80)||base.exp||'',
+      age:p.birthDate?ageFromBirthDate(p.birthDate):(Number.isInteger(p.age)?p.age:base.age||null),exp:text(p.experience,80)||base.exp||'',
       bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
       completed:u.completed,bookings:u.bookings,score:Math.round((u.bookings*.25+u.completed)*(resident?1.05:1)*100)/100,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],

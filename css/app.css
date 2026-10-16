@@ -997,7 +997,7 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 }
 
 /* доступность фокуса */
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px;

@@ -13,12 +13,14 @@ test('one directory preserves legacy cards, links accounts, isolates media and r
     assert.equal((await request('/admin/masters/zinaida/account','PUT',{userId:ids.master})).status,403);
     assert.equal((await request('/admin/masters/zinaida/account','PUT',{userId:ids.master},'admin')).status,200);
     directory=(await (await request('/directory')).json()).masters;assert.equal(directory.length,11);assert.ok(!directory.some(m=>m.id===ids.master));
-    assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{city:'СПБ',age:30,experience:'8 лет',bio:'Общее описание'}})).status,200);
+    assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{city:'СПБ',birthDate:'1996-01-01',experience:'8 лет',bio:'Общее описание'}})).status,200);
     assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{bookingLink:'https://t.me/not_allowed'}})).status,403);
     assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{adminBookingLink:'https://t.me/not_allowed'}})).status,403);
     assert.equal((await request('/admin/users/'+ids.master,'PATCH',{bookingLink:'https://t.me/example_master'},'admin')).status,200);
     assert.equal((await request('/admin/users/'+ids.master,'PATCH',{bookingLink:'javascript:alert(1)'},'admin')).status,400);
-    const card=(await (await request('/masters/zinaida')).json()).master;assert.equal(card.name,'Общее имя');assert.equal(card.resident,true);assert.equal(card.city,'СПБ');assert.equal(card.age,30);assert.equal(card.exp,'8 лет');assert.equal(card.bookingLink,'https://t.me/example_master');
+    assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{birthDate:'2020-01-01'}})).status,400);
+    assert.equal((await request('/me','PATCH',{name:'Общее имя',profile:{birthDate:'1999-02-30'}})).status,400);
+    const card=(await (await request('/masters/zinaida')).json()).master;assert.equal(card.name,'Общее имя');assert.equal(card.resident,true);assert.equal(card.city,'СПБ');assert.equal(card.age,new Date().getUTCFullYear()-1996);assert.ok(!('birthDate' in card));assert.equal(card.exp,'8 лет');assert.equal(card.bookingLink,'https://t.me/example_master');
     assert.equal((await (await request('/masters/'+ids.master)).json()).master.id,'zinaida');
     assert.equal((await request('/admin/users/'+ids.master,'PATCH',{bookingLink:''},'admin')).status,200);assert.equal((await (await request('/masters/zinaida')).json()).master.bookingLink,'');
     const resource=(await db.query('SELECT id FROM resources LIMIT 1')).rows[0].id;

@@ -30,7 +30,7 @@
       toggle.addEventListener('pointercancel',()=>{pointerAction=false;});
       toggle.addEventListener('keydown',()=>{pointerAction=false;});
     });
-    root.querySelectorAll('input[type="number"]:not([data-quantity-styled])').forEach(input=>{
+    root.querySelectorAll('input[type="number"]:not([data-quantity-styled]):not([data-plain-number])').forEach(input=>{
       input.dataset.quantityStyled='true';
       const wrapper=document.createElement('div');wrapper.className='quantity-control';
       const minus=document.createElement('button'),plus=document.createElement('button');

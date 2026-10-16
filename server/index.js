@@ -1,3 +1,6 @@
+import {studioRules,studioRulesVersion} from "./studio-rules.js";
+import {updateOperatorDetails} from "./operator-details.js";
+import {ageFromBirthDate} from "./profile-age.js";
 import {masterDirectory,catalogIds,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
@@ -42,6 +45,13 @@ export async function createApp(db) {
     "INSERT INTO settings(id,data) VALUES(1,$1) ON CONFLICT DO NOTHING",
     [JSON.stringify(defaults)],
   );
+  await db.transaction(async q => {
+    const row = (await q.query("SELECT data FROM settings WHERE id=1 FOR UPDATE")).rows[0];
+    let updated = updateOperatorDetails(row.data);
+    if (!updated.website) updated = {...updated,website:"https://tattoo-office.com"};
+    if (updated.rulesContentVersion !== studioRulesVersion) updated = {...updated, rules:studioRules, rulesVersion:studioRulesVersion, rulesContentVersion:studioRulesVersion};
+    if (updated !== row.data) await q.query("UPDATE settings SET data=$1 WHERE id=1", [JSON.stringify(updated)]);
+  });
   const one = async (q, s, p = []) => (await q.query(s, p)).rows[0];
   const settings = async (q = db) =>
     withCities((await one(q, "SELECT data FROM settings WHERE id=1")).data);
@@ -426,10 +436,10 @@ export async function createApp(db) {
       fail("Проверьте настройку видимости в рейтинге");
     if (p.city !== undefined && !["Москва","СПБ"].includes(p.city)) fail("Выберите Москву или СПБ");
     if (p.avatar !== undefined && (typeof p.avatar !== "string" || p.avatar.length > 90000 || (p.avatar && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.avatar)))) fail("Проверьте фотографию профиля");
-    if(p.age!==undefined && p.age!==null && p.age!=="" && (!Number.isInteger(Number(p.age))||Number(p.age)<18||Number(p.age)>100))fail("Возраст: от 18 до 100 лет");
+    if(p.birthDate!==undefined && p.birthDate!=="" && (ageFromBirthDate(p.birthDate)===null || ageFromBirthDate(p.birthDate)<18 || ageFromBirthDate(p.birthDate)>100))fail("Укажите корректную дату рождения: возраст от 18 до 100 лет");
     if(p.bookingLink!==undefined || p.adminBookingLink!==undefined)fail("Ссылку для записи назначает администратор",403);
     const profile = {
-      age: p.age===undefined ? req.user.profile?.age??null : p.age===""||p.age===null?null:Number(p.age),
+      birthDate:p.birthDate===undefined?req.user.profile?.birthDate||"":p.birthDate,
       experience:String(p.experience ?? req.user.profile?.experience ?? "").slice(0,80),
       city: p.city ?? req.user.profile?.city ?? "",
       avatar: p.avatar ?? req.user.profile?.avatar ?? "",
@@ -814,7 +824,6 @@ export async function createApp(db) {
       result.integrations = {
         yookassa: yookassaEnabled(),
         yookassaTest: yookassaTest(),
-        cloudkassir: !!process.env.CLOUDKASSIR_API_SECRET,
         calendar: !!process.env.GOOGLE_SERVICE_ACCOUNT,
         telegram: !!process.env.TELEGRAM_BOT_TOKEN,
         email: !!process.env.EMAIL_API_URL,
@@ -829,12 +838,18 @@ export async function createApp(db) {
         s = { ...old };
       for (const key of [
         "studioName",
+        "website",
         "address",
         "phone",
         "email",
         "legalName",
         "inn",
         "legalAddress",
+        "ogrnip",
+        "bankName",
+        "bankBik",
+        "bankCorrespondent",
+        "bankAccount",
         "rules",
         "rulesVersion",
         "privacy",

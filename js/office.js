@@ -1,3 +1,4 @@
+import {bindFileUpload} from "./file-upload.js";
 import {mountGallery} from "./profile-media.js";
 const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -140,7 +141,8 @@ function testNote() {
   return "";
 }
 function field(name, label, value = "", type = "text", extra = "") {
-  return `<label class="field"><span>${label}</span><input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
+  const monetary = type === "number" && /^(price|deposit|amount|balance|resident_\d+|guest_\d+)$/.test(name);
+  return `<label class="field${monetary ? ' field--money' : ''}"><span>${label}</span><input name="${name}" type="${type}" value="${esc(value)}" ${monetary ? 'data-plain-number inputmode="decimal"' : ''} ${extra}>${monetary ? '<span class="field__currency" aria-hidden="true">₽</span>' : ''}</label>`;
 }
 function textarea(name, label, value = "") {
   return `<label class="field"><span>${label}</span><textarea name="${name}">${esc(value)}</textarea></label>`;
@@ -453,7 +455,7 @@ function findPage() {
 
 3. Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.
 
-Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article></div></div><div class="find-bottom"><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div>`);
+Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article><div class="find-bottom"><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div></div></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -470,7 +472,7 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
     </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>Поздняя отмена — ${s.lateCancellation === "review" ? "по решению администратора" : "по регламенту студии"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
-    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text">${esc(s.rules)}</div><small>Версия ${esc(s.rulesVersion)}</small></details>
+    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text">${esc(s.rules)}</div></details>
   </section>`);
 }
 
@@ -755,7 +757,7 @@ async function rankingPage() {
   const data = await api("/ranking?period="+rankingPeriod);
   data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
   const crown = document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Рейтинг мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="Имя или фамилия" autocomplete="off"></label><label class="field"><span>Город</span><select id="ranking-city"><option value="">Все города</option><option>Москва</option><option>СПБ</option></select></label><label class="field"><span>Период</span><select id="ranking-period"><option value="all" ${rankingPeriod==='all'?'selected':''}>Всё время</option><option value="month" ${rankingPeriod==='month'?'selected':''}>Этот месяц</option></select></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="Имя или фамилия" autocomplete="off"></label><label class="field"><span>Город</span><select id="ranking-city"><option value="">Все города</option><option>Москва</option><option>СПБ</option></select></label><label class="field"><span>Период</span><select id="ranking-period"><option value="all" ${rankingPeriod==='all'?'selected':''}>Всё время</option><option value="month" ${rankingPeriod==='month'?'selected':''}>Этот месяц</option></select></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -788,7 +790,8 @@ async function cabinetPage() {
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
-    body = `<form id="profile-form"><label class="profile-avatar-picker"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span><b>Фотография профиля</b><small>Выбрать фото · JPG, PNG или WebP</small></span><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp"><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></label><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("age", "Возраст", me.profile.age||"", "number", 'min="18" max="100"')}${field("experience", "Стаж", me.profile.experience||"", "text", 'maxlength="80" placeholder="Например, 5 лет"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><section id="profile-gallery" class="profile-gallery"><h3>Работы и эскизы</h3><p class="small muted">Загрузка портфолио…</p></section><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
+    body = `<form id="profile-form"><div class="profile-avatar-picker file-upload-zone"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span class="file-upload-copy"><b>Фотография профиля</b><small>Нажмите кнопку или перетащите фото · JPG, PNG, WebP до 5 МБ</small><span id="avatar-upload-status" class="file-upload-status" role="status" aria-live="polite">${me.profile.avatar?'Фото загружено':''}</span></span><button class="chrome" type="button" id="avatar-choose">${me.profile.avatar?'Заменить фото':'Выбрать фото'}</button><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></div><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("birthDate", "Дата рождения", me.profile.birthDate||"", "date", 'data-styled="true" autocomplete="bday" max="'+today()+'"')}${field("experience", "Стаж", me.profile.experience||"", "text", 'maxlength="80" placeholder="Например, 5 лет"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
+  if(cabTab==='portfolio' && me.accountType==='master')body='<section id="profile-gallery" class="profile-gallery profile-gallery--tab"><h3>Работы и эскизы</h3><p class="small muted" role="status">Загрузка портфолио…</p></section>';
   const accent = '';
   return win(
     "My profile",
@@ -797,6 +800,7 @@ async function cabinetPage() {
       ["history", "Архив"],
       ["balance", "Баланс"],
       ["notifications", "Входящие"],
+      ...(me.accountType==='master' ? [["portfolio", "Работы / эскизы"]] : []),
       ["profile", "Личное дело"],
     ]
       .map(
@@ -876,21 +880,20 @@ function mountCabinet() {
   );
   if($('#profile-gallery'))mountGallery($('#profile-gallery'),api,notify,refresh).catch(e=>notify(e.message));
   const avatarFile = $("#profile-avatar-file");
-  if (avatarFile) avatarFile.onchange = async () => {
-    const file = avatarFile.files[0]; if (!file) return;
-    if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 5*1024*1024) { notify("Выберите JPG, PNG или WebP до 5 МБ"); avatarFile.value=""; return; }
-    try {
-      const bitmap = await createImageBitmap(file);
-      const canvas = document.createElement("canvas"); canvas.width=192; canvas.height=192;
-      const ctx=canvas.getContext("2d"),side=Math.min(bitmap.width,bitmap.height);
-      ctx.fillStyle="#fff";ctx.fillRect(0,0,192,192);
-      ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);bitmap.close();
-      const value=canvas.toDataURL("image/jpeg",.78);
-      if(value.length>90000)throw Error("Выберите фотографию меньшего размера");
-      $('#profile-form [name="avatar"]').value=value;
-      $('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Ваш аватар">`;
-    } catch(error) {notify(error.message || "Не удалось загрузить фотографию");}
-  };
+  if(avatarFile)bindFileUpload($('.profile-avatar-picker'),avatarFile,$('#avatar-choose'),async files=>{
+    const file=files[0];if(!file)return;
+    const zone=$('.profile-avatar-picker'),status=$('#avatar-upload-status'),button=$('#avatar-choose'),submit=$('#profile-form button[type="submit"]');
+    const show=(message,error=false)=>{status.textContent=message;zone.classList.toggle('has-error',error);};
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){show('Выберите JPG, PNG или WebP до 5 МБ',true);return;}
+    zone.classList.add('is-loading');button.disabled=true;submit.disabled=true;show('Подготавливаем фотографию…');
+    try{
+      const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;
+      try{const ctx=canvas.getContext('2d'),side=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,192,192);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);}finally{bitmap.close();}
+      const value=canvas.toDataURL('image/jpeg',.78);if(value.length>90000)throw Error('Выберите фотографию меньшего размера');
+      $('#profile-form [name="avatar"]').value=value;$('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Предпросмотр фотографии">`;
+      button.textContent='Заменить фото';show('Фото выбрано. Нажмите «Сохранить личное дело».');
+    }catch(error){show(error.message||'Не удалось прочитать фотографию',true);}finally{zone.classList.remove('is-loading');button.disabled=false;submit.disabled=false;}
+  });
   onForm("#profile-form", async (d) => {
     await api("/me", "PATCH", { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === "on" } });
     await refresh();
@@ -1043,7 +1046,7 @@ async function adminPage() {
         ),
     )}`;
   if (adminTab === "settings")
-    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${field("openHour", "Открытие (час, МСК)", s.openHour, "number", 'min="0" max="23"')}${field("closeHour", "Закрытие (час, МСК)", s.closeHour, "number", 'min="1" max="24"')}</div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (вкладка «Расписание») и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (вкладка «Расписание») и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -1051,7 +1054,7 @@ async function adminPage() {
         ["retain", "Удержать предоплату по регламенту"],
       ],
       s.lateCancellation,
-    )}</div></fieldset><fieldset class="admin-group"><legend>Реквизиты и документы</legend><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label></fieldset><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
+    )}</div></fieldset><fieldset class="admin-group"><legend>Реквизиты и документы</legend><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("ogrnip", "ОГРНИП", s.ogrnip || "")}${field("bankName", "Банк", s.bankName || "")}${field("bankBik", "БИК", s.bankBik || "")}${field("bankCorrespondent", "Корреспондентский счёт", s.bankCorrespondent || "")}${field("bankAccount", "Расчётный счёт", s.bankAccount || "")}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label></fieldset><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
       ["Сервис", "Ключи"],
       Object.entries(a.integrations || {}).map(
         ([k, v]) =>
@@ -1428,6 +1431,19 @@ function mountAdmin() {
         f.scrollIntoView({ block: "center" });
       }),
   );
+  const settingsForm = $("#settings-form");
+  if (settingsForm) {
+    const opening = settingsForm.elements.openHour, closing = settingsForm.elements.closeHour;
+    const syncHours = () => {
+      for (const option of closing.options) option.disabled = Number(option.value) <= Number(opening.value);
+      if (Number(closing.value) <= Number(opening.value)) {
+        closing.value = String(Number(opening.value) + 1);
+        closing.dispatchEvent(new Event("change", {bubbles:true}));
+      }
+      $("#studio-hours-summary").textContent = `Рабочий день — ${Number(closing.value) - Number(opening.value)} ч. Время по Москве.`;
+    };
+    opening.addEventListener("change", syncHours); closing.addEventListener("change", syncHours); syncHours();
+  }
   onForm("#settings-form", async (d) => {
     const rates = { resident: {}, guest: {} };
     for (const r of ["resident", "guest"])
@@ -1460,10 +1476,11 @@ function legalPage(key) {
       data: "Согласие на обработку данных",
       info: "Реквизиты студии",
     };
-  let text =
-    key === "info"
-      ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.\n\nВопросы о записи, работе пространства и документах можно направить через раздел «Feedback».\n\n${s.legalName ? "Оператор: " + s.legalName + "\n" : ""}${s.inn ? "ИНН: " + s.inn + "\n" : ""}${s.legalAddress ? "Юридический адрес: " + s.legalAddress + "\n" : ""}${s.email ? "Электронная почта: " + s.email + "\n" : ""}Реквизиты владельца студии и контакт для официальных обращений будут внесены перед открытием регистрации и оплаты.`
-      : s[key === "data" ? "consent" : key];
+  const contacts = [s.legalName, `Сайт: ${s.website || "https://tattoo-office.com"}`, s.ogrnip && `ОГРНИП: ${s.ogrnip}`, s.inn && `ИНН: ${s.inn}`, s.legalAddress && `Юридический адрес: ${s.legalAddress}`, s.email && `Электронная почта: ${s.email}`, s.phone && `Телефон поддержки: ${s.phone}`].filter(Boolean).join("\n");
+  const bank = [s.bankName, s.bankBik && `БИК: ${s.bankBik}`, s.bankCorrespondent && `Корреспондентский счёт: ${s.bankCorrespondent}`, s.bankAccount && `Расчётный счёт: ${s.bankAccount}`].filter(Boolean).join("\n");
+  const text = key === "info"
+    ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.\n\n${contacts}\n\nБанковские реквизиты\n${bank}`
+    : [s[key === "data" ? "consent" : key], "Реквизиты и контакты\n" + contacts, key === "offer" ? "Банковские реквизиты\n" + bank : ""].filter(Boolean).join("\n\n");
   return win(
     titles[key] || "Документы",
     `${testNote()}${!text ? '<div class="note-paper">Документ готовится к публикации. Владелец студии заполнит его в настройках перед запуском.</div>' : `<div class="prose">${esc(text)}</div>`}`,
@@ -1588,6 +1605,15 @@ async function render() {
         break;
       case "safety":
         html = safetyPage();
+        mount = () => {
+          const rules = $(".rules-full");
+          rules.addEventListener("toggle", () => {
+            if (!rules.open) return;
+            requestAnimationFrame(() => {
+              if (rules.isConnected && rules.open) $(".rules-full__text", rules).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',block:'start'});
+            });
+          });
+        };
         break;
       case "archive": {
         html = archivePage();
