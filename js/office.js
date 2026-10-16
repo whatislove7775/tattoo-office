@@ -472,7 +472,7 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
     </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>Поздняя отмена — ${s.lateCancellation === "review" ? "по решению администратора" : "по регламенту студии"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
-    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text">${esc(s.rules)}</div></details>
+    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text legal-document">${documentSections(s.rules, [], "h3")}</div></details>
   </section>`);
 }
 
@@ -1468,23 +1468,39 @@ function mountAdmin() {
     render();
   });
 }
+function documentSections(text, titles = [], tag = "h2") {
+  return String(text || "").trim().split(/\n\s*\n/).filter(Boolean).map((block, i) => {
+    const lines = block.trim().split("\n");
+    const explicit = /^(?:\d+[.)]\s|#{1,3}\s)/.test(lines[0]);
+    const heading = explicit ? lines.shift().replace(/^#{1,3}\s/, "") : titles[i];
+    return `<section class="document-section">${heading ? `<${tag}>${esc(heading)}</${tag}>` : ""}${lines.filter(Boolean).map(line => `<p>${esc(line)}</p>`).join("")}</section>`;
+  }).join("");
+}
 function legalPage(key) {
-  const s = pub.settings,
-    titles = {
-      privacy: "Политика обработки данных",
-      offer: "Оферта",
-      data: "Согласие на обработку данных",
-      info: "Реквизиты студии",
-    };
-  const contacts = [s.legalName, `Сайт: ${s.website || "https://tattoo-office.com"}`, s.ogrnip && `ОГРНИП: ${s.ogrnip}`, s.inn && `ИНН: ${s.inn}`, s.legalAddress && `Юридический адрес: ${s.legalAddress}`, s.email && `Электронная почта: ${s.email}`, s.phone && `Телефон поддержки: ${s.phone}`].filter(Boolean).join("\n");
-  const bank = [s.bankName, s.bankBik && `БИК: ${s.bankBik}`, s.bankCorrespondent && `Корреспондентский счёт: ${s.bankCorrespondent}`, s.bankAccount && `Расчётный счёт: ${s.bankAccount}`].filter(Boolean).join("\n");
-  const text = key === "info"
-    ? `Tattoo Office — тату-студия и рабочее пространство для мастеров.\nThe Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.\n\n${contacts}\n\nБанковские реквизиты\n${bank}`
-    : [s[key === "data" ? "consent" : key], "Реквизиты и контакты\n" + contacts, key === "offer" ? "Банковские реквизиты\n" + bank : ""].filter(Boolean).join("\n\n");
-  return win(
-    titles[key] || "Документы",
-    `${testNote()}${!text ? '<div class="note-paper">Документ готовится к публикации. Владелец студии заполнит его в настройках перед запуском.</div>' : `<div class="prose">${esc(text)}</div>`}`,
-  );
+  const s = pub.settings;
+  const titles = {privacy:"Политика обработки данных",offer:"Оферта",data:"Согласие на обработку данных",info:"Реквизиты студии"};
+  const headings = {
+    privacy:["Какие данные мы обрабатываем","Для чего нужны данные и кто имеет доступ","Ваши права и срок хранения"],
+    offer:["Рабочее место и стоимость","Подтверждение и перенос записи","Работа в студии и дополнительные услуги","Отмена и возврат"],
+    data:["На что вы даёте согласие","Обработка данных и отзыв согласия"],
+  };
+  const details = (title, rows) => `<section class="document-details"><h2>${title}</h2><dl>${rows.filter(([,value])=>value).map(([label,value,href])=>`<div><dt>${label}</dt><dd>${href ? `<a href="${esc(href)}">${esc(value)}</a>` : esc(value)}</dd></div>`).join("")}</dl></section>`;
+  const website = s.website || "https://tattoo-office.com";
+  const contacts = details("Реквизиты и контакты",[
+    ["Исполнитель / оператор",s.legalName],
+    ["ОГРНИП",s.ogrnip],["ИНН",s.inn],
+    ["Юридический адрес",s.legalAddress],
+    ["Сайт",website.replace(/^https?:\/\//,""),/^https?:\/\//.test(website)?website:null],
+    ["Электронная почта",s.email,s.email?"mailto:"+s.email:null],
+    ["Телефон поддержки",s.phone,s.phone?"tel:"+s.phone.replace(/[^+\d]/g,""):null],
+  ]);
+  const bank = details("Банковские реквизиты",[
+    ["Банк",s.bankName],["БИК",s.bankBik],["Корреспондентский счёт",s.bankCorrespondent],["Расчётный счёт",s.bankAccount],
+  ]);
+  const intro = key === "info"
+    ? '<div class="document-intro"><p>Tattoo Office — тату-студия и рабочее пространство для мастеров.</p><p>The Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.</p></div>'
+    : documentSections(s[key === "data" ? "consent" : key],headings[key]);
+  return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`);
 }
 async function render() {
   if (!$("#office-view")) return;

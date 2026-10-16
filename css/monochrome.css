@@ -1677,3 +1677,27 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
   .club-offer__prices .club-join {margin-top:auto;padding-top:24px;}
   .club-offer__prices .club-prices {margin-bottom:26px;}
 }
+
+/* Readable documents: clear sections, comfortable measure and aligned requisites. */
+.office-feature .legal-document {max-width:780px;white-space:normal;font-size:15px;line-height:1.75;color:var(--ink-2);overflow-wrap:anywhere;}
+.legal-document .document-section {margin:0 0 28px;}
+.office-feature .legal-document :is(h2,h3) {margin:0 0 12px;font-size:18px;font-weight:500;line-height:1.4;color:var(--ink);letter-spacing:-.01em;}
+.office-feature .legal-document p {margin:0 0 12px;line-height:1.75;}
+.legal-document p:last-child {margin-bottom:0;}
+.document-intro {margin-bottom:28px;}
+.document-details {margin:32px 0 0;padding-top:24px;border-top:1px solid var(--panel-edge);}
+.document-details dl {margin:0;}
+.document-details dl>div {display:grid;grid-template-columns:minmax(150px, .65fr) minmax(0,1.35fr);gap:12px 24px;padding:10px 0;}
+.document-details dt {color:var(--ink-3);font-weight:400;}
+.document-details dd {margin:0;color:var(--ink);font-variant-numeric:tabular-nums;}
+.document-details a {text-decoration:underline;text-decoration-color:var(--panel-edge);text-underline-offset:3px;}
+.document-details a:hover {text-decoration-color:currentColor;}
+.rules-full__text.legal-document {margin-top:28px;scroll-margin-top:24px;}
+@media (max-width:700px) {
+  .office-feature .legal-document {font-size:14px;line-height:1.75;}
+  .office-feature .legal-document :is(h2,h3) {font-size:17px;}
+  .legal-document .document-section {margin-bottom:24px;}
+  .document-details dl>div {grid-template-columns:1fr;gap:3px;padding:9px 0;}
+  .document-details dt {font-size:12px;}
+  .rules-full__text.legal-document {scroll-margin-top:100px;}
+}
