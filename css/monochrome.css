@@ -1713,3 +1713,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 @media (min-width:1101px) {
   .office-feature .find-lead {display:grid;grid-template-columns:minmax(0,1.28fr) minmax(280px,.72fr);gap:18px;}
 }
+.rules-full summary>span {position:relative;display:block;flex:none;align-self:center;width:14px;height:14px;font-size:0;line-height:0;}
+.rules-full summary>span::before,.rules-full summary>span::after {content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:currentColor;border-radius:1px;}
+.rules-full summary>span::before {width:14px;height:1.4px;}
+.rules-full summary>span::after {width:1.4px;height:14px;}
