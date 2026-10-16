@@ -1731,3 +1731,11 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="1"] {--podium-tone:#e0bf68;}
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="2"] {--podium-tone:#b8c7d9;}
 :root[data-theme="dark"] .ranking-podium[data-ranking-place="3"] {--podium-tone:#d6a07b;}
+@media (max-width:700px) {
+  body[data-page="club"] .window-head h1 {display:block;min-width:0;}
+  body[data-page="club"] .window-head .club-heading-tail.has-help {display:inline-flex!important;gap:6px;white-space:nowrap;vertical-align:baseline;}
+  body[data-page="club"] .window-head .club-heading-tail>.help-alert {width:20px;height:20px;min-width:20px;min-height:20px;margin:0;padding:1px;}
+  body[data-page="club"] .window-head .club-heading-tail>.help-alert svg {width:18px;height:18px;}
+}
+
+.club-heading-tail.has-help {white-space:nowrap;}

@@ -118,7 +118,8 @@ function go(path) {
   } else location.hash = "#/" + path;
 }
 function head(title, back = "") {
-  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${esc(title)}</h1>${back ? `<a class="back" href="#/${back}">← Назад</a>` : ""}</div>`;
+  const heading = title === "Tattoo Office Private Club" ? 'Tattoo Office Private <span class="club-heading-tail">Club</span>' : esc(title);
+  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${heading}</h1>${back ? `<a class="back" href="#/${back}">← Назад</a>` : ""}</div>`;
 }
 function icon(name) {
   const paths = {gift:'M20 12v8H4v-8M2 7h20v5H2zM12 7v13M12 7H7.5A2.5 2.5 0 1 1 10 4.5L12 7zm0 0h4.5A2.5 2.5 0 1 0 14 4.5L12 7z',receipt:'M5 3v18l3-2 4 2 4-2 3 2V3l-3 2-4-2-4 2-3-2zM9 9h6M9 13h6'};
@@ -470,7 +471,7 @@ function aboutPage() {
 function clubPage() {
   const rates = pub.settings.rates;
   const priceRows = [3, 6, 12].map((hours) => `<div class="club-prices__row"><span>${hours === 12 ? "От 6 до 12 часов" : `До ${hours} часов`}</span><s class="club-prices__old">${money(rates.guest[hours])}</s><b>${money(rates.resident[hours])}</b></div>`).join("");
-  return win("Tattoo Office Private Club",`<p data-help data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
+  return win("Tattoo Office Private Club",`<p data-help data-help-for=".club-heading-tail" data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
 
 Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><div class="club-offer"><div class="club-offer__prices"><h2>Специальные цены для участников клуба!</h2><div class="club-prices"><div class="club-prices__row club-prices__row--head"><span>Время сеанса</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div><div class="club-join"><h3>Как попасть?</h3><p>Работать в Tattoo Office.</p><a class="chrome" href="#/signup/master">Начать работать в офисе →</a></div></div><figure class="club-offer__frame"><img class="club-offer__photo" src="assets/club/private-club.jpg" alt="Мастер Tattoo Office Private Club"><figcaption>Tattoo Office Private Club</figcaption></figure></div>`);
 }
