@@ -57,7 +57,7 @@
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
                  '<span class="polaroid__photo">' + img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') + '<span class="desktop-shortcut" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 18c0-5 4-9 9-11l-3-3h10v10l-4-4c-5 2-8 5-6 10-3 0-6-1-6-2Z"/></svg></span></span>' +
-                 '<div class="polaroid__cap">' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use class="crown-outline" href="#clubCrownPath"/><use href="#clubCrownPath"/></svg>' : '') + '</div>' +
+                 '<div class="polaroid__cap">' + esc(name) + '</div>' +
                '</button>';
       }).join('');
 
