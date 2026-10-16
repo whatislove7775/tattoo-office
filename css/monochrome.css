@@ -1435,3 +1435,32 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .admin-city-tabs {margin:4px 0 14px;}
 .admin-city-tabs button[aria-selected="true"] {color:var(--ink)!important;text-shadow:none!important;}
 .city-choice__btn:disabled {opacity:1;}
+
+/* Master activity ranking shares the site's quiet monochrome chrome. */
+.ranking-launch {position:fixed;left:24px;bottom:24px;z-index:36;display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--panel-edge,#ccc);border-radius:18px;background:var(--control-fill);color:var(--ink);font-size:13px;text-decoration:none;}
+.ranking-head {max-width:620px;}
+.ranking-head p {line-height:1.6;}
+.ranking-list {list-style:none;padding:0;margin:28px 0;display:grid;gap:12px;}
+.ranking-row {display:grid;grid-template-columns:34px minmax(0,1fr) 66px;gap:14px;align-items:center;padding:18px;border:1px solid var(--panel-edge,#ddd);border-radius:20px;background:var(--panel);}
+.ranking-position {font-size:22px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+.ranking-name {display:flex;gap:8px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere;font-size:18px;}
+.ranking-crown {width:21px;height:21px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.ranking-resident {font-size:11px;padding:3px 7px;border:1px solid var(--ink-3);border-radius:99px;}
+.ranking-counts {margin:8px 0;font-size:12px;}
+.ranking-track {height:6px;background:var(--panel-2);border-radius:8px;overflow:hidden;}
+.ranking-track span {height:100%;display:block;border-radius:inherit;background:var(--ink);}
+.ranking-score {text-align:right;font-size:20px;font-variant-numeric:tabular-nums;}
+.ranking-score small {display:block;font-size:11px;font-weight:400;color:var(--ink-3);}
+.ranking-note {line-height:1.6;}
+.ranking-visibility {margin:20px 0;}
+.master__name {display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.master__name>span {min-width:0;}
+.master-share {display:grid;place-items:center;flex:none;width:36px;height:36px;padding:7px;border:1px solid var(--panel-edge,#ddd);border-radius:50%;background:var(--control-fill);color:var(--ink);cursor:pointer;}
+.master-share svg {width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+@media (max-width:700px) {
+  .ranking-launch {left:14px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 86px);font-size:12px;padding:10px 12px;}
+  .ranking-row {padding:14px 10px;gap:8px;grid-template-columns:24px minmax(0,1fr) 52px;}
+  .ranking-name {font-size:16px;}
+  .master-share {width:32px;height:32px;padding:6px;}
+}
+@media (prefers-reduced-motion:no-preference) {.master-share {transition:transform .18s ease;}.master-share:active {transform:scale(.94);}}

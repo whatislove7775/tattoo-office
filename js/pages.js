@@ -52,7 +52,7 @@
                '</button>';
       }).join('');
 
-      return '<div class="drift" id="driftBox">' + cards + '</div>';
+      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav">Рейтинг мастеров <span aria-hidden="true">↗</span></a>';
     },
 
     mount: function (root) {
@@ -110,7 +110,7 @@
              '<div class="master">' +
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
-                 '<div class="master__name">' + esc(name) + '</div>' +
+                 '<div class="master__name"><span>' + esc(name) + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
                    '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' +
@@ -126,6 +126,17 @@
     mount: function (root, params) {
       var m = global.DATA.masterById(params.id);
       if (!m) return;
+      root.querySelector('.master-share').onclick = async function () {
+        var url = new URL(location.href); url.hash = '#/master/' + m.id;
+        try {
+          if (navigator.share) await navigator.share({title: pick(m.name) + ' · Tattoo Office', url: url.href});
+          else { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+          try { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
+          catch (_) { global.TO.toast('Не удалось скопировать ссылку. Скопируйте адрес страницы.'); }
+        }
+      };
       var pane = root.querySelector('#worksPane');
 
       function render(tab) {

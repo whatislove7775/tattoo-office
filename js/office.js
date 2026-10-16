@@ -744,6 +744,12 @@ async function paymentPage(id) {
     "cabinet",
   );
 }
+async function rankingPage() {
+  const data = await api("/ranking");
+  const highest = data.masters[0]?.score || 1;
+  const crown = document.querySelector("#clubCrownPath").getAttribute("d");
+  return win("Рейтинг мастеров", `<div class="ranking-head"><h2>Люди, которые делают.</h2><p class="muted">Подтверждённая бронь — 0,25 балла, завершённый сеанс — ещё 1. Резидентство добавляет 5%. Отмены и неоплаченные заявки не учитываются.</p><a href="#/masters">Все мастера →</a></div>${data.masters.length ? `<ol class="ranking-list">${data.masters.map(m => `<li class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg><span class="ranking-resident">резидент</span>` : ""}</div><div class="ranking-counts muted">Брони: ${m.bookings} · Завершено: ${m.completed}</div><div class="ranking-track" role="meter" aria-label="Баллы ${esc(m.name)}" aria-valuemin="0" aria-valuemax="${highest}" aria-valuenow="${m.score}"><span style="width:${Math.max(0,Math.min(100,m.score/highest*100))}%"></span></div></div><strong class="ranking-score">${new Intl.NumberFormat("ru-RU",{maximumFractionDigits:2}).format(m.score)}<small>баллов</small></strong></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}<p class="small muted ranking-note">Участие можно отключить в личном деле. Рейтинг отражает активность в студии, а не оценку качества татуировок.</p>`);
+}
 async function cabinetPage() {
   if (!me) return authPage(false);
   const data = await api("/bookings"),
@@ -783,7 +789,7 @@ async function cabinetPage() {
         ["graphite", "Графит"],
       ],
       me.profile.accent || "paper",
-    )}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><button class="chrome" type="submit">Сохранить личное дело</button></form><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
+    )}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
   const accent =
     me.profile.accent === "graphite"
       ? "background:#deddd8"
@@ -875,7 +881,7 @@ function mountCabinet() {
       }),
   );
   onForm("#profile-form", async (d) => {
-    await api("/me", "PATCH", { name: d.name, profile: d });
+    await api("/me", "PATCH", { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === "on" } });
     await refresh();
     notify("Личное дело сохранено");
     render();
@@ -1460,6 +1466,9 @@ async function render() {
       return;
     }
     switch (path[0]) {
+      case "ranking":
+        html = await rankingPage();
+        break;
       case "masters":
       case "":
         html = mastersPage();

@@ -1,3 +1,4 @@
+import { masterRanking } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
 import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
@@ -298,6 +299,10 @@ export async function createApp(db) {
       paymentEnabled: yookassaEnabled(),
     });
   });
+  app.get("/api/ranking", async (req,res) => {
+    res.set("Cache-Control", "no-store");
+    res.json(await masterRanking(db));
+  });
   app.get("/api/me", async (req, res) => res.json({ user: safe(req.user) }));
   const loginLimit = rateLimit({ windowMs: 900000, limit: 25 });
   app.post("/api/auth/register", loginLimit, async (req, res) => {
@@ -403,7 +408,10 @@ export async function createApp(db) {
     const name = String(req.body.name || "").trim(),
       p = req.body.profile || {};
     if (!name || name.length > 100) fail("Проверьте имя");
+    if (p.rankingVisible !== undefined && typeof p.rankingVisible !== "boolean")
+      fail("Проверьте настройку видимости в рейтинге");
     const profile = {
+      rankingVisible: p.rankingVisible ?? (req.user.profile?.rankingVisible !== false),
       bio: String(p.bio || "").slice(0, 1000),
       specialty: String(p.specialty || "").slice(0, 100),
       accent: ["paper", "beige", "graphite"].includes(p.accent)
