@@ -739,12 +739,12 @@ async function paymentPage(id) {
     "cabinet",
   );
 }
-let rankingPeriod='all';
+
 async function rankingPage() {
-  const data = await api("/ranking?period="+rankingPeriod);
+  const data = await api("/ranking?period=all");
   data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
   const crown = document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="Имя или фамилия" autocomplete="off"></label><label class="field"><span>Город</span><select id="ranking-city"><option value="">Все города</option><option>Москва</option><option>СПБ</option></select></label><label class="field"><span>Период</span><select id="ranking-period"><option value="all" ${rankingPeriod==='all'?'selected':''}>Всё время</option><option value="month" ${rankingPeriod==='month'?'selected':''}>Этот месяц</option></select></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -1506,12 +1506,11 @@ async function render() {
       case "ranking":
         html = await rankingPage();
         mount=()=>{
-          const filter=()=>{let count=0;const query=$('#ranking-search').value.trim().toLocaleLowerCase('ru'),city=$('#ranking-city').value;
-            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query)||(city&&row.dataset.rankingCity!==city);if(!row.hidden)count++;});
+          const filter=()=>{let count=0;const query=$('#ranking-search').value.trim().toLocaleLowerCase('ru');
+            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query);if(!row.hidden)count++;});
             if($('#ranking-empty'))$('#ranking-empty').hidden=count>0;
           };
-          $('#ranking-search').oninput=filter;$('#ranking-city').onchange=filter;
-          $('#ranking-period').onchange=e=>{rankingPeriod=e.target.value;render();};
+          $('#ranking-search').oninput=filter;
         };
         break;
       case "masters":

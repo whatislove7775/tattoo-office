@@ -1667,7 +1667,8 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 .field--money input::-webkit-inner-spin-button,.field--money input::-webkit-outer-spin-button {-webkit-appearance:none;margin:0;}
 .field--money .field__currency {position:absolute;right:16px;bottom:13px;pointer-events:none;color:var(--ink-3);line-height:20px;}
 @media (max-width:700px) {
-  .site-bottom .ranking-launch.chrome {position:static;align-self:flex-start;flex:none;margin:0 0 82px;max-width:100%;transform:none;}
+  #siteHeader>.ranking-launch.chrome {--ranking-mobile-height:clamp(24px,7.5vw,30px);position:absolute;left:10px;top:calc((44px + 22.5vw - var(--ranking-mobile-height))/2);bottom:auto;width:max-content;max-width:calc(49vw - 28px);height:var(--ranking-mobile-height);box-sizing:border-box;margin:0;padding:4px 10px;gap:6px;font-size:clamp(12px,3.3vw,14px);line-height:1.1;white-space:nowrap;border-radius:16px;box-shadow:0 2px 6px #00000014;transform:none;z-index:4;}
+  #siteHeader>.ranking-launch .ranking-users {width:16px;height:16px;flex:none;}
 }
 @media (min-width:701px) {
   body[data-page="club"] #office-view>.window:has(>.club-offer) {display:flex;flex-direction:column;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 76px)!important;}
@@ -1717,3 +1718,5 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 @media (min-width:701px) {
   .office-feature .brand-story>img {height:100%;min-height:0;max-height:none;align-self:stretch;object-fit:cover;}
 }
+
+.office-feature .ranking-tools {grid-template-columns:minmax(0,1fr);}

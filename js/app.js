@@ -18,8 +18,8 @@
   function placeRankingLaunch() {
     var badge = document.querySelector('.ranking-launch');
     if (!badge) return;
-    var bottom = document.querySelector('.site-bottom');
-    if (mobileLayoutQuery.matches && bottom) bottom.prepend(badge);
+    var header = document.getElementById('siteHeader');
+    if (mobileLayoutQuery.matches && header) header.append(badge);
     else document.body.append(badge);
   }
   // Telegram appends a Safari-like UA. Its injected native bridge identifies it.
