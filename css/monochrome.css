@@ -1481,7 +1481,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .ranking-sessions small {display:block;font-size:10px;color:var(--ink-3);font-weight:400;margin-top:5px;}
 .ranking-launch {transform:none;}
 .ranking-users {width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-.profile-resident-crown {width:16px;height:16px;display:inline-block;vertical-align:middle;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.7;filter:drop-shadow(0 1px 2px #000);}
+.profile-resident-crown {width:16px;height:16px;display:inline-block;vertical-align:middle;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.7;filter:none;}
 .master-share {width:32px;height:32px;padding:7px;border-radius:50%;background:var(--panel);box-shadow:none;border-color:var(--panel-edge);}
 .master-share svg {width:17px;height:17px;stroke-width:1.8;}
 .payment-sheet {width:min(100%,540px);margin:0 auto;border:1px solid var(--panel-edge);border-radius:24px;padding:28px;background:var(--panel);box-shadow:0 8px 28px #00000008;}
