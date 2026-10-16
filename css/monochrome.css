@@ -1720,3 +1720,14 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 }
 
 .office-feature .ranking-tools {grid-template-columns:minmax(0,1fr);}
+
+/* Podium colours follow the actual rank, including when the list is searched. */
+.ranking-podium[data-ranking-place="1"] {--podium-tone:#967015;}
+.ranking-podium[data-ranking-place="2"] {--podium-tone:#66788e;}
+.ranking-podium[data-ranking-place="3"] {--podium-tone:#a46a43;}
+.ranking-list--compact>.ranking-podium .ranking-row {padding-inline:14px;background:color-mix(in srgb,var(--podium-tone) 12%,var(--panel));box-shadow:inset 3px 0 var(--podium-tone);}
+.ranking-list--compact>.ranking-podium .ranking-position {color:var(--podium-tone);font-weight:600;}
+.ranking-list--compact>.ranking-podium a.ranking-row:hover {background:color-mix(in srgb,var(--podium-tone) 19%,var(--panel));}
+:root[data-theme="dark"] .ranking-podium[data-ranking-place="1"] {--podium-tone:#e0bf68;}
+:root[data-theme="dark"] .ranking-podium[data-ranking-place="2"] {--podium-tone:#b8c7d9;}
+:root[data-theme="dark"] .ranking-podium[data-ranking-place="3"] {--podium-tone:#d6a07b;}
