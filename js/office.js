@@ -227,31 +227,18 @@ const masters = Array.from({ length: 10 }, (_, i) => ({
   filename: `tattooartist_${String(i + 1).padStart(2, "0")}.png`,
   photo: `assets/masters/master-${i + 1}.png`,
 }));
-function syncMasters() {
+function syncMasters(content = pub?.content || []) {
+  const assetNames = works => (works || []).map(work => (typeof work === "string" ? work : work.src || "").split("/").pop().replace(/\.[^.]+$/, ""));
   for (const m of masters) {
-    const c = pub?.content.find((c) => c.id === "master-" + m.id)?.data;
-    m.name = c?.title || window.I18N.pick(legacyMasters[m.id - 1].name);
-    m.featured = c?.featured !== false;
-    m.bookingLink = c?.bookingLink || "";
+    const c = content.find(entry => entry.id === "master-" + m.id)?.data;
     const original = legacyMasters[m.id - 1];
-    original.featured = m.featured;
-    original.bookingLink = m.bookingLink;
-    if (c?.title) original.name = { ru: c.title, en: c.title };
-    if (c?.body) original.bio = { ru: c.body, en: c.body };
-    if (c?.portfolio?.length)
-      original.portfolio = c.portfolio.map((f) => ({
-        src: `assets/works/${f}.png`,
-        cap: { ru: f, en: f },
-      }));
-    if (c?.drafts?.length)
-      original.drafts = c.drafts.map((f) => ({
-        src: `assets/works/${f}.png`,
-        cap: { ru: f, en: f },
-      }));
-    m.bio = c?.body || "";
-    m.specialty = c?.specialty || "";
-    m.portfolio = c?.portfolio || [];
-    m.drafts = c?.drafts || [];
+    m.name = c?.title || window.I18N.pick(original.name);
+    m.featured = c?.featured !== false;
+    m.bookingLink = c?.bookingLink ?? original.bookingLink ?? "";
+    m.bio = c?.body || window.I18N.pick(original.bio);
+    m.specialty = c?.specialty ?? original.specialty ?? "";
+    m.portfolio = c?.portfolio?.length ? c.portfolio.slice() : assetNames(original.portfolio);
+    m.drafts = c?.drafts?.length ? c.drafts.slice() : assetNames(original.drafts);
   }
 }
 const positions = [
@@ -918,6 +905,7 @@ async function adminPage() {
   if (me.role !== "admin")
     return win("Служебный вход", "У вас нет доступа к этому разделу.");
   adminData = await api("/admin");
+  syncMasters(adminData.content);
   const a = adminData,
     s = pub.settings,
     tabs = [

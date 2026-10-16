@@ -56,5 +56,14 @@ try{
   assert.equal(await page.locator('[name=openHour]').getAttribute('type'),null);await page.locator('[name=openHour]').selectOption('23',{force:true});assert.equal(await page.locator('[name=closeHour]').inputValue(),'24');assert.match(await page.locator('#studio-hours-summary').innerText(),/1 ч/);
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
   await page.screenshot({path:`${output}/admin-settings.png`});
+  await context.request.put(base+'/api/admin/content/master-2',{data:{title:'Mr.A',body:'',portfolio:[],drafts:[],published:true,featured:true}});
+  await page.locator('[data-admintab=masters]').first().click();await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
+  const beforeMaster=(await (await context.request.get(base+'/api/directory')).json()).masters.find(m=>m.id==='mr-a');
+  assert.equal(await page.locator('#dialog [name=body]').inputValue(),beforeMaster.bio);
+  assert.equal(await page.locator('#dialog [name=portfolio]').inputValue(),'tattoo-1, tattoo-2, tattoo-3, tattoo-4, tattoo-5, tattoo-6, tattoo-7, tattoo-8');
+  assert.ok((await page.locator('#dialog [name=drafts]').inputValue()).startsWith('draft-1'));
+  await page.locator('#dialog button[type=submit]').click();await page.locator('#dialog').waitFor({state:'hidden'});
+  const afterMaster=(await (await context.request.get(base+'/api/directory')).json()).masters.find(m=>m.id==='mr-a');assert.equal(afterMaster.bio,beforeMaster.bio);assert.deepEqual(afterMaster.portfolio,beforeMaster.portfolio);assert.deepEqual(afterMaster.drafts,beforeMaster.drafts);assert.equal(afterMaster.featured,beforeMaster.featured);
+  await page.locator('[data-edit-master="2"]').click();assert.equal(await page.locator('#dialog [name=body]').inputValue(),beforeMaster.bio);await page.keyboard.press('Escape');
   assert.deepEqual(errors,[]);console.log('PASS: registration → profile → photo upload → public portfolio → ranking → booking → test payment → next booking; 5 viewport sizes without overflow.');
 }catch(e){console.log('Notice:',await page.locator('#notice').textContent());console.log('Errors:',errors);await page.screenshot({path:join(output,'failure.png')});throw e;}finally{await browser.close();await new Promise(r=>server.close(r));await db.close();}
