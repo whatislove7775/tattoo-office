@@ -1659,7 +1659,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
  .gallery-dropzone .chrome {grid-column:2;justify-self:start;}
 }
 
-.polaroid__cap .profile-resident-crown {filter:none;overflow:visible;}
+.polaroid__cap .profile-resident-crown {filter:drop-shadow(0 1px .7px #0008);overflow:visible;}
 .polaroid__cap .profile-resident-crown .crown-outline {stroke:#333;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;}
 
 /* Keep status labels and account actions optically centred. */
