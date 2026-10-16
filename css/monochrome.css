@@ -257,8 +257,6 @@ body[data-page="admin"] .site-bottom .rent-slider { display:none; }
 .rules-full { border-top:1px solid var(--panel-edge);margin-top:32px;padding:20px 0; }
 .rules-full summary { list-style:none;cursor:pointer;display:flex;justify-content:flex-start;align-items:center;gap:12px;font-size:16px; }
 .rules-full summary::-webkit-details-marker { display:none; }
-.rules-full summary>span { font-size:25px;font-weight:300; }
-.rules-full[open] summary>span { transform:rotate(45deg); }
 .rules-full__text { white-space:pre-wrap;line-height:1.7;font-size:15px;color:var(--ink-2);max-width:780px;margin:22px 0 16px; }
 .rules-full small { color:var(--ink-3);font-size:11px; }
 @media (max-width:700px) {
@@ -352,7 +350,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 @media (max-width:700px) { .office-feature .interior-dossier { min-height:330px; } }
 .office-feature a.chrome,.office-feature button.chrome,.office-feature button[type="submit"],.office-feature .rules-booking .chrome { background-clip:border-box;border-color:#292929;box-shadow:0 3px 8px #0002; }
 
-.rules-full summary,.rules-full summary>span { font-weight:700; }
+.rules-full summary { font-weight:700; }
 @media (min-width:701px) {
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider { width:calc(var(--rail-width) * .68); }
   .site-bottom .rent-slider__label { inset-inline-start:62px;inset-inline-end:7px;font-size:clamp(13px,1.1vw,16px); }
@@ -669,7 +667,6 @@ button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!import
 .office-feature .auth-photo .auth-image {left:-6.05%;top:-11.73%;width:112.74%;height:123.46%;}
 .rules-full {margin-top:24px;padding:16px 0 0;}
 .rules-full summary {font-weight:500;font-size:16px;line-height:1.4;}
-.rules-full summary>span {font-weight:inherit;font-size:24px;}
 .office-feature .form-actions #booking-next {width:auto;min-width:120px;white-space:nowrap;padding:12px 20px;}
 .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {padding-block:12px;}
 .site-bottom .foot .foot__copy {margin-top:10px;}
@@ -1713,7 +1710,10 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 @media (min-width:1101px) {
   .office-feature .find-lead {display:grid;grid-template-columns:minmax(0,1.28fr) minmax(280px,.72fr);gap:18px;}
 }
-.rules-full summary>span {position:relative;display:block;flex:none;align-self:center;width:14px;height:14px;font-size:0;line-height:0;}
-.rules-full summary>span::before,.rules-full summary>span::after {content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:currentColor;border-radius:1px;}
-.rules-full summary>span::before {width:14px;height:1.4px;}
-.rules-full summary>span::after {width:1.4px;height:14px;}
+
+.rules-full summary>.rules-toggle-icon {display:block;flex:none;align-self:center;width:16px;height:16px;overflow:visible;transform-origin:center;}
+.rules-full .rules-toggle-icon path {fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;}
+.rules-full[open] summary>.rules-toggle-icon {transform:rotate(45deg);}
+@media (min-width:701px) {
+  .office-feature .brand-story>img {height:100%;min-height:0;max-height:none;align-self:stretch;object-fit:cover;}
+}

@@ -459,7 +459,7 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
     </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>Поздняя отмена — ${s.lateCancellation === "review" ? "по решению администратора" : "по регламенту студии"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
-    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<span aria-hidden="true">+</span></summary><div class="rules-full__text legal-document">${documentSections(s.rules, [], "h3")}</div></details>
+    <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<svg class="rules-toggle-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 2v12M2 8h12"/></svg></summary><div class="rules-full__text legal-document">${documentSections(s.rules, [], "h3")}</div></details>
   </section>`);
 }
 
