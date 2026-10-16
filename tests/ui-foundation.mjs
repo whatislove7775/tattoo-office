@@ -1,7 +1,8 @@
+import express from "express";
 import {chromium} from '@playwright/test';import assert from 'node:assert/strict';import {mkdir} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {database} from '../server/db.js';import {createApp} from '../server/index.js';
 process.env.DATA_DIR='memory://';process.env.NODE_ENV='test';delete process.env.DATABASE_URL;delete process.env.ADMIN_EMAIL;delete process.env.ADMIN_PASSWORD;
-const db=await database(),app=await createApp(db),server=app.listen(0,'127.0.0.1');await new Promise(r=>server.on('listening',r));
+const db=await database(),app=await createApp(db),site=express();site.use((req,res,next)=>req.path.startsWith('/api/')?app(req,res,next):next());site.use(express.static('dist'));const server=site.listen(0,'127.0.0.1');await new Promise(r=>server.on('listening',r));
 const base='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({channel:process.env.CI?undefined:'chrome',headless:true});
 const output=join(tmpdir(),'tattoo-foundation-qa');await mkdir(output,{recursive:true});
 const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&r.url().includes('/api/'))console.log('API failure',r.status(),r.url());});page.setDefaultTimeout(10000);
@@ -20,6 +21,7 @@ try{
     const geometry=await page.evaluate(()=>{const back=document.querySelector('.window-head .back').getBoundingClientRect(),panel=document.querySelector('#stage').getBoundingClientRect();return {wide:document.documentElement.scrollWidth>innerWidth+1,backFits:back.right<=panel.right+1&&back.left>=panel.left-1,backClickable:!!document.elementFromPoint(back.x+back.width/2,back.y+back.height/2)?.closest('.back')};});assert.equal(geometry.wide,false,`Horizontal overflow at ${width}`);assert.equal(geometry.backFits,true,`Back outside panel at ${width}`);assert.equal(geometry.backClickable,true,`Back is obscured at ${width}`);
     await page.screenshot({path:`${output}/ranking-${width}.png`});
   }
+  await page.goto(base+'/#/master/zinaida');await page.locator('.master__photo').waitFor();await page.waitForFunction(()=>document.querySelector('.master__photo')?.complete&&document.querySelector('.master__photo').naturalWidth>0);assert.ok((await page.locator('.master__photo').evaluate(im=>im.currentSrc)).includes('/assets/responsive/'));
   await page.setViewportSize({width:1440,height:1000});await page.goto(base+'/#/booking');await page.locator('[data-city=spb]').click();
   const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);await page.locator(`[data-day="${tomorrow}"]`).click();await page.locator('#booking-next').click();await page.locator('.time:not([disabled])').first().click();await page.locator('.resource-choice:not([disabled])').first().click();await page.locator('#booking-next').click();await page.locator('#booking-next').click();await page.locator('#booking-agree').check();await page.locator('#booking-next').click();await page.waitForURL('**/#/payment/*');await page.locator('.payment-booking').waitFor();await page.locator('#test-pay').click();await page.waitForURL('**/#/cabinet');await page.locator('.cabinet-next').waitFor();
   assert.deepEqual(errors,[]);console.log('PASS: registration → profile → photo upload → public portfolio → ranking → booking → test payment → next booking; 5 viewport sizes without overflow.');
