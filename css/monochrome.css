@@ -1571,3 +1571,6 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 
 .who__name .account-resident-crown {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:none;}
 .who__text small {display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.rail .who__name,.mobile-menu-open .who__name {display:flex;align-items:center;justify-content:flex-start;gap:6px;min-width:0;}
+.who__label {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
