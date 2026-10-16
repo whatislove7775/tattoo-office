@@ -95,6 +95,7 @@
       return;
     }
 
+    document.querySelector(".ranking-launch")?.remove();
     if (currentCleanup) {
       currentCleanup();
       currentCleanup = null;
@@ -105,6 +106,8 @@
 
     view.innerHTML = '<div class="view-enter">' + page.html(params) + "</div>";
     var root = view.firstElementChild;
+    var rankingLaunch = root.querySelector(".ranking-launch");
+    if (rankingLaunch) document.body.append(rankingLaunch);
     if (page.mount) page.mount(root, params);
     if (root.__cleanup) currentCleanup = root.__cleanup;
 

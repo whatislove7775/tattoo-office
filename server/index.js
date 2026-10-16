@@ -410,7 +410,11 @@ export async function createApp(db) {
     if (!name || name.length > 100) fail("Проверьте имя");
     if (p.rankingVisible !== undefined && typeof p.rankingVisible !== "boolean")
       fail("Проверьте настройку видимости в рейтинге");
+    if (p.city !== undefined && !["Москва","СПБ"].includes(p.city)) fail("Выберите Москву или СПБ");
+    if (p.avatar !== undefined && (typeof p.avatar !== "string" || p.avatar.length > 90000 || (p.avatar && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.avatar)))) fail("Проверьте фотографию профиля");
     const profile = {
+      city: p.city ?? req.user.profile?.city ?? "",
+      avatar: p.avatar ?? req.user.profile?.avatar ?? "",
       rankingVisible: p.rankingVisible ?? (req.user.profile?.rankingVisible !== false),
       bio: String(p.bio || "").slice(0, 1000),
       specialty: String(p.specialty || "").slice(0, 100),

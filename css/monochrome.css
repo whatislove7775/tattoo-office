@@ -1464,3 +1464,72 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .master-share {width:32px;height:32px;padding:6px;}
 }
 @media (prefers-reduced-motion:no-preference) {.master-share {transition:transform .18s ease;}.master-share:active {transform:scale(.94);}}
+
+/* Compact editorial standings: identity, membership and completed sessions. */
+.ranking-heading {display:flex;justify-content:space-between;gap:16px;padding:0 16px 14px 102px;color:var(--ink-3);font-size:12px;border-bottom:1px solid var(--panel-edge);}
+.ranking-list--compact {margin:0;gap:0;}
+.ranking-list--compact .ranking-row {grid-template-columns:30px 46px minmax(0,1fr) 64px;gap:14px;padding:18px 10px;border:0;border-bottom:1px solid var(--panel-edge);border-radius:0;background:transparent;}
+.ranking-list--compact .ranking-row--resident {background:color-mix(in srgb,var(--ink) 4%,transparent);}
+.ranking-list--compact .ranking-position {font-size:17px;align-self:center;}
+.ranking-avatar {display:grid;place-items:center;width:46px;height:46px;overflow:hidden;border-radius:50%;background:var(--control-fill);color:var(--ink-2);font-size:15px;font-weight:600;border:1px solid var(--panel-edge);}
+.ranking-avatar img {width:100%;height:100%;object-fit:cover;}
+.ranking-list--compact .ranking-name {font-size:16px;font-weight:500;gap:7px;}
+.ranking-meta {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--ink-2);}
+.ranking-meta .ranking-resident {font-size:10px;border-color:var(--panel-edge);font-weight:400;padding:3px 7px;}
+.ranking-meta .ranking-resident.is-resident {background:var(--ink);color:var(--panel);border-color:var(--ink);}
+.ranking-sessions {text-align:right;font-size:22px;line-height:1.1;font-weight:500;font-variant-numeric:tabular-nums;}
+.ranking-sessions small {display:block;font-size:10px;color:var(--ink-3);font-weight:400;margin-top:5px;}
+.ranking-launch {transform:none;}
+.ranking-users {width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.profile-resident-crown {width:16px;height:16px;display:inline-block;vertical-align:middle;margin-left:5px;fill:none;stroke:currentColor;stroke-width:1.7;filter:drop-shadow(0 1px 2px #000);}
+.master-share {width:32px;height:32px;padding:7px;border-radius:50%;background:var(--panel);box-shadow:none;border-color:var(--panel-edge);}
+.master-share svg {width:17px;height:17px;stroke-width:1.8;}
+.payment-sheet {width:min(100%,540px);margin:0 auto;border:1px solid var(--panel-edge);border-radius:24px;padding:28px;background:var(--panel);box-shadow:0 8px 28px #00000008;}
+.payment-sheet__header {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--panel-edge);padding-bottom:20px;}
+.payment-sheet__header .eyebrow {font-size:11px;}
+.payment-status {font-size:11px;line-height:1.3;color:var(--ink-2);border:1px solid var(--panel-edge);border-radius:99px;padding:6px 10px;}
+.payment-sheet__summary {padding:26px 0 22px;}
+.payment-sheet__summary h2 {font-size:clamp(34px,4vw,48px);font-weight:500;letter-spacing:-.03em;margin:0;}
+.payment-sheet__summary p {font-size:16px;margin:8px 0 0;color:var(--ink-2);}
+.payment-sheet__actions {display:grid;gap:12px;}
+.payment-sheet__actions>p {margin:0 0 4px;line-height:1.5;}
+.payment-sheet__actions>.chrome {width:100%;justify-content:center;}
+.payment-sheet__actions .payment-refresh {background:var(--control-fill);color:var(--ink);font-size:13px;min-height:42px;}
+.payment-sheet__note {margin:22px 0 0;padding-top:18px;border-top:1px solid var(--panel-edge);font-size:12px;line-height:1.6;}
+.club-offer {grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr);gap:28px;align-items:stretch;margin-top:28px;}
+.club-offer__prices {display:flex;flex-direction:column;min-width:0;}
+.club-offer h2 {font-size:clamp(22px,2vw,30px);margin:0 0 24px;max-width:24ch;}
+.club-offer__frame {margin:0;border:1px solid var(--panel-edge);border-radius:22px;padding:8px;background:var(--control-fill);display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.club-offer__photo {margin:0;border-radius:15px;width:100%;height:100%;min-height:260px;aspect-ratio:auto;object-fit:cover;flex:1;}
+.club-offer__frame figcaption {padding:12px 8px 4px;font-size:10px;color:var(--ink-3);letter-spacing:.04em;}
+.club-join {margin:26px 0 0;padding-top:24px;border-top:1px solid var(--panel-edge);}
+.club-join h3 {font-size:21px;margin:0 0 6px;}
+.club-join p {margin:0 0 18px;color:var(--ink-2);font-size:15px;}
+.club-join .chrome {max-width:100%;}
+.profile-avatar-picker {position:relative;display:flex;align-items:center;gap:18px;padding:18px;border:1px dashed var(--panel-edge);border-radius:20px;background:var(--panel-2);margin-bottom:24px;cursor:pointer;}
+.profile-avatar-preview {display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--control-fill);font-size:24px;}
+.profile-avatar-preview img {width:100%;height:100%;object-fit:cover;}
+.profile-avatar-picker b {font-size:15px;font-weight:500;}
+.profile-avatar-picker small {display:block;color:var(--ink-3);font-size:11px;margin-top:6px;}
+.profile-avatar-picker input[type=file] {position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+@media (max-width:1100px) {
+ .club-offer {grid-template-columns:1fr;}
+ .club-offer__frame {max-width:100%;height:300px;}
+ .club-offer__photo {min-height:0;}
+ .club-join {margin-top:22px;}
+}
+@media (max-width:700px) {
+ .ranking-launch {left:5vw;transform:none;}
+ .ranking-heading {padding-left:80px;}
+ .ranking-list--compact .ranking-row {grid-template-columns:20px 38px minmax(0,1fr) 44px;gap:9px;padding:16px 0;}
+ .ranking-avatar {width:38px;height:38px;font-size:12px;}
+ .ranking-list--compact .ranking-name {font-size:14px;}
+ .ranking-meta {gap:6px;font-size:11px;}
+ .ranking-sessions {font-size:20px;}
+ .payment-sheet {padding:20px;border-radius:20px;}
+ .payment-sheet__header {gap:10px;}
+ .payment-sheet__summary {padding:24px 0;}
+ .club-offer {gap:22px;}
+ .club-offer__frame {height:340px;}
+ .profile-avatar-picker {padding:14px;gap:12px;}
+}

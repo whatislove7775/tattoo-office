@@ -48,11 +48,11 @@
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
                  '<span class="polaroid__photo">' + img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') + '<span class="desktop-shortcut" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 18c0-5 4-9 9-11l-3-3h10v10l-4-4c-5 2-8 5-6 10-3 0-6-1-6-2Z"/></svg></span></span>' +
-                 '<div class="polaroid__cap">' + esc(name) + '</div>' +
+                 '<div class="polaroid__cap">' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : '') + '</div>' +
                '</button>';
       }).join('');
 
-      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav">Рейтинг мастеров <span aria-hidden="true">↗</span></a>';
+      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Рейтинг мастеров</span></a>';
     },
 
     mount: function (root) {
@@ -110,7 +110,7 @@
              '<div class="master">' +
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
-                 '<div class="master__name"><span>' + esc(name) + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
+                 '<div class="master__name"><span>' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
                    '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' +

@@ -250,6 +250,8 @@
     mapUrl: 'https://yandex.ru/maps/'
   };
 
+  MASTERS.forEach(function(master,index) { master.resident = index < Math.floor(MASTERS.length / 2); });
+
   global.DATA = {
     masters: MASTERS,
     interior: INTERIOR,

@@ -81,6 +81,7 @@ function scheduleRailLayout(){
     document.body.style.setProperty('--desktop-stage-top',stageTop+'px');
     document.body.style.setProperty('--desktop-footer-top',top+'px');
     document.body.style.setProperty('--desktop-footer-bottom',(top+footerHeight)+'px');
+
   });
 }
 const railLayoutObserver=new ResizeObserver(scheduleRailLayout);
@@ -94,3 +95,16 @@ setInterval(updateCopyrightYear,60000);
 // Lucide Crown data, rendered through the same Morphicons driver as other controls.
 const crownPath=document.getElementById('clubCrownPath');
 if(crownPath)createMorph(crownPath,crownPath.getAttribute('d'),{reducedMotion:'user'});
+
+// Users is the Lucide outline used in the Morphicons icon picker.
+const rankingMorphs=new WeakSet();
+function enhanceRankingIcon(){
+  const path=document.querySelector('.ranking-users-path');
+  if(!path || rankingMorphs.has(path))return;
+  rankingMorphs.add(path);
+  const base=path.getAttribute('d'),instance=createMorph(path,base,{reducedMotion:'user'});
+  const link=path.closest('a');
+  link.addEventListener('pointerenter',()=>instance.morphTo(base,'smooth'));
+}
+new MutationObserver(enhanceRankingIcon).observe(document.getElementById('view'),{childList:true,subtree:true});
+enhanceRankingIcon();

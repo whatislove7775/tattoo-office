@@ -477,7 +477,7 @@ function clubPage() {
   const priceRows = [3, 6, 12].map((hours) => `<div class="club-prices__row"><span>${hours === 12 ? "От 6 до 12 часов" : `До ${hours} часов`}</span><s class="club-prices__old">${money(rates.guest[hours])}</s><b>${money(rates.resident[hours])}</b></div>`).join("");
   return win("Tattoo Office Private Club",`<p data-help data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
 
-Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><div class="club-offer"><div class="club-offer__prices"><h2>Специальные цены для участников клуба!</h2><div class="club-prices"><div class="club-prices__row club-prices__row--head"><span>Время сеанса</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div></div><img class="club-offer__photo" src="assets/club/private-club.jpg" alt="Мастер Tattoo Office Private Club"></div><div class="club-join"><h3>Как попасть? — Работать в Tattoo Office!</h3><a class="chrome" href="#/signup">Начать работать в офисе →</a></div>`);
+Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><div class="club-offer"><div class="club-offer__prices"><h2>Специальные цены для участников клуба!</h2><div class="club-prices"><div class="club-prices__row club-prices__row--head"><span>Время сеанса</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div><div class="club-join"><h3>Как попасть?</h3><p>Работать в Tattoo Office.</p><a class="chrome" href="#/signup/master">Начать работать в офисе →</a></div></div><figure class="club-offer__frame"><img class="club-offer__photo" src="assets/club/private-club.jpg" alt="Мастер Tattoo Office Private Club"><figcaption>Tattoo Office Private Club</figcaption></figure></div>`);
 }
 function authPage(signup) {
   const role = location.hash.split('/')[2] === 'customer' ? 'customer' : 'master';
@@ -728,8 +728,8 @@ async function mountBooking() {
 async function paymentPage(id) {
   const { payment: p, mode, provider, test } = await api("/payments/" + id);
   return win(
-    "Касса / предоплата",
-    `<div class="auth-form"><span class="eyebrow">ПЛАТЁЖ № ${p.id.slice(0, 8)}</span><h2 style="margin-top:20px">${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p><p class="small muted">Статус: ${statusName[p.status] || p.status}</p>${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome" id="card-pay">Оплатить через ЮKassa →</button><button class="small" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
+    "Оплата",
+    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p></div><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome payment-primary" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
       p.kind === "final" && p.status === "pending"
         ? `<div style="margin-top:25px">${select(
             "upgrade",
@@ -740,15 +740,14 @@ async function paymentPage(id) {
             p.tariff,
           )}<button class="chrome" id="upgrade-invoice" data-booking="${p.booking_id}">Пересчитать счёт</button></div>`
         : ""
-    }<p class="small muted" style="margin-top:25px">${p.kind === "deposit" ? "Место удерживается 15 минут с момента создания записи." : ""}</p></div>`,
+    }</div>${p.kind === "deposit" ? '<p class="payment-sheet__note small muted">Место удерживается 15 минут с момента создания записи.</p>' : ""}</div>`,
     "cabinet",
   );
 }
 async function rankingPage() {
   const data = await api("/ranking");
-  const highest = data.masters[0]?.score || 1;
   const crown = document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Рейтинг мастеров", `<div class="ranking-head"><h2>Люди, которые делают.</h2><p class="muted">Подтверждённая бронь — 0,25 балла, завершённый сеанс — ещё 1. Резидентство добавляет 5%. Отмены и неоплаченные заявки не учитываются.</p><a href="#/masters">Все мастера →</a></div>${data.masters.length ? `<ol class="ranking-list">${data.masters.map(m => `<li class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg><span class="ranking-resident">резидент</span>` : ""}</div><div class="ranking-counts muted">Брони: ${m.bookings} · Завершено: ${m.completed}</div><div class="ranking-track" role="meter" aria-label="Баллы ${esc(m.name)}" aria-valuemin="0" aria-valuemax="${highest}" aria-valuenow="${m.score}"><span style="width:${Math.max(0,Math.min(100,m.score/highest*100))}%"></span></div></div><strong class="ranking-score">${new Intl.NumberFormat("ru-RU",{maximumFractionDigits:2}).format(m.score)}<small>баллов</small></strong></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}<p class="small muted ranking-note">Участие можно отключить в личном деле. Рейтинг отражает активность в студии, а не оценку качества татуировок.</p>`);
+  return win("Рейтинг мастеров", `<div class="ranking-heading"><span>Мастер</span><span>Сеансы</span></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li class="ranking-row ${m.resident ? 'ranking-row--resident' : ''}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" loading="lazy">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span><span class="ranking-resident ${m.resident ? 'is-resident' : ''}">${m.resident ? 'резидент' : 'нерезидент'}</span></div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`);
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -780,7 +779,7 @@ async function cabinetPage() {
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
-    body = `<form id="profile-form"><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
+    body = `<form id="profile-form"><label class="profile-avatar-picker"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span><b>Фотография профиля</b><small>Выбрать фото · JPG, PNG или WebP</small></span><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp"><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></label><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
       "accent",
       "Обложка личного дела",
       [
@@ -880,6 +879,22 @@ function mountCabinet() {
         };
       }),
   );
+  const avatarFile = $("#profile-avatar-file");
+  if (avatarFile) avatarFile.onchange = async () => {
+    const file = avatarFile.files[0]; if (!file) return;
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 5*1024*1024) { notify("Выберите JPG, PNG или WebP до 5 МБ"); avatarFile.value=""; return; }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas"); canvas.width=192; canvas.height=192;
+      const ctx=canvas.getContext("2d"),side=Math.min(bitmap.width,bitmap.height);
+      ctx.fillStyle="#fff";ctx.fillRect(0,0,192,192);
+      ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);bitmap.close();
+      const value=canvas.toDataURL("image/jpeg",.78);
+      if(value.length>90000)throw Error("Выберите фотографию меньшего размера");
+      $('#profile-form [name="avatar"]').value=value;
+      $('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Ваш аватар">`;
+    } catch(error) {notify(error.message || "Не удалось загрузить фотографию");}
+  };
   onForm("#profile-form", async (d) => {
     await api("/me", "PATCH", { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === "on" } });
     await refresh();

@@ -34,6 +34,13 @@ test('ranking uses registered masters, completed work, a 5% resident bonus and p
     assert.ok(result.masters.every(m=>!('email' in m)&&!('profile' in m)&&!('password' in m)));
     const token='ranking-test-token';await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '1 day')",[hashToken(token),ids.Resident]);
     const update=async profile=>fetch(origin+'/api/me',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:'office_session='+token},body:JSON.stringify({name:'Resident',profile})});
+    const avatar='data:image/jpeg;base64,/9j/2Q==';
+    assert.equal((await update({city:'СПБ',avatar})).status,200);
+    const updated=(await ranking()).masters.find(m=>m.id===ids.Resident);
+    assert.equal(updated.city,'СПБ');assert.equal(updated.avatar,avatar);
+    assert.equal((await update({city:'Other'})).status,400);
+    assert.equal((await update({avatar:'data:image/svg+xml;base64,PHN2Zz4='})).status,400);
+    assert.equal((await update({avatar:'https://untrusted.example/photo.jpg'})).status,400);
     assert.equal((await update({rankingVisible:false})).status,200);
     assert.ok(!(await ranking()).masters.some(m=>m.id===ids.Resident));
     assert.equal((await update({bio:'Updated biography'})).status,200);
