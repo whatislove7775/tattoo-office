@@ -1577,3 +1577,6 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 
 .ranking-launch.chrome {background:var(--panel);border:1px solid #c5c5c5;border-radius:22px;box-shadow:0 8px 16px rgba(0,0,0,.11),0 1px 3px rgba(0,0,0,.06);font-size:clamp(15px,1.35vw,19px);font-weight:400;line-height:1.2;}
 :root[data-theme="dark"] .ranking-launch.chrome {border-color:var(--panel-edge);box-shadow:0 8px 16px #0007,0 1px 3px #0005;}
+
+.master__name .master-share {display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0;line-height:0;}
+.master__name .master-share svg {display:block;flex:none;margin:0;transform:translateY(-.5px);}
