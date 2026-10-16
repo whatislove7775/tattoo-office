@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily verified Tattoo Office backup
+[Timer]
+OnCalendar=*-*-* 04:30:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+[Install]
+WantedBy=timers.target

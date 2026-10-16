@@ -25,7 +25,7 @@ test('ranking uses registered masters, completed work, a 5% resident bonus and p
     for(const [name,statuses] of [['Regular',['completed','completed','cancelled','pending','expired']],['Resident',['completed','completed']],['Busy',['completed','completed','completed']],['Hidden',['completed']],['Customer',['completed']]]) {
       for(const status of statuses) await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,'2026-01-01T10:00Z','2026-01-01T13:00Z',3,100,100,$4)",[randomUUID(),ids[name],resource,status]);
     }
-    const ranking=async()=>{const r=await fetch(origin+'/api/ranking');assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');return r.json();};
+    const ranking=async()=>{const r=await fetch(origin+'/api/ranking');assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');const data=await r.json();data.masters=data.masters.filter(m=>Object.values(ids).includes(m.id));return data;};
     let result=await ranking();
     assert.deepEqual(result.masters.map(m=>m.name),['Busy','Resident','Regular','New']);
     assert.equal(result.masters[1].score,2.63);assert.equal(result.masters[2].score,2.5);

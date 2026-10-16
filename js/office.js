@@ -1,3 +1,4 @@
+import {mountGallery} from "./profile-media.js";
 const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) =>
@@ -187,8 +188,12 @@ async function refresh() {
     if (!response.ok) throw new Error("Не удалось загрузить данные сайта");
     pub = await response.json(); me = null; paintShell(); return;
   }
-  [pub, { user: me }] = await Promise.all([api("/public"), api("/me")]);
+  const [publicData,account,directory]=await Promise.all([api("/public"),api("/me"),api("/directory")]);
+  pub=publicData;me=account.user;
   syncMasters();
+  window.DATA.masters.splice(0,window.DATA.masters.length,...directory.masters.map(m=>({...m,
+    name:{ru:m.name,en:m.name},city:{ru:m.city,en:m.city},exp:{ru:m.exp,en:m.exp},bio:{ru:m.bio,en:m.bio},photo:m.avatar,
+    portfolio:m.portfolio.map(w=>({...w,cap:{ru:w.cap||'',en:w.cap||''}})),drafts:m.drafts.map(w=>({...w,cap:{ru:w.cap||'',en:w.cap||''}}))})));
   paintShell();
 }
 function paintShell() {
@@ -213,6 +218,7 @@ function paintShell() {
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
 }
+const legacyMasters=window.DATA.masters.slice();
 const masters = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,
   name: window.I18N.pick(window.DATA.masters[i].name),
@@ -222,10 +228,10 @@ const masters = Array.from({ length: 10 }, (_, i) => ({
 function syncMasters() {
   for (const m of masters) {
     const c = pub?.content.find((c) => c.id === "master-" + m.id)?.data;
-    m.name = c?.title || window.I18N.pick(window.DATA.masters[m.id - 1].name);
+    m.name = c?.title || window.I18N.pick(legacyMasters[m.id - 1].name);
     m.featured = c?.featured !== false;
     m.bookingLink = c?.bookingLink || "";
-    const original = window.DATA.masters[m.id - 1];
+    const original = legacyMasters[m.id - 1];
     original.featured = m.featured;
     original.bookingLink = m.bookingLink;
     if (c?.title) original.name = { ru: c.title, en: c.title };
@@ -729,7 +735,7 @@ async function paymentPage(id) {
   const { payment: p, mode, provider, test } = await api("/payments/" + id);
   return win(
     "Оплата",
-    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p></div><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome payment-primary" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
+    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p></div><dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city]||p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome payment-primary" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
       p.kind === "final" && p.status === "pending"
         ? `<div style="margin-top:25px">${select(
             "upgrade",
@@ -740,27 +746,16 @@ async function paymentPage(id) {
             p.tariff,
           )}<button class="chrome" id="upgrade-invoice" data-booking="${p.booking_id}">Пересчитать счёт</button></div>`
         : ""
-    }</div>${p.kind === "deposit" ? '<p class="payment-sheet__note small muted">Место удерживается 15 минут с момента создания записи.</p>' : ""}</div>`,
+    }</div>${p.kind === "deposit" && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до "+timeLabel(p.expires_at)+" (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
     "cabinet",
   );
 }
+let rankingPeriod='all';
 async function rankingPage() {
-  const data = await api("/ranking");
-  const registeredNames = new Set(data.masters.map(m => m.name.trim().toLocaleLowerCase('ru')));
-  const published = window.DATA.masters.filter(m => m.featured !== false)
-    .filter(m => !registeredNames.has(window.I18N.pick(m.name).trim().toLocaleLowerCase('ru')))
-    .map(m => ({id:m.id,name:window.I18N.pick(m.name),city:window.I18N.pick(m.city),avatar:m.photo,
-      resident:m.resident===true,completed:0,score:0,profileUrl:'#/master/'+encodeURIComponent(m.id)}));
-  data.masters = [...data.masters.map(m => ({...m,profileUrl:'#/profile/'+encodeURIComponent(m.id)})),...published]
-    .sort((a,b) => b.score-a.score || b.completed-a.completed || a.name.localeCompare(b.name,'ru'))
-    .map((m,i) => ({...m,rank:i+1}));
+  const data = await api("/ranking?period="+rankingPeriod);
+  data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
   const crown = document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Рейтинг мастеров", `${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" loading="lazy">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
-}
-async function registeredProfilePage(id) {
-  const {master:m}=await api("/masters/"+encodeURIComponent(id));
-  const crown=document.querySelector("#clubCrownPath").getAttribute("d");
-  return win("Профиль мастера", `<article class="registered-profile"><div class="registered-profile__avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="${esc(m.name)}">`:`<span>${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</div><div><div class="registered-profile__title"><h2>${esc(m.name)}</h2>${m.resident?`<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><path d="${esc(crown)}"/></svg>`:""}</div>${m.city?`<p class="muted">${esc(m.city)}</p>`:""}${m.resident?'<span class="ranking-resident is-resident">резидент</span>':""}${m.specialty?`<p>${esc(m.specialty)}</p>`:""}${m.bio?`<p class="registered-profile__bio">${esc(m.bio)}</p>`:""}<p class="small muted">Завершённых сеансов: ${m.completed}</p></div></article>`, "ranking");
+  return win("Рейтинг мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="Имя или фамилия" autocomplete="off"></label><label class="field"><span>Город</span><select id="ranking-city"><option value="">Все города</option><option>Москва</option><option>СПБ</option></select></label><label class="field"><span>Период</span><select id="ranking-period"><option value="all" ${rankingPeriod==='all'?'selected':''}>Всё время</option><option value="month" ${rankingPeriod==='month'?'selected':''}>Этот месяц</option></select></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="${esc(m.name)}" loading="lazy">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name">${esc(m.name)}${m.resident ? `<svg class="ranking-crown ui-icon" viewBox="0 0 24 24" role="img" aria-label="Резидент"><path d="${esc(crown)}"/></svg>` : ""}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident">резидент</span>' : ""}</div></div><strong class="ranking-sessions">${m.completed}<small>сеансов</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -772,6 +767,7 @@ async function cabinetPage() {
       ),
     ),
     done = data.bookings.filter((b) => b.status === "completed").length;
+  const next=active.filter(b=>new Date(b.ends_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
   let body = "";
   if (cabTab === "bookings")
     body = active.length
@@ -792,7 +788,7 @@ async function cabinetPage() {
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
-    body = `<form id="profile-form"><label class="profile-avatar-picker"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span><b>Фотография профиля</b><small>Выбрать фото · JPG, PNG или WebP</small></span><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp"><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></label><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
+    body = `<form id="profile-form"><label class="profile-avatar-picker"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span><b>Фотография профиля</b><small>Выбрать фото · JPG, PNG или WebP</small></span><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp"><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></label><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("age", "Возраст", me.profile.age||"", "number", 'min="18" max="100"')}${field("experience", "Стаж", me.profile.experience||"", "text", 'maxlength="80" placeholder="Например, 5 лет"')}${field("bookingLink", "Ссылка для записи в Telegram", me.profile.bookingLink||"", "url", 'placeholder="https://t.me/имя"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "")}${select(
       "accent",
       "Обложка личного дела",
       [
@@ -801,7 +797,7 @@ async function cabinetPage() {
         ["graphite", "Графит"],
       ],
       me.profile.accent || "paper",
-    )}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
+    )}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><section id="profile-gallery" class="profile-gallery"><h3>Работы и эскизы</h3><p class="small muted">Загрузка портфолио…</p></section><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
   const accent =
     me.profile.accent === "graphite"
       ? "background:#deddd8"
@@ -810,7 +806,7 @@ async function cabinetPage() {
         : "";
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div><div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -892,6 +888,7 @@ function mountCabinet() {
         };
       }),
   );
+  if($('#profile-gallery'))mountGallery($('#profile-gallery'),api,notify,refresh).catch(e=>notify(e.message));
   const avatarFile = $("#profile-avatar-file");
   if (avatarFile) avatarFile.onchange = async () => {
     const file = avatarFile.files[0]; if (!file) return;
@@ -1046,7 +1043,7 @@ async function adminPage() {
       ["Фото", "Мастер", "На главной", ""],
       masters.map(
         (m) =>
-          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button></td></tr>`,
+          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
       ),
     )}<p data-help class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
@@ -1392,6 +1389,11 @@ function mountAdmin() {
       }
     };
   });
+  $$('[data-link-master]').forEach(button=>button.onclick=async()=>{
+    const master=legacyMasters[Number(button.dataset.linkMaster)-1];
+    const {userId}=await api('/admin/masters/'+master.id+'/account');
+    dialogForm('Привязать аккаунт',`<p>Карточка: ${esc(window.I18N.pick(master.name))}</p>${select('userId','Аккаунт мастера',[['','Отвязать аккаунт'],...adminData.users.filter(u=>u.account_type==='master'&&u.role!=='admin'&&u.active).map(u=>[u.id,u.name+' · '+u.email])],userId||'')}<p class="small muted">После привязки имя, резидентство, портфолио и статистика будут браться из этого аккаунта.</p>`,d=>api('/admin/masters/'+master.id+'/account','PUT',{userId:d.userId}));
+  });
   $$("[data-edit-master]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -1494,11 +1496,16 @@ async function render() {
       return;
     }
     switch (path[0]) {
-      case "profile":
-        html = await registeredProfilePage(path[1]);
-        break;
       case "ranking":
         html = await rankingPage();
+        mount=()=>{
+          const filter=()=>{let count=0;const query=$('#ranking-search').value.trim().toLocaleLowerCase('ru'),city=$('#ranking-city').value;
+            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query)||(city&&row.dataset.rankingCity!==city);if(!row.hidden)count++;});
+            if($('#ranking-empty'))$('#ranking-empty').hidden=count>0;
+          };
+          $('#ranking-search').oninput=filter;$('#ranking-city').onchange=filter;
+          $('#ranking-period').onchange=e=>{rankingPeriod=e.target.value;render();};
+        };
         break;
       case "masters":
       case "":

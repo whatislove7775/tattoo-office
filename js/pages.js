@@ -26,8 +26,9 @@
 
   /* Картинка с автоматической заглушкой, если файла ещё нет в assets. */
   function img(src, seed, label, cls, extra, kind) {
+    if(!src)return '<span class="master-placeholder '+(cls||'')+'" role="img" aria-label="'+esc(label)+'">'+esc(String(label||'').trim().split(/\s+/).slice(0,2).map(function(n){return n[0];}).join(''))+'</span>';
     return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(label || '') + '"' +
-           ' loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
+           ' decoding="async" loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
            (kind ? ' data-kind="' + esc(kind) + '"' : '') +
            ' onerror="TO.imgFail(this)"' + (extra || '') + '>';
   }
@@ -113,8 +114,8 @@
                  '<div class="master__name"><span>' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
-                   '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' +
-                   '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
+                   (m.age ? '<span class="master__age">' + m.age + ' ' + esc(t('master.age')) + '</span>' : '') +
+                   (pick(m.exp) ? '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' : '') +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
                  '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p></div>' +
@@ -146,11 +147,11 @@
           return;
         }
         pane.innerHTML = '<div class="works">' + list.map(function (w, i) {
-          var cap = pick(w.cap);
+          var cap = pick(w.cap);if(/\.(png|jpe?g|webp)$/i.test(cap))cap='';
           return '<figure class="work" role="button" tabindex="0" aria-label="Открыть: ' + esc(cap) + '" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
                  'data-seed="' + esc(m.id + i) + '" data-sfx="open">' +
-                   img(w.src, m.id + '-' + tab + i, cap, 'work__img', '', 'tattoo') +
-                   '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' +
+                   img(w.thumb || w.src, m.id + '-' + tab + i, cap || (tab==='drafts'?'Эскиз':'Работа'), 'work__img', '', 'tattoo') +
+                   (cap ? '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' : '') +
                  '</figure>';
         }).join('') + '</div>';
       }
@@ -174,7 +175,7 @@
         var figures = Array.prototype.slice.call(pane.querySelectorAll('.work'));
         global.PhotoViewer.open(figures.map(function (item) {
           var picture = item.querySelector('img');
-          return { src: picture.currentSrc || picture.src, caption: item.dataset.cap };
+          return { src: item.dataset.src || picture.currentSrc || picture.src, caption: item.dataset.cap };
         }), figures.indexOf(fig));
       });
       pane.addEventListener('keydown', function (e) {

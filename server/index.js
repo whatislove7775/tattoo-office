@@ -1,3 +1,5 @@
+import {masterDirectory,catalogIds,bookingContact} from "./master-directory.js";
+import {jpegPayload,mediaView} from "./master-media.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -107,6 +109,10 @@ export async function createApp(db) {
   }
   const app = express();
   app.disable("x-powered-by");
+  app.use((req,res,next)=>{
+    req.requestId=uuid();res.set('X-Request-ID',req.requestId);
+    const started=Date.now();res.on('finish',()=>{if(res.statusCode>=500)console.error(JSON.stringify({event:'request.failed',requestId:req.requestId,method:req.method,path:req.route?.path||'unmatched',status:res.statusCode,durationMs:Date.now()-started}));});next();
+  });
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -125,6 +131,7 @@ export async function createApp(db) {
       },
     }),
   );
+  app.use("/api/me/gallery",express.json({limit:"400kb"}));
   app.use(
     express.json({
       limit: "100kb",
@@ -299,6 +306,7 @@ export async function createApp(db) {
       paymentEnabled: yookassaEnabled(),
     });
   });
+  app.get("/api/directory",async(req,res)=>res.json({masters:(await masterDirectory(db)).map(({rankingVisible,score,bookings,...m})=>m)}));
   app.get("/api/masters/:id", async (req,res) => {
     const master=await registeredMasterProfile(db,req.params.id);
     if(!master)fail("Мастер не найден",404);
@@ -306,7 +314,8 @@ export async function createApp(db) {
   });
   app.get("/api/ranking", async (req,res) => {
     res.set("Cache-Control", "no-store");
-    res.json(await masterRanking(db));
+    if(req.query.period && !["all","month"].includes(req.query.period))fail("Выберите период рейтинга");
+    res.json(await masterRanking(db,{period:req.query.period||"all"}));
   });
   app.get("/api/me", async (req, res) => res.json({ user: safe(req.user) }));
   const loginLimit = rateLimit({ windowMs: 900000, limit: 25 });
@@ -417,23 +426,83 @@ export async function createApp(db) {
       fail("Проверьте настройку видимости в рейтинге");
     if (p.city !== undefined && !["Москва","СПБ"].includes(p.city)) fail("Выберите Москву или СПБ");
     if (p.avatar !== undefined && (typeof p.avatar !== "string" || p.avatar.length > 90000 || (p.avatar && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.avatar)))) fail("Проверьте фотографию профиля");
+    if(p.age!==undefined && p.age!==null && p.age!=="" && (!Number.isInteger(Number(p.age))||Number(p.age)<18||Number(p.age)>100))fail("Возраст: от 18 до 100 лет");
+    if(p.bookingLink && !bookingContact(p.bookingLink))fail("Укажите ссылку Telegram: https://t.me/имя");
     const profile = {
+      age: p.age===undefined ? req.user.profile?.age??null : p.age===""||p.age===null?null:Number(p.age),
+      experience:String(p.experience ?? req.user.profile?.experience ?? "").slice(0,80),
+      bookingLink: p.bookingLink===undefined ? req.user.profile?.bookingLink||"" : bookingContact(p.bookingLink),
       city: p.city ?? req.user.profile?.city ?? "",
       avatar: p.avatar ?? req.user.profile?.avatar ?? "",
       rankingVisible: p.rankingVisible ?? (req.user.profile?.rankingVisible !== false),
-      bio: String(p.bio || "").slice(0, 1000),
-      specialty: String(p.specialty || "").slice(0, 100),
+      bio: String(p.bio ?? req.user.profile?.bio ?? "").slice(0, 1000),
+      specialty: String(p.specialty ?? req.user.profile?.specialty ?? "").slice(0, 100),
       accent: ["paper", "beige", "graphite"].includes(p.accent)
         ? p.accent
         : "paper",
       status: String(p.status || "").slice(0, 100),
     };
-    await db.query("UPDATE users SET name=$1,profile=$2 WHERE id=$3", [
+    await db.query("UPDATE users SET name=$1,profile=profile || $2::jsonb WHERE id=$3", [
       name,
       JSON.stringify(profile),
       req.user.id,
     ]);
     res.json({ ok: true });
+  });
+  app.get("/api/me/gallery",auth,async(req,res)=>{
+    const {rows}=await db.query("SELECT id,kind,caption,position FROM master_media WHERE user_id=$1 ORDER BY position,created_at,id",[req.user.id]);
+    res.json({items:rows.map(mediaView)});
+  });
+  app.post("/api/me/gallery",auth,async(req,res)=>{
+    if(req.user.account_type!=="master")fail("Портфолио доступно мастерам",403);
+    const {kind,caption,thumbnail,image}=req.body;
+    if(!["portfolio","drafts"].includes(kind))fail("Выберите работы или эскизы");
+    jpegPayload(thumbnail,50000);jpegPayload(image,300000);
+    const id=uuid();
+    await db.transaction(async q=>{
+      await q.query("SELECT id FROM users WHERE id=$1 FOR UPDATE",[req.user.id]);
+      const count=await one(q,"SELECT count(*)::int AS n FROM master_media WHERE user_id=$1",[req.user.id]);
+      if(count.n>=24)fail("Можно загрузить до 24 фотографий");
+      await q.query("INSERT INTO master_media(id,user_id,kind,caption,position,thumbnail,image) VALUES($1,$2,$3,$4,$5,$6,$7)",[id,req.user.id,kind,String(caption||"").slice(0,150),count.n,thumbnail,image]);
+      await q.query("UPDATE users SET profile=jsonb_set(profile,'{galleryManaged}','true') WHERE id=$1",[req.user.id]);
+    });
+    res.status(201).json({id});
+  });
+  app.patch("/api/me/gallery",auth,async(req,res)=>{
+    const items=req.body.items;
+    if(!Array.isArray(items)||items.length>24||items.some(i=>!i||typeof i.id!=="string"||!/^[0-9a-f-]{36}$/i.test(i.id)||!['portfolio','drafts'].includes(i.kind))||new Set(items.map(i=>i.id)).size!==items.length)fail("Проверьте порядок фотографий");
+    await db.transaction(async q=>{
+      await q.query("SELECT id FROM users WHERE id=$1 FOR UPDATE",[req.user.id]);
+      const {rows}=await q.query("SELECT id FROM master_media WHERE user_id=$1",[req.user.id]);
+      if(rows.length!==items.length||items.some(i=>!rows.some(r=>r.id===i.id)))fail("Список фотографий изменился. Обновите страницу",409);
+      for(const [position,item] of items.entries())await q.query("UPDATE master_media SET kind=$1,caption=$2,position=$3 WHERE id=$4 AND user_id=$5",[item.kind,String(item.caption||'').slice(0,150),position,item.id,req.user.id]);
+    });res.json({ok:true});
+  });
+  app.delete("/api/me/gallery/:id",auth,async(req,res)=>{
+    const deleted=await one(db,"DELETE FROM master_media WHERE id=$1 AND user_id=$2 RETURNING id",[req.params.id,req.user.id]);
+    if(!deleted)fail("Фотография не найдена",404);res.json({ok:true});
+  });
+  app.get("/api/media/:id",async(req,res)=>{
+    const m=await one(db,"SELECT m.thumbnail,m.image FROM master_media m JOIN users u ON u.id=m.user_id WHERE m.id=$1 AND u.active=true AND u.account_type='master'",[req.params.id]);
+    if(!m)fail("Фотография не найдена",404);
+    const value=req.query.size==='thumb'?m.thumbnail:m.image;
+    res.set('Cache-Control','public,max-age=300').type('image/jpeg').send(Buffer.from(value.split(',')[1],'base64'));
+  });
+  app.get("/api/admin/masters/:id/account",roles("admin"),async(req,res)=>{
+    if(!catalogIds.has(req.params.id))fail("Карточка мастера не найдена",404);
+    res.json({userId:(await one(db,"SELECT user_id FROM master_links WHERE master_id=$1",[req.params.id]))?.user_id||null});
+  });
+  app.put("/api/admin/masters/:id/account",roles("admin"),async(req,res)=>{
+    if(!catalogIds.has(req.params.id))fail("Карточка мастера не найдена",404);
+    await db.transaction(async q=>{
+      if(!req.body.userId)await q.query("DELETE FROM master_links WHERE master_id=$1",[req.params.id]);
+      else {
+        const user=await one(q,"SELECT id FROM users WHERE id=$1 AND active=true AND account_type='master' AND role IN ('guest','resident')",[req.body.userId]);
+        if(!user)fail("Аккаунт мастера не найден",404);
+        await q.query("INSERT INTO master_links(master_id,user_id) VALUES($1,$2) ON CONFLICT(master_id) DO UPDATE SET user_id=$2",[req.params.id,user.id]);
+      }
+      await audit(q,req.user.id,"master.account.link",{id:req.params.id,userId:req.body.userId||null});
+    });res.json({ok:true});
   });
   app.post("/api/me/password", auth, async (req, res) => {
     if (!verifyPassword(String(req.body.current || ""), req.user.password))
@@ -1226,7 +1295,7 @@ export async function createApp(db) {
     res.json(result);
   });
   app.get("/api/payments/:id", auth, async (req, res) => {
-    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1", [req.params.id]);
+    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
     await syncYookassa(p);
     p = { ...p, ...(await one(db, "SELECT * FROM payments WHERE id=$1", [p.id])) };
@@ -1311,6 +1380,7 @@ export async function createApp(db) {
       return res.status(400).json({ error: "Некорректный идентификатор" });
     if (!e.status) console.error(e.message);
     res.status(e.status || 500).json({
+      requestId:req.requestId,
       error: e.status
         ? e.message
         : "Не удалось выполнить действие. Повторите позже.",

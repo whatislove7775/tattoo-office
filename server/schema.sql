@@ -39,3 +39,8 @@ CREATE TABLE IF NOT EXISTS password_resets(token text PRIMARY KEY,user_id uuid N
 
 -- Two studios: each workspace belongs to a city (existing places are in Saint Petersburg).
 ALTER TABLE resources ADD COLUMN IF NOT EXISTS city text NOT NULL DEFAULT 'spb';
+
+-- Link historical public cards to actual accounts without guessing identities.
+CREATE TABLE IF NOT EXISTS master_links(master_id text PRIMARY KEY,user_id uuid UNIQUE NOT NULL REFERENCES users(id));
+CREATE TABLE IF NOT EXISTS master_media(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id),kind text NOT NULL CHECK(kind IN ('portfolio','drafts')),caption text NOT NULL DEFAULT '',position integer NOT NULL DEFAULT 0,thumbnail text NOT NULL,image text NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS master_media_owner ON master_media(user_id,kind,position);
