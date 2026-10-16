@@ -1444,7 +1444,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .ranking-row {display:grid;grid-template-columns:34px minmax(0,1fr) 66px;gap:14px;align-items:center;padding:18px;border:1px solid var(--panel-edge,#ddd);border-radius:20px;background:var(--panel);}
 .ranking-position {font-size:22px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
 .ranking-name {display:flex;gap:8px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere;font-size:18px;}
-.ranking-crown {width:21px;height:21px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.ranking-crown {width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 .ranking-resident {font-size:11px;padding:3px 7px;border:1px solid var(--ink-3);border-radius:99px;}
 .ranking-counts {margin:8px 0;font-size:12px;}
 .ranking-track {height:6px;background:var(--panel-2);border-radius:8px;overflow:hidden;}
@@ -1565,3 +1565,6 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head {box-sizing:bo
 body:is([data-page="ranking"],[data-page="profile"]) .window-head h1 {min-width:0;flex:1;}
 body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-shrink:0;margin-right:4px;}
 .ranking-list--compact>li:last-child .ranking-row {border-bottom:0;}
+
+.master__name>span {display:inline-flex;align-items:center;column-gap:6px;}
+.master__name .profile-resident-crown {display:block;flex:none;margin-left:0;align-self:center;}
