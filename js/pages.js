@@ -121,7 +121,7 @@
                    (pick(m.exp) ? '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' : '') +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
-                 '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p></div>' +
+                 (m.resident ? '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p>' : '') + '</div>' +
                '</div>' +
                '<div id="worksPane"></div>' +
              '</div>';

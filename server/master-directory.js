@@ -25,7 +25,7 @@ export async function masterDirectory(db,{period='all'}={}) {
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
       age:Number.isInteger(p.age)?p.age:base.age||null,exp:text(p.experience,80)||base.exp||'',
-      bookingLink:bookingContact(p.bookingLink)||base.bookingLink||'',rankingVisible:p.rankingVisible!==false,
+      bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
       completed:u.completed,bookings:u.bookings,score:Math.round((u.bookings*.25+u.completed)*(resident?1.05:1)*100)/100,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};

@@ -427,19 +427,15 @@ export async function createApp(db) {
     if (p.city !== undefined && !["Москва","СПБ"].includes(p.city)) fail("Выберите Москву или СПБ");
     if (p.avatar !== undefined && (typeof p.avatar !== "string" || p.avatar.length > 90000 || (p.avatar && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.avatar)))) fail("Проверьте фотографию профиля");
     if(p.age!==undefined && p.age!==null && p.age!=="" && (!Number.isInteger(Number(p.age))||Number(p.age)<18||Number(p.age)>100))fail("Возраст: от 18 до 100 лет");
-    if(p.bookingLink && !bookingContact(p.bookingLink))fail("Укажите ссылку Telegram: https://t.me/имя");
+    if(p.bookingLink!==undefined || p.adminBookingLink!==undefined)fail("Ссылку для записи назначает администратор",403);
     const profile = {
       age: p.age===undefined ? req.user.profile?.age??null : p.age===""||p.age===null?null:Number(p.age),
       experience:String(p.experience ?? req.user.profile?.experience ?? "").slice(0,80),
-      bookingLink: p.bookingLink===undefined ? req.user.profile?.bookingLink||"" : bookingContact(p.bookingLink),
       city: p.city ?? req.user.profile?.city ?? "",
       avatar: p.avatar ?? req.user.profile?.avatar ?? "",
       rankingVisible: p.rankingVisible ?? (req.user.profile?.rankingVisible !== false),
       bio: String(p.bio ?? req.user.profile?.bio ?? "").slice(0, 1000),
       specialty: String(p.specialty ?? req.user.profile?.specialty ?? "").slice(0, 100),
-      accent: ["paper", "beige", "graphite"].includes(p.accent)
-        ? p.accent
-        : "paper",
       status: String(p.status || "").slice(0, 100),
     };
     await db.query("UPDATE users SET name=$1,profile=profile || $2::jsonb WHERE id=$3", [
@@ -786,7 +782,7 @@ export async function createApp(db) {
       Object.assign(result, {
         users: (
           await db.query(
-            "SELECT id,email,name,role,active,balance,deposit_waived,created_at FROM users ORDER BY created_at DESC",
+            "SELECT id,email,name,role,account_type,active,balance,deposit_waived,created_at,profile->>'adminBookingLink' AS booking_link FROM users ORDER BY created_at DESC",
           )
         ).rows,
         bookings: (
@@ -960,6 +956,12 @@ export async function createApp(db) {
         active,
         u.id,
       ]);
+      if(req.body.bookingLink!==undefined) {
+        if(typeof req.body.bookingLink!=="string" || req.body.bookingLink.length>2048 || (req.body.bookingLink && !bookingContact(req.body.bookingLink)))fail("Укажите ссылку Telegram: https://t.me/имя");
+        if(u.account_type!=="master")fail("Ссылка для записи доступна только мастерам");
+        await q.query("UPDATE users SET profile=jsonb_set(profile,'{adminBookingLink}',$1::jsonb) WHERE id=$2",[JSON.stringify(bookingContact(req.body.bookingLink)),u.id]);
+        await audit(q,req.user.id,"master.booking_link.update",{id:u.id});
+      }
       if (req.body.depositWaived !== undefined && typeof req.body.depositWaived !== "boolean") fail("Проверьте настройку предоплаты");
       const waived = role === "resident" && (req.body.depositWaived ?? u.deposit_waived);
       await q.query("UPDATE users SET deposit_waived=$1 WHERE id=$2", [waived, u.id]);

@@ -1628,3 +1628,5 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 .ranking-tools .office-select::after {width:5px;height:5px;opacity:.6;}
 @media (max-width:1000px) {.ranking-tools {grid-template-columns:1fr 1fr;max-width:100%;}.ranking-tools>.field:first-child {grid-column:1/-1;}}
 @media (max-width:700px) {.ranking-tools {gap:10px;}.office-feature .ranking-tools .field input {font-size:16px;}}
+
+.profile-gallery #gallery-save {margin-top:18px;}
