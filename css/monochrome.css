@@ -1709,3 +1709,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 }
 
 .office-feature .brand-story__actions>a:not(.chrome) {flex-basis:100%;margin-bottom:14px;}
+.office-feature .find-lead .space-picker {width:100%;}
+@media (min-width:1101px) {
+  .office-feature .find-lead {display:grid;grid-template-columns:minmax(0,1.28fr) minmax(280px,.72fr);gap:18px;}
+}
