@@ -579,3 +579,14 @@ test('20th completed visit: one free rental, extras payable, cancellation restor
   const state=(await request('/bookings','GET',null,cookie)).data.loyalty;
   assert.equal(state.progress,0);assert.equal(state.cycle,2);assert.equal(state.freeNext,false);
 });
+
+test('admin can assign a Telegram booking link when creating a master', async()=>{
+  const body={name:'Telegram Master',email:'telegram-create@test.invalid',password,role:'resident',bookingLink:'https://t.me/m/test_booking'};
+  assert.equal((await request('/admin/users','POST',body,resident)).status,403);
+  const bad=await request('/admin/users','POST',{...body,bookingLink:'https://example.com/chat'},admin);assert.equal(bad.status,400);
+  assert.equal((await db.query('SELECT id FROM users WHERE email=$1',[body.email])).rows.length,0);
+  const created=await request('/admin/users','POST',body,admin);assert.equal(created.status,201);
+  const profile=await request('/masters/'+created.data.id);assert.equal(profile.data.master.bookingLink,body.bookingLink);
+  const stored=(await db.query('SELECT profile FROM users WHERE id=$1',[created.data.id])).rows[0].profile;assert.equal(stored.adminBookingLink,body.bookingLink);
+  assert.equal((await request('/me','PATCH',{name:'Resident',profile:{bookingLink:body.bookingLink}},resident)).status,403);
+});

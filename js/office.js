@@ -1173,7 +1173,7 @@ function mountAdmin() {
           ([r]) => me.role === "admin" || r === "guest",
         ),
         u?.role || "guest",
-      )}${u?.account_type === "master" ? field("bookingLink","Ссылка для записи в Telegram",u.booking_link||"","url",'maxlength="2048" placeholder="https://t.me/имя"') : ""}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
+      )}${(!u || u.account_type === "master") ? field("bookingLink","Ссылка на чат в Telegram",u?.booking_link||"","url",'maxlength="2048" placeholder="https://t.me/имя"') : ""}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
       (d) =>
         api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
           ...d,

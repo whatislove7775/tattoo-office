@@ -933,16 +933,21 @@ export async function createApp(db) {
     const role = req.body.role || "guest";
     if (!["guest", "resident", "admin"].includes(role))
       fail("Недопустимая роль", 403);
+    const bookingLink = req.body.bookingLink;
+    if (bookingLink !== undefined && (typeof bookingLink !== "string" || bookingLink.length > 2048 || (bookingLink && !bookingContact(bookingLink)))) fail("Укажите ссылку Telegram: https://t.me/имя или https://t.me/m/код");
+    if (bookingLink && role === "admin") fail("Ссылка для записи доступна только мастерам");
+    const profile = bookingLink ? {adminBookingLink:bookingContact(bookingLink)} : {};
     const id = uuid();
     await db.transaction(async (q) => {
       await q.query(
-        "INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,$4,$5,CASE WHEN $5='admin' THEN 'admin' ELSE 'master' END)",
+        "INSERT INTO users(id,email,password,name,role,account_type,profile) VALUES($1,$2,$3,$4,$5,CASE WHEN $5='admin' THEN 'admin' ELSE 'master' END,$6)",
         [
           id,
           validEmail(req.body.email),
           hashPassword(validPassword(req.body.password)),
           String(req.body.name || "Мастер").slice(0, 100),
           role,
+          JSON.stringify(profile),
         ],
       );
       await audit(q, req.user.id, "user.create", { id, role });
