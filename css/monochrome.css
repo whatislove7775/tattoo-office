@@ -1568,3 +1568,6 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 
 .master__name>span {display:inline-flex;align-items:center;column-gap:6px;}
 .master__name .profile-resident-crown {display:block;flex:none;margin-left:0;align-self:center;}
+
+.who__name .account-resident-crown {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:none;}
+.who__text small {display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
