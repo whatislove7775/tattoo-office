@@ -669,7 +669,7 @@ button:disabled {cursor:url('../assets/cursors/no.png') 10 10,not-allowed!import
 .office-feature .auth-photo .auth-image {left:-6.05%;top:-11.73%;width:112.74%;height:123.46%;}
 .rules-full {margin-top:24px;padding:16px 0 0;}
 .rules-full summary {font-weight:500;font-size:16px;line-height:1.4;}
-.rules-full summary>span {font-weight:300;font-size:24px;}
+.rules-full summary>span {font-weight:inherit;font-size:24px;}
 .office-feature .form-actions #booking-next {width:auto;min-width:120px;white-space:nowrap;padding:12px 20px;}
 .site-bottom .foot,body[data-page="masters"] .site-bottom .foot {padding-block:12px;}
 .site-bottom .foot .foot__copy {margin-top:10px;}
@@ -1659,7 +1659,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
  .gallery-dropzone .chrome {grid-column:2;justify-self:start;}
 }
 
-.polaroid__cap .profile-resident-crown {filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 2px 1px #000);}
+.polaroid__cap .profile-resident-crown {filter:drop-shadow(0 1px .6px #0009);}
 
 /* Keep status labels and account actions optically centred. */
 .ranking-meta .ranking-resident {display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:23px;padding:4px 9px;line-height:1;}
