@@ -187,7 +187,7 @@
      элемент получает клик по умолчанию — чтобы «немых» кнопок не осталось. */
   var CLICKABLE = 'a, button, .slot, .tab, .dot, .polaroid, [role="button"], summary';
 
-  document.addEventListener('pointerdown', function (e) {
+  document.addEventListener('click', function (e) {
     var tagged = e.target.closest('[data-sfx]');
     if (tagged) { SFX.play(tagged.getAttribute('data-sfx')); return; }
     if (e.target.closest(CLICKABLE)) SFX.click();

@@ -80,7 +80,7 @@
     /* Карточки раскладываются парами: внутри пары вторая заходит на первую
        на четверть корпуса, а сами пары разнесены по всему полю — иначе
        при сплошном шаге «минус четверть» всё сбивается в кучу в центре. */
-    this.fits = this.w >= cw * 2 && this.h >= ch + PAD * 2;
+    this.fits = this.w >= cw * 1.8 && this.h >= ch + PAD * 2;
     if (!this.fits) { this.el.classList.add('drift--static'); return; }
 
     var groups = Math.ceil(n / 2);
@@ -253,6 +253,8 @@
 
   /* ------------------------- перетаскивание мышью ------------------------- */
   Drift.prototype._down = function (e) {
+    /* На телефоне жест по карточке должен прокручивать страницу. */
+    if (e.pointerType === 'touch') return;
     if (e.button != null && e.button !== 0) return;
     var node = e.target.closest('.polaroid');
     if (!node || !node.__drift) return;
