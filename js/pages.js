@@ -7,6 +7,20 @@
   'use strict';
 
   var t = global.t, pick = function (o) { return global.I18N.pick(o); };
+  function masterBookingLink(master) {
+    if (!master.bookingLink) return '';
+    try {
+      var url = new URL(master.bookingLink);
+      if (url.protocol !== 'https:' || !['t.me','telegram.me'].includes(url.hostname)) return '';
+      if (!/^\/m\//.test(url.pathname) && !url.searchParams.has('text')) url.searchParams.set('text', 'Здравствуйте! Хочу записаться к мастеру ' + pick(master.name) + '.');
+      return url.href;
+    } catch (_) { return ''; }
+  }
+
+  function ageLabel(age) {
+    if(global.I18N.get()==='en')return age+' '+(age===1?'year':'years');
+    return age+' '+({one:'год',few:'года',many:'лет',other:'лет'}[new Intl.PluralRules('ru').select(age)]);
+  }
 
   /* ------------------------------ хелперы --------------------------------- */
   function esc(s) {
@@ -17,8 +31,12 @@
 
   /* Картинка с автоматической заглушкой, если файла ещё нет в assets. */
   function img(src, seed, label, cls, extra, kind) {
+    if(!src)return '<span class="master-placeholder '+(cls||'')+'" role="img" aria-label="'+esc(label)+'">'+esc(String(label||'').trim().split(/\s+/).slice(0,2).map(function(n){return n[0];}).join(''))+'</span>';
+    var responsive=global.PhotoSources && global.PhotoSources[src];
+    var sizes=cls==='polaroid__img'?'(max-width:700px) 32vw, 240px':cls==='master__photo'?'(max-width:700px) 25vw, 280px':'(max-width:700px) 43vw, 400px';
+    var sources=responsive?' srcset="'+esc(responsive.srcset)+'" sizes="'+sizes+'"':'';
     return '<img class="' + (cls || '') + '" src="' + esc(src) + '" alt="' + esc(label || '') + '"' +
-           ' loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
+           sources + ' decoding="async" loading="lazy" data-seed="' + esc(seed) + '" data-label="' + esc(label || '') + '"' +
            (kind ? ' data-kind="' + esc(kind) + '"' : '') +
            ' onerror="TO.imgFail(this)"' + (extra || '') + '>';
   }
@@ -34,24 +52,21 @@
   /* =========================== 1. КАТАЛОГ МАСТЕРОВ ======================== */
   var Masters = {
     html: function () {
-      var cards = global.DATA.masters.map(function (m) {
+      var cards = global.DATA.masters.filter(function (m) { return m.featured !== false && m.resident === true && Boolean(m.photo); }).map(function (m) {
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +
-                 img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') +
+                 '<span class="polaroid__photo">' + img(m.photo, m.id, name, 'polaroid__img', ' draggable="false"') + '<span class="desktop-shortcut" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 18c0-5 4-9 9-11l-3-3h10v10l-4-4c-5 2-8 5-6 10-3 0-6-1-6-2Z"/></svg></span></span>' +
                  '<div class="polaroid__cap">' + esc(name) + '</div>' +
                '</button>';
       }).join('');
 
-      return '<div class="drift" id="driftBox">' + cards + '</div>';
+      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Top artist</span></a>';
     },
 
     mount: function (root) {
       var box = root.querySelector('#driftBox');
-      var narrow = global.matchMedia('(max-width: 900px)').matches;
-
-      /* На узких экранах и в «бережном» режиме — обычная сетка. */
-      if (narrow || global.Drift.reduced) {
+      if (global.Drift.reduced) {
         box.classList.add('drift--static');
       } else {
         var drift = new global.Drift(box);
@@ -95,23 +110,23 @@
         '</div>';
 
       return '<div class="section-head">' +
-               '<span class="crumbs"><a href="#/masters">' + esc(t('masters.title')) + '</a> / ' + esc(name) + '</span>' +
+               '<span class="crumbs"><span class="bullet" aria-hidden="true"></span><a href="#/masters">' + esc(t('masters.title')) + '</a><span class="crumbs__current"> / ' + esc(name) + '</span></span>' +
                tabs +
                '<span class="spacer"></span>' +
-               '<a href="#/masters" data-sfx="nav">←' + esc(t('master.back')) + '</a>' +
+               '<a class="master-back" href="#/masters" aria-label="Назад к мастерам" data-sfx="nav">← Назад</a>' +
              '</div>' +
 
              '<div class="master">' +
-               '<div>' +
-                 img(m.photo, m.id, name, 'master__photo') +
-                 '<div class="master__name">' + esc(name) + '</div>' +
-                 '<div class="master__meta">' +
-                   '<span>' + m.age + ' ' + esc(t('master.age')) + '</span>' +
-                   '<span>' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' +
+               '<div class="master-profile">' +
+                 img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
+                 '<div class="master__name"><span>' + esc(name) + (m.resident ? '<svg class="profile-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
+                 '<div class="master-profile__facts">' +
+                   '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
+                   (m.age ? '<span class="master__age">' + esc(ageLabel(m.age)) + '</span>' : '') +
+                   (pick(m.exp) ? '<span class="master__exp">' + esc(t('master.exp')) + ' ' + esc(pick(m.exp)) + '</span>' : '') +
                  '</div>' +
                  '<div class="master__bio">' + esc(pick(m.bio)) + '</div>' +
-                 '<p style="margin-top:26px"><a class="btn" href="#/book/' + esc(m.id) + '" data-sfx="open">' +
-                   esc(t('master.book')) + '</a></p>' +
+                 (m.resident ? '<p class="master-profile__action">' + (masterBookingLink(m) ? '<a class="btn btn--primary" href="' + esc(masterBookingLink(m)) + '" target="_blank" rel="noopener noreferrer" data-sfx="open">' + esc(t('master.book')) + '</a>' : '<button class="btn btn--primary" type="button" disabled>' + esc(t('master.book')) + '</button><small class="muted">Контакт для записи скоро появится.</small>') + '</p>' : '') + '</div>' +
                '</div>' +
                '<div id="worksPane"></div>' +
              '</div>';
@@ -120,6 +135,17 @@
     mount: function (root, params) {
       var m = global.DATA.masterById(params.id);
       if (!m) return;
+      root.querySelector('.master-share').onclick = async function () {
+        var url = new URL(location.href); url.hash = '#/master/' + m.id;
+        try {
+          if (navigator.share) await navigator.share({title: pick(m.name) + ' · Tattoo Office', url: url.href});
+          else { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+          try { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
+          catch (_) { global.TO.toast('Не удалось скопировать ссылку. Скопируйте адрес страницы.'); }
+        }
+      };
       var pane = root.querySelector('#worksPane');
 
       function render(tab) {
@@ -129,11 +155,11 @@
           return;
         }
         pane.innerHTML = '<div class="works">' + list.map(function (w, i) {
-          var cap = pick(w.cap);
-          return '<figure class="work" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
+          var cap = pick(w.cap);if(/\.(png|jpe?g|webp)$/i.test(cap))cap='';
+          return '<figure class="work" role="button" tabindex="0" aria-label="Открыть: ' + esc(cap) + '" data-src="' + esc(w.src) + '" data-cap="' + esc(cap) + '" ' +
                  'data-seed="' + esc(m.id + i) + '" data-sfx="open">' +
-                   img(w.src, m.id + '-' + tab + i, cap, 'work__img', '', 'tattoo') +
-                   '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' +
+                   img(w.thumb || w.src, m.id + '-' + tab + i, cap || (tab==='drafts'?'Эскиз':'Работа'), 'work__img', '', 'tattoo') +
+                   (cap ? '<figcaption class="work__cap">' + esc(cap) + '</figcaption>' : '') +
                  '</figure>';
         }).join('') + '</div>';
       }
@@ -154,7 +180,17 @@
         var fig = e.target.closest('.work');
         if (!fig) return;
         var im = fig.querySelector('img');
-        global.TO.modal(fig.dataset.cap, '<img src="' + esc(im.currentSrc || im.src) + '" alt="">');
+        var figures = Array.prototype.slice.call(pane.querySelectorAll('.work'));
+        global.PhotoViewer.open(figures.map(function (item) {
+          var picture = item.querySelector('img');
+          return { src: item.dataset.src || picture.currentSrc || picture.src, caption: item.dataset.cap };
+        }), figures.indexOf(fig));
+      });
+      pane.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          var fig = e.target.closest('.work');
+          if (fig) { e.preventDefault(); fig.click(); }
+        }
       });
     }
   };
@@ -164,7 +200,7 @@
     html: function () {
       var d = global.DATA.interior;
       var thumbs = d.photos.map(function (p, i) {
-        return img(p.src, 'int' + i, pick(p.cap), '', ' data-i="' + i + '" data-sfx="click"', 'room');
+        return '<button type="button" data-i="' + i + '" aria-label="' + esc(pick(p.cap)) + '">' + img(p.src, 'int' + i, pick(p.cap), '', '', 'room') + '</button>';
       }).join('');
       var dots = d.photos.map(function (_, i) {
         return '<span class="dot" data-i="' + i + '"' + (i === 0 ? ' aria-current="true"' : '') + '></span>';
@@ -200,7 +236,8 @@
       }
 
       root.querySelector('#intThumbs').addEventListener('click', function (e) {
-        if (e.target.tagName === 'IMG') show(+e.target.dataset.i);
+        var button=e.target.closest('button[data-i]');
+        if(button) show(+button.dataset.i);
       });
       dots.addEventListener('click', function (e) {
         if (e.target.classList.contains('dot')) show(+e.target.dataset.i);

@@ -1,0 +1,1322 @@
+[
+  {
+    "id": "zinaida",
+    "name": {
+      "ru": "Зинаида Петровна",
+      "en": "Zinaida Petrovna"
+    },
+    "age": 21,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "2 года",
+      "en": "2 years"
+    },
+    "bio": {
+      "ru": "работает в стиле барокко. качественно, долго и с характером.",
+      "en": "works in baroque. properly, slowly and with character."
+    },
+    "photo": "assets/masters/master-1.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-1"
+  },
+  {
+    "id": "mr-a",
+    "name": {
+      "ru": "Mr.A",
+      "en": "Mr.A"
+    },
+    "age": 33,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "12 лет",
+      "en": "12 years"
+    },
+    "bio": {
+      "ru": "основатель офиса. орнаменты, блэкворк, всё, что режет глаз.",
+      "en": "founder of the office. ornamental, blackwork, everything that cuts the eye."
+    },
+    "photo": "assets/masters/master-2.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-2"
+  },
+  {
+    "id": "sexova",
+    "name": {
+      "ru": "Зинаида Сексова",
+      "en": "Zinaida Sexova"
+    },
+    "age": 24,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "4 года",
+      "en": "4 years"
+    },
+    "bio": {
+      "ru": "тонкие линии, шрифты, всё маленькое и злое.",
+      "en": "fine line, lettering, everything small and mean."
+    },
+    "photo": "assets/masters/master-3.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-3"
+  },
+  {
+    "id": "kostya",
+    "name": {
+      "ru": "Костя Офисный",
+      "en": "Kostya Office"
+    },
+    "age": 29,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "7 лет",
+      "en": "7 years"
+    },
+    "bio": {
+      "ru": "олдскул, традишнл, флэши по средам.",
+      "en": "old school, traditional, flash days on wednesdays."
+    },
+    "photo": "assets/masters/master-4.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-4"
+  },
+  {
+    "id": "vera",
+    "name": {
+      "ru": "Вера Никитична",
+      "en": "Vera Nikitichna"
+    },
+    "age": 26,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "5 лет",
+      "en": "5 years"
+    },
+    "bio": {
+      "ru": "реализм в сером, портреты животных и людей, которых уже нет.",
+      "en": "black and grey realism, portraits of animals and people who are gone."
+    },
+    "photo": "assets/masters/master-5.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-5"
+  },
+  {
+    "id": "gleb",
+    "name": {
+      "ru": "Глеб Факсов",
+      "en": "Gleb Faxov"
+    },
+    "age": 31,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "9 лет",
+      "en": "9 years"
+    },
+    "bio": {
+      "ru": "киберсигилизм, техно-орнамент, любит большие проекты.",
+      "en": "cybersigilism, techno ornament, loves big projects."
+    },
+    "photo": "assets/masters/master-6.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-6"
+  },
+  {
+    "id": "nastya",
+    "name": {
+      "ru": "Настя Скрепкина",
+      "en": "Nastya Skrepkina"
+    },
+    "age": 23,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "3 года",
+      "en": "3 years"
+    },
+    "bio": {
+      "ru": "акварель, ботаника, цвет. записывается на месяц вперёд.",
+      "en": "watercolour, botanics, colour. booked a month ahead."
+    },
+    "photo": "assets/masters/master-7.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-7"
+  },
+  {
+    "id": "petr",
+    "name": {
+      "ru": "Пётр Архивный",
+      "en": "Petr Archive"
+    },
+    "age": 38,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "15 лет",
+      "en": "15 years"
+    },
+    "bio": {
+      "ru": "японская традиция, рукава и спины. работает только по записи.",
+      "en": "japanese traditional, sleeves and backpieces. by appointment only."
+    },
+    "photo": "assets/masters/master-8.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-8"
+  },
+  {
+    "id": "liza",
+    "name": {
+      "ru": "Лиза Печатная",
+      "en": "Liza Pechatnaya"
+    },
+    "age": 25,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "6 лет",
+      "en": "6 years"
+    },
+    "bio": {
+      "ru": "графика, гравюра, всё чёрное и очень плотное.",
+      "en": "graphics, engraving, everything black and very dense."
+    },
+    "photo": "assets/masters/master-9.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-9"
+  },
+  {
+    "id": "sasha",
+    "name": {
+      "ru": "Саша Штампов",
+      "en": "Sasha Shtampov"
+    },
+    "age": 27,
+    "city": {
+      "ru": "Москва",
+      "en": "Moscow"
+    },
+    "exp": {
+      "ru": "8 лет",
+      "en": "8 years"
+    },
+    "bio": {
+      "ru": "леттеринг и шрифты. пишет на коже так же, как на бумаге.",
+      "en": "lettering and type. writes on skin the same way as on paper."
+    },
+    "photo": "assets/masters/master-10.png",
+    "portfolio": [
+      {
+        "src": "assets/works/tattoo-1.png",
+        "cap": {
+          "ru": "работа 1.png",
+          "en": "work 1.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-2.png",
+        "cap": {
+          "ru": "работа 2.png",
+          "en": "work 2.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-3.png",
+        "cap": {
+          "ru": "работа 3.png",
+          "en": "work 3.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-4.png",
+        "cap": {
+          "ru": "работа 4.png",
+          "en": "work 4.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-5.png",
+        "cap": {
+          "ru": "работа 5.png",
+          "en": "work 5.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-6.png",
+        "cap": {
+          "ru": "работа 6.png",
+          "en": "work 6.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-7.png",
+        "cap": {
+          "ru": "работа 7.png",
+          "en": "work 7.png"
+        }
+      },
+      {
+        "src": "assets/works/tattoo-8.png",
+        "cap": {
+          "ru": "работа 8.png",
+          "en": "work 8.png"
+        }
+      }
+    ],
+    "drafts": [
+      {
+        "src": "assets/works/draft-1.png",
+        "cap": {
+          "ru": "эскиз 1.png",
+          "en": "sketch 1.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-2.png",
+        "cap": {
+          "ru": "эскиз 2.png",
+          "en": "sketch 2.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-3.png",
+        "cap": {
+          "ru": "эскиз 3.png",
+          "en": "sketch 3.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-4.png",
+        "cap": {
+          "ru": "эскиз 4.png",
+          "en": "sketch 4.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-5.png",
+        "cap": {
+          "ru": "эскиз 5.png",
+          "en": "sketch 5.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-6.png",
+        "cap": {
+          "ru": "эскиз 6.png",
+          "en": "sketch 6.png"
+        }
+      },
+      {
+        "src": "assets/works/draft-7.png",
+        "cap": {
+          "ru": "эскиз 7.png",
+          "en": "sketch 7.png"
+        }
+      }
+    ],
+    "resident": true,
+    "contentId": "master-10"
+  }
+]
