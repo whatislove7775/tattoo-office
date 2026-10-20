@@ -897,7 +897,8 @@ function mountCabinet() {
 }
 let adminData,
   adminDate = today(),
-  usersFilter = "all";
+  usersFilter = "all",
+  adminScrollTo = "";
 // Кнопка «Read feedback» под меню админки; зелёная точка — есть новые обращения.
 function paintFeedbackDock(hasNew) {
   let dock = document.getElementById("adminFeedbackDock");
@@ -935,12 +936,14 @@ async function adminPage() {
     s = pub.settings,
     tabs = [
       ["home", "Main"],
-      ["schedule", "Расписание"], ["bookings", "Записи"],
+      ["schedule", "Calendar"],
       ["users", "Users"], ["catalog", "Склад и услуги"],
       ["finance", "Финансы"], ["feedback", "Feedback"],
       ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
     ];
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
+  // Записи теперь внутри Calendar; «Booking history» открывает Calendar и прокручивает к записям.
+  if (adminTab === "bookings") { adminTab = "schedule"; adminScrollTo = "admin-bookings"; }
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   const menu = $("#menuList");
   // «Обращения» открываются кнопкой Read feedback под меню, а не пунктом меню.
@@ -1000,16 +1003,14 @@ async function adminPage() {
         (b) =>
           `<tr><td>${dateLabel(b.starts_at)} ${timeLabel(b.starts_at)} — ${dateLabel(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td>${b.external ? '<span class="muted">Изменить в Google Calendar</span>' : `<button data-delete-block="${b.id}">Открыть</button>`}</td></tr>`,
       ),
-    )}`;
-  }
-  if (adminTab === "bookings")
-    body = table(
+    )}<h3 id="admin-bookings" class="admin-bookings-title">Записи · ${CITY_LABELS[adminCity]}</h3>${table(
       ["Сеанс", "Мастер / место", "Сумма", "Статус", "Действие"],
-      a.bookings.map(
+      a.bookings.filter((b) => cityIds.has(b.resource_id)).map(
         (b) =>
           `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
-    );
+    )}`;
+  }
   if (adminTab === "users") {
     // «Пользователи»: все аккаунты (мастера, админы, клиенты) и карточки мастеров на сайте.
     const isAdmin = (u) => u.role === "admin" || u.account_type === "admin",
@@ -1055,7 +1056,7 @@ async function adminPage() {
       ),
     );
   if (adminTab === "settings")
-    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (вкладка «Расписание») и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (раздел Calendar) и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -1102,6 +1103,11 @@ function dialogForm(title, html, submit) {
   });
 }
 function mountAdmin() {
+  if (adminScrollTo) {
+    const target = document.getElementById(adminScrollTo);
+    adminScrollTo = "";
+    if (target) requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }));
+  }
   if (!me) {
     mountAdminAuth();
     return;
@@ -1144,7 +1150,6 @@ function mountAdmin() {
       }
     });
     const summaries = {
-      bookings: [["Всего записей", a.bookings.length], ["Подтверждено", a.bookings.filter(b => b.status === "confirmed").length], ["Ожидают отмены", a.bookings.filter(b => b.status === "cancel_requested").length]],
       catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
       finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
       feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]],

@@ -224,6 +224,18 @@
      из двух дуг радиуса 26 с прямым участком между ними, как в присланном
      макете. Координаты считаются в реальных пикселях при каждом ресайзе —
      так углы остаются окружностями, а не растянутыми эллипсами. */
+  // Тень шапки рисуется отдельной копией формы под окнами, а сама шапка — поверх них.
+  (function mirrorHeaderShadow() {
+    var source = document.getElementById("headerShapePath"), copy = document.getElementById("headerShadowPath"), box = document.getElementById("headerShadow");
+    if (!source || !copy || !box) return;
+    var sync = function () {
+      var d = source.getAttribute("d");
+      if (d) copy.setAttribute("d", d); else copy.removeAttribute("d");
+      box.style.height = document.getElementById("siteHeader").offsetHeight + "px";
+    };
+    new MutationObserver(sync).observe(source, { attributes: true, attributeFilter: ["d"] });
+    sync();
+  })();
   function paintHeaderShape() {
     var header = document.getElementById("siteHeader");
     var fringe = header.querySelector(".fringe");
