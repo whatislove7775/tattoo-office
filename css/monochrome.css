@@ -1798,8 +1798,10 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 .admin-feedback-dock__icon svg {width:30px;height:22px;fill:none;stroke:var(--ink-2);stroke-width:1.4;stroke-linejoin:round;}
 .admin-feedback-dock__dot {position:absolute;right:-5px;top:-6px;width:9px;height:9px;border-radius:50%;background:#3fd23f;box-shadow:0 0 0 2px var(--panel),0 0 6px #3fd23f99;}
 @media (min-width:701px) {
-  body.admin-session[data-page="admin"] .admin-feedback-dock {position:fixed;right:24px;bottom:calc(42px + var(--desktop-foot-height,125px));width:calc(var(--rail-width) * .68);z-index:46;}
+  body.admin-session[data-page="admin"] .admin-feedback-dock {position:relative;flex:none;align-self:flex-end;width:calc(var(--rail-width) * .68);margin:0;pointer-events:auto;}
 }
+.who--link {cursor:pointer;}
+.who--link .office-initial {cursor:pointer;}
 @media (max-width:700px) {
   body.admin-session[data-page="admin"] .admin-feedback-dock {width:min(100%,460px);margin:0 auto 14px;}
 }
@@ -1814,3 +1816,6 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
   .header-shadow path {fill:var(--panel);}
 }
 .admin-bookings-title {scroll-margin-top:200px;}
+@media (min-width:701px) and (max-width:1366px) {
+  body.admin-session[data-page="admin"] .admin-feedback-dock {width:var(--rail-width);}
+}

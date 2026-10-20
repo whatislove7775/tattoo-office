@@ -220,6 +220,18 @@ function paintShell() {
     ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}"><span class="who__label">${esc(me.name)}</span>${me.role === "resident" ? '<svg class="account-resident-crown ui-icon" viewBox="0 0 24 24" aria-label="Резидент"><use href="#clubCrownPath"/></svg>' : ""}</a><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
+  if (me?.role === "admin") {
+    // Аватар и имя администратора открывают раздел «Профиль»; выход — только иконкой.
+    const who = el.querySelector(".who");
+    who.classList.add("who--link");
+    who.onclick = (e) => {
+      if (e.target.closest("#menuLogout")) return;
+      e.preventDefault();
+      adminTab = "profile";
+      document.body.classList.remove("mobile-menu-open");
+      if (location.hash === "#/admin") render(); else go("admin");
+    };
+  }
 }
 const legacyMasters=window.DATA.masters.slice();
 const masters = Array.from({ length: 10 }, (_, i) => ({
@@ -914,8 +926,16 @@ function paintFeedbackDock(hasNew) {
       document.body.classList.remove("mobile-menu-open");
       if (location.hash === "#/admin") render(); else go("admin");
     };
-    const bottom = document.querySelector(".site-bottom");
-    bottom.insertBefore(dock, bottom.querySelector(".foot"));
+    // На компьютере — в правой колонке сразу под панелью аккаунта (не наезжает на неё),
+    // на телефоне — над подвалом.
+    const place = () => {
+      if (window.isMobileLayout?.()) {
+        const bottom = document.querySelector(".site-bottom");
+        bottom.insertBefore(dock, bottom.querySelector(".foot"));
+      } else document.getElementById("loginPanel").after(dock);
+    };
+    place();
+    matchMedia("(max-width:700px)").addEventListener("change", place);
   }
   dock.classList.toggle("has-new", hasNew);
   dock.setAttribute("aria-current", adminTab === "feedback" ? "page" : "false");
@@ -938,8 +958,8 @@ async function adminPage() {
       ["home", "Main"],
       ["schedule", "Calendar"],
       ["users", "Users"], ["catalog", "Склад и услуги"],
-      ["finance", "Финансы"], ["feedback", "Feedback"],
-      ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
+      ["finance", "Finance"], ["feedback", "Feedback"],
+      ["settings", "Настройки"], ["profile", "Профиль"],
     ];
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   // Записи теперь внутри Calendar; «Booking history» открывает Calendar и прокручивает к записям.
@@ -948,7 +968,8 @@ async function adminPage() {
   const menu = $("#menuList");
   // «Обращения» открываются кнопкой Read feedback под меню, а не пунктом меню.
   paintFeedbackDock(a.feedback.some((f) => f.status === "new"));
-  menu.innerHTML = tabs.filter(([value]) => value !== "feedback").map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
+  // Feedback — кнопка под меню, Профиль — по нажатию на аватар и имя в панели аккаунта.
+  menu.innerHTML = tabs.filter(([value]) => !["feedback", "profile"].includes(value)).map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
   requestAnimationFrame(() => window.TO?.refreshLayout());
   let body = "";
   if (adminTab === "home") {
@@ -1071,20 +1092,6 @@ async function adminPage() {
           `<tr><td>${esc(k)}</td><td>${v ? "заданы на сервере" : "не подключён"}</td></tr>`,
       ),
     )}<div class="note-paper">Режим: тестовый. Боевые платежи заблокированы до проверки кассы, документов и инфраструктуры в РФ. Секретные ключи задаются на сервере, в браузере не хранятся.</div>`;
-  if (adminTab === "audit")
-    body = `<h3>Действия сотрудников</h3>${table(
-      ["Дата", "Действие", "Данные"],
-      a.audit.map(
-        (x) =>
-          `<tr><td>${dateLabel(x.created_at)} ${timeLabel(x.created_at)}</td><td>${esc(x.action)}</td><td><code>${esc(JSON.stringify(x.details))}</code></td></tr>`,
-      ),
-    )}<h3 style="margin-top:30px">Очередь интеграций</h3>${table(
-      ["Событие", "Статус", "Попытки"],
-      a.outbox.map(
-        (x) =>
-          `<tr><td>${esc(x.kind)}</td><td>${esc(x.status)}${x.last_error ? `<br><small>${esc(x.last_error)}</small>` : ""}</td><td>${x.attempts}</td></tr>`,
-      ),
-    )}`;
   return win(
     "Admin panel",
     `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
@@ -1152,8 +1159,7 @@ function mountAdmin() {
     const summaries = {
       catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
       finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
-      feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]],
-      audit: [["Действий", a.audit.length], ["Событий в очереди", a.outbox.length]]
+      feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]]
     };
     function safemodeLabel() { return pub.settings.mode === "test" ? "Тестовые оплаты" : "Успешные оплаты"; }
     if (summaries[adminTab]) {
