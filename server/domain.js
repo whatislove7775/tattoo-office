@@ -127,3 +127,15 @@ export function cityRates(s, city) {
 export function cityOpen(s, city) {
   return !!withCities(s).cities[city]?.open;
 }
+
+// Сайт и превью Vercel обращаются к одному API. Изменяющие запросы принимаются
+// только с основного адреса (APP_ORIGIN) и с превью-адресов этого проекта Vercel.
+// Шаблон превью можно переопределить в PREVIEW_ORIGIN_PATTERN (пустая строка — выключить).
+export const DEFAULT_PREVIEW_ORIGIN_PATTERN = "^https://tattoo-office-[a-z0-9-]+-whatislove7775s-projects\\.vercel\\.app$";
+export function allowedOrigin(origin, { appOrigin, host, previewPattern = DEFAULT_PREVIEW_ORIGIN_PATTERN } = {}) {
+  if (!origin) return true;
+  const main = appOrigin ? appOrigin.split(",").map((x) => x.trim()).filter(Boolean) : [`http://${host}`];
+  if (main.includes(origin)) return true;
+  if (!previewPattern) return false;
+  try { return new RegExp(previewPattern).test(origin); } catch { return false; }
+}
