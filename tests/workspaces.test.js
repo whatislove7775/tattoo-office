@@ -37,6 +37,9 @@ test("workspaces: photo, city, upload and deletion that keeps booking history", 
     const place = (await publicResources()).find((r) => r.id === id);
     assert.equal(place.city, "msk");
     assert.equal(place.photo, src);
+    // Saving without a photo field (older admin pages) keeps the chosen photo.
+    assert.equal((await call("/admin/resources", "POST", { id, name: "М1 — Патрики", city: "msk", active: true })).status, 200);
+    assert.equal((await publicResources()).find((r) => r.id === id).photo, src);
     for (const photo of ["https://evil.example/a.jpg", "assets/../server/index.js", "javascript:alert(1)"])
       assert.equal((await call("/admin/resources", "POST", { id, name: "М1", city: "msk", photo })).status, 400, photo);
 

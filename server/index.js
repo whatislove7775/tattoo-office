@@ -1003,12 +1003,12 @@ export async function createApp(db) {
     const id = req.body.id || uuid(),
       name = String(req.body.name || "").trim(),
       city = validCity(String(req.body.city || "spb")),
-      photo = imageSrc(req.body.photo);
+      photo = req.body.photo === undefined ? null : imageSrc(req.body.photo);
     if (!name || name.length > 100) fail("Название места");
     await db.transaction(async (q) => {
       await lock(q);
       await q.query(
-        "INSERT INTO resources(id,name,active,calendar_id,city,photo) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4,city=$5,photo=$6 WHERE NOT resources.deleted",
+        "INSERT INTO resources(id,name,active,calendar_id,city,photo) VALUES($1,$2,$3,$4,$5,COALESCE($6,'')) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4,city=$5,photo=COALESCE($6,resources.photo) WHERE NOT resources.deleted",
         [
           id,
           name,
