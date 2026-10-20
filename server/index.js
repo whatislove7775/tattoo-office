@@ -32,6 +32,8 @@ import {
   withCities,
   cityRates,
   cityOpen,
+  allowedOrigin,
+  DEFAULT_PREVIEW_ORIGIN_PATTERN,
 } from "./domain.js";
 const root = fileURLToPath(new URL("../", import.meta.url));
 export async function createApp(db) {
@@ -180,10 +182,12 @@ export async function createApp(db) {
       !["GET", "HEAD"].includes(req.method) &&
       !req.path.startsWith("/webhooks/")
     ) {
-      const origin = req.get("origin");
       if (
-        origin &&
-        origin !== (process.env.APP_ORIGIN || `http://${req.get("host")}`)
+        !allowedOrigin(req.get("origin"), {
+          appOrigin: process.env.APP_ORIGIN,
+          host: req.get("host"),
+          previewPattern: process.env.PREVIEW_ORIGIN_PATTERN ?? DEFAULT_PREVIEW_ORIGIN_PATTERN,
+        })
       )
         return res
           .status(403)
