@@ -4,7 +4,7 @@
   function enhance(root) {
     // Sentence case, including labels produced after route and form updates.
     for (const element of root.querySelectorAll('a,button,p,h1,h2,h3,summary,label>span,.login__label,.rent-slider__label,.tab__label,.calendar-head>span,.picker-month>span,.choice small,.stat>span,.receipt .line>span,.club-rates__table span,.master__bio,.master__meta span')) {
-      if (element.matches('a[href^="mailto:"],a[href^="tel:"]')) continue;
+      if (element.matches('a[href^="mailto:"],a[href^="tel:"]') || element.closest('[data-keep-case]')) continue;
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       while (walker.nextNode()) {
         const node = walker.currentNode;

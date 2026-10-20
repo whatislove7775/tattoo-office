@@ -898,6 +898,29 @@ function mountCabinet() {
 let adminData,
   adminDate = today(),
   usersFilter = "all";
+// Кнопка «Read feedback» под меню админки; зелёная точка — есть новые обращения.
+function paintFeedbackDock(hasNew) {
+  let dock = document.getElementById("adminFeedbackDock");
+  if (!dock) {
+    dock = document.createElement("button");
+    dock.type = "button";
+    dock.id = "adminFeedbackDock";
+    dock.className = "admin-feedback-dock";
+    dock.dataset.keepCase = "";
+    dock.dataset.sfx = "open";
+    dock.onclick = () => {
+      adminTab = "feedback";
+      document.body.classList.remove("mobile-menu-open");
+      if (location.hash === "#/admin") render(); else go("admin");
+    };
+    const bottom = document.querySelector(".site-bottom");
+    bottom.insertBefore(dock, bottom.querySelector(".foot"));
+  }
+  dock.classList.toggle("has-new", hasNew);
+  dock.setAttribute("aria-current", adminTab === "feedback" ? "page" : "false");
+  dock.setAttribute("aria-label", hasNew ? "Read feedback — есть новые обращения" : "Read feedback");
+  dock.innerHTML = `<span class="admin-feedback-dock__icon" aria-hidden="true"><svg viewBox="0 0 28 20"><rect x="1" y="1" width="26" height="18" rx="2"/><path d="m1.5 2 12.5 10L26.5 2M1.5 18l9-8M26.5 18l-9-8"/></svg>${hasNew ? '<i class="admin-feedback-dock__dot"></i>' : ""}</span><u>Read feedback</u>`;
+}
 const cityTabs = () =>
   `<div class="tabs admin-city-tabs" role="tablist" aria-label="Студия">${CITY_IDS.map((id) => `<button type="button" role="tab" data-admin-city="${id}" aria-selected="${id === adminCity}">${CITY_LABELS[id]}${cityInfo(id).open ? "" : " · скоро"}</button>`).join("")}</div>`;
 const table = (heads, rows) =>
@@ -911,21 +934,23 @@ async function adminPage() {
   const a = adminData,
     s = pub.settings,
     tabs = [
-      ["home", "Главная"],
+      ["home", "Main"],
       ["schedule", "Расписание"], ["bookings", "Записи"],
-      ["users", "Пользователи"], ["catalog", "Склад и услуги"],
-      ["finance", "Финансы"], ["feedback", "Обращения"],
+      ["users", "Users"], ["catalog", "Склад и услуги"],
+      ["finance", "Финансы"], ["feedback", "Feedback"],
       ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
     ];
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   const menu = $("#menuList");
-  menu.innerHTML = tabs.map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
+  // «Обращения» открываются кнопкой Read feedback под меню, а не пунктом меню.
+  paintFeedbackDock(a.feedback.some((f) => f.status === "new"));
+  menu.innerHTML = tabs.filter(([value]) => value !== "feedback").map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
   requestAnimationFrame(() => window.TO?.refreshLayout());
   let body = "";
   if (adminTab === "home") {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
-    body = `<div class="admin-home"><h2>Главная</h2><div class="admin-shortcuts"><button class="chrome" id="manual-booking">${icon("plus")}Новая запись</button><button class="chrome" id="add-user">${icon("user")}Новый пользователь</button><button class="chrome" data-admintab="settings">${icon("edit")}Тарифы и условия</button><button class="chrome" data-admintab="schedule">${icon("calendar")}Календарь</button><button class="chrome" data-admintab="bookings">${icon("history")}История записей</button></div></div>`;
+    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="settings">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
