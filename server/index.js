@@ -3,6 +3,7 @@ import {updateOperatorDetails} from "./operator-details.js";
 import {ageFromBirthDate} from "./profile-age.js";
 import {masterDirectory,catalogIds,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
+import {imageSrc} from "./site-media.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -83,17 +84,19 @@ export async function createApp(db) {
       description,
     ]);
   };
-  if (!(await one(db, "SELECT id FROM resources LIMIT 1")))
-    for (const name of [
-      "01 — у окна",
-      "02 — большой зал",
-      "03 — тихая комната",
-      "04 — у стены",
-    ])
-      await db.query("INSERT INTO resources(id,name) VALUES($1,$2)", [
-        uuid(),
-        name,
-      ]);
+  // Стартовые места создаются один раз: если администратор удалит все места,
+  // они не появятся снова после перезапуска.
+  if ((await one(db, "SELECT data->>'resourcesSeeded' AS v FROM settings WHERE id=1")).v !== "true") {
+    if (!(await one(db, "SELECT id FROM resources LIMIT 1")))
+      for (const [name, photo] of [
+        ["01 — у окна", "assets/interior/1.jpg"],
+        ["02 — большой зал", "assets/interior/4.jpg"],
+        ["03 — тихая комната", "assets/interior/4.jpg"],
+        ["04 — у стены", "assets/interior/2.jpg"],
+      ])
+        await db.query("INSERT INTO resources(id,name,photo) VALUES($1,$2,$3)", [uuid(), name, photo]);
+    await db.query("UPDATE settings SET data=jsonb_set(data,'{resourcesSeeded}','true') WHERE id=1");
+  }
   if (!(await one(db, "SELECT id FROM catalog LIMIT 1")))
     for (const [name, kind, price, stock] of [
       ["Сборка места", "service", 30000, 0],
@@ -144,6 +147,7 @@ export async function createApp(db) {
     }),
   );
   app.use("/api/me/gallery",express.json({limit:"400kb"}));
+  app.use("/api/admin/media",express.json({limit:"1200kb"}));
   app.use(
     express.json({
       limit: "100kb",
@@ -304,7 +308,7 @@ export async function createApp(db) {
     res.json({
       settings: s,
       resources: (
-        await db.query("SELECT id,name,active,city FROM resources ORDER BY name")
+        await db.query("SELECT id,name,active,city,photo FROM resources WHERE NOT deleted ORDER BY name")
       ).rows,
       catalog: (
         await db.query(
@@ -812,7 +816,7 @@ export async function createApp(db) {
             "SELECT * FROM payments ORDER BY created_at DESC LIMIT 500",
           )
         ).rows,
-        resources: (await db.query("SELECT * FROM resources ORDER BY name"))
+        resources: (await db.query("SELECT * FROM resources WHERE NOT deleted ORDER BY name"))
           .rows,
       });
     }
@@ -998,23 +1002,57 @@ export async function createApp(db) {
   app.post("/api/admin/resources", roles("admin"), async (req, res) => {
     const id = req.body.id || uuid(),
       name = String(req.body.name || "").trim(),
-      city = validCity(String(req.body.city || "spb"));
+      city = validCity(String(req.body.city || "spb")),
+      photo = imageSrc(req.body.photo);
     if (!name || name.length > 100) fail("Название места");
     await db.transaction(async (q) => {
       await lock(q);
       await q.query(
-        "INSERT INTO resources(id,name,active,calendar_id,city) VALUES($1,$2,$3,$4,$5) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4,city=$5",
+        "INSERT INTO resources(id,name,active,calendar_id,city,photo) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET name=$2,active=$3,calendar_id=$4,city=$5,photo=$6 WHERE NOT resources.deleted",
         [
           id,
           name,
           req.body.active !== false,
           String(req.body.calendarId || ""),
           city,
+          photo,
         ],
       );
       await audit(q, req.user.id, "resource.save", { id, city });
     });
     res.json({ id });
+  });
+  // Удаление рабочего места: без истории — полностью, с бронями или закрытиями —
+  // скрывается (история записей и счета сохраняются).
+  app.delete("/api/admin/resources/:id", roles("admin"), async (req, res) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Рабочее место не найдено", 404);
+    const result = await db.transaction(async (q) => {
+      await lock(q);
+      const r = await one(q, "SELECT id FROM resources WHERE id=$1 AND NOT deleted FOR UPDATE", [req.params.id]);
+      if (!r) fail("Рабочее место не найдено", 404);
+      const upcoming = await one(q, "SELECT id FROM bookings WHERE resource_id=$1 AND ends_at>now() AND status IN ('pending','confirmed','cancel_requested') LIMIT 1", [r.id]);
+      if (upcoming) fail("На этом месте есть предстоящие записи. Перенесите или отмените их", 409);
+      const used = await one(q, "SELECT (SELECT count(*) FROM bookings WHERE resource_id=$1)+(SELECT count(*) FROM blocks WHERE resource_id=$1)+(SELECT count(*) FROM calendar_busy WHERE resource_id=$1) AS n", [r.id]);
+      if (Number(used.n)) await q.query("UPDATE resources SET deleted=true,active=false WHERE id=$1", [r.id]);
+      else await q.query("DELETE FROM resources WHERE id=$1", [r.id]);
+      await audit(q, req.user.id, "resource.delete", { id: r.id, archived: Number(used.n) > 0 });
+      return { archived: Number(used.n) > 0 };
+    });
+    res.json({ ok: true, ...result });
+  });
+  app.post("/api/admin/media", roles("admin"), async (req, res) => {
+    const image = jpegPayload(req.body.image, 900000), thumbnail = jpegPayload(req.body.thumbnail, 60000), id = uuid();
+    await db.transaction(async (q) => {
+      await q.query("INSERT INTO site_media(id,image,thumbnail) VALUES($1,$2,$3)", [id, image, thumbnail]);
+      await audit(q, req.user.id, "media.upload", { id });
+    });
+    res.status(201).json({ id, src: "/api/site-media/" + id });
+  });
+  app.get("/api/site-media/:id", async (req, res) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Фотография не найдена", 404);
+    const m = await one(db, "SELECT image,thumbnail FROM site_media WHERE id=$1", [req.params.id]);
+    if (!m) fail("Фотография не найдена", 404);
+    res.set("Cache-Control", "public,max-age=86400").type("image/jpeg").send(Buffer.from((req.query.size === "thumb" ? m.thumbnail : m.image).split(",")[1], "base64"));
   });
   app.post("/api/admin/catalog", staff, async (req, res) => {
     const { name, kind, price, stock } = req.body,

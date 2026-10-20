@@ -592,7 +592,7 @@ function bookingPage() {
       .filter((x) => x.active && resourceCity(x) === draft.city)
       .map(
         (r) =>
-          `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="assets/interior/${[1,4,4,2][pub.resources.indexOf(r)%4]}.jpg" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span class="resource-choice__state" aria-hidden="true">${draft.resourceId === r.id ? '<svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>' : ""}</span></button>`,
+          `<button class="choice resource-choice ${draft.resourceId === r.id ? "selected" : ""}" data-resource="${r.id}" ${selected?.free.includes(r.id) ? "" : "disabled"}><img class="resource-choice__photo" src="${esc(resourcePhoto(r))}" alt="" loading="lazy"><span><b>${esc(r.name)}</b><small>${!selected ? "Сначала выберите время" : selected.free.includes(r.id) ? "Свободно на весь сеанс" : "Занято"}</small></span><span class="resource-choice__state" aria-hidden="true">${draft.resourceId === r.id ? '<svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>' : ""}</span></button>`,
       )
       .join("")}</div>`;
   }
@@ -815,9 +815,14 @@ function loyaltyCard(loyalty, accent) {
   const stamps = Array.from({length:19},(_,i)=>`<span class="stamp ${i<progress?"used":""}" aria-label="Посещение ${i+1}${i<progress?" завершено":""}">${i<progress?"✓":String(i+1).padStart(2,"0")}</span>`).join("");
   return `<section class="stamp-card" style="${accent}"><div class="loyalty-heading"><div><h3>Каждое 20-е посещение — бесплатно</h3><p>${loyalty?.reserved ? "Бесплатное место уже забронировано" : progress === 19 ? "Следующая аренда места — в подарок" : `${19-progress} посещений до бесплатного места`}</p></div><span class="loyalty-counter">${progress}<small>/ 19</small></span></div><div class="stamps" aria-label="${progress} завершённых посещений в цикле ${cycle}">${stamps}<button class="stamp stamp--gift" type="button" id="loyalty-gift" aria-label="20-е посещение: условия бесплатной аренды" aria-haspopup="dialog">${icon("gift")}</button></div><div class="loyalty-foot"><span class="small muted">Цикл ${cycle}</span></div></section>`;
 }
-function placePhoto(booking) {
-  const index = pub.resources.findIndex(r=>r.id===booking.resource_id);
+// Фото рабочего места: выбранное в Workspaces, иначе стандартное по порядку.
+function resourcePhoto(r) {
+  if (r?.photo) return r.photo;
+  const index = pub.resources.findIndex((x) => x.id === r?.id);
   return `assets/interior/${[1,4,4,2][Math.max(0,index)%4]}.jpg`;
+}
+function placePhoto(booking) {
+  return resourcePhoto(pub.resources.find((r) => r.id === booking.resource_id) || { id: booking.resource_id });
 }
 function notificationItem(n, data) {
   const lines = String(n.message || "").split("\n").map((line) => line.trim()).filter(Boolean);
@@ -956,10 +961,13 @@ async function adminPage() {
     s = pub.settings,
     tabs = [
       ["home", "Main"],
+      ["users", "Users"],
       ["schedule", "Calendar"],
-      ["users", "Users"], ["catalog", "Склад и услуги"],
-      ["finance", "Finance"], ["feedback", "Feedback"],
-      ["settings", "Настройки"], ["profile", "Профиль"],
+      ["workspaces", "Workspaces"],
+      ["catalog", "Add-ons"],
+      ["finance", "Finance"],
+      ["settings", "Settings"],
+      ["feedback", "Feedback"], ["profile", "Профиль"],
     ];
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   // Записи теперь внутри Calendar; «Booking history» открывает Calendar и прокручивает к записям.
@@ -990,7 +998,7 @@ async function adminPage() {
           }).format(new Date(b.starts_at)) === adminDate &&
           !["cancelled", "expired"].includes(b.status),
       );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button>${me.role === "admin" ? '<button class="chrome" id="add-resource">+ Рабочее место</button>' : ""}</div>${cityTabs()}<p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте первое кнопкой «+ Рабочее место».</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
+    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button></div>${cityTabs()}<p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в разделе Workspaces.</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
       { length: s.closeHour - s.openHour },
       (_, i) => {
         const h = s.openHour + i,
@@ -1031,6 +1039,11 @@ async function adminPage() {
           `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
     )}`;
+  }
+  if (adminTab === "workspaces") {
+    // Рабочие места студии в выбранном городе — так их видят мастера при аренде.
+    const list = a.resources.filter((r) => resourceCity(r) === adminCity);
+    body = `${cityTabs()}<div class="admin-tools workspace-tools"><button class="chrome" id="add-resource">+ Рабочее место</button></div><p data-help class="small muted">Места показываются мастерам при аренде в выбранном городе — с этой фотографией и названием. Место можно временно выключить («Принимать записи») или удалить. Место с прошлыми записями при удалении скрывается, история записей сохраняется.</p>${list.length ? `<div class="workspace-list">${list.map((r) => `<article class="workspace-card${r.active ? "" : " is-off"}"><img class="workspace-card__photo" src="${esc(resourcePhoto(r))}" alt="" loading="lazy"><div class="workspace-card__copy"><h3>${esc(r.name)}</h3><small>${r.active ? "Принимает записи" : "Не принимает записи"}</small></div><div class="workspace-card__actions"><button type="button" data-edit-resource="${r.id}">Изменить</button><button type="button" class="workspace-delete" data-delete-resource="${r.id}">Удалить</button></div></article>`).join("")}</div>` : `<div class="empty">В городе ${esc(CITY_LABELS[adminCity])} пока нет рабочих мест. Добавьте первое кнопкой «+ Рабочее место».</div>`}`;
   }
   if (adminTab === "users") {
     // «Пользователи»: все аккаунты (мастера, админы, клиенты) и карточки мастеров на сайте.
@@ -1096,6 +1109,23 @@ async function adminPage() {
     "Admin panel",
     `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
   );
+}
+// Сжимает фото в браузере до JPEG нужного размера перед загрузкой на сервер.
+async function compressImage(file, max, longest) {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, longest / Math.max(bitmap.width, bitmap.height)), canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.85, 0.75, 0.62, 0.5]) {
+      const value = canvas.toDataURL("image/jpeg", quality);
+      if (value.length <= max) return value;
+    }
+    throw Error("Фотография слишком большая. Попробуйте другую.");
+  } finally { bitmap.close(); }
 }
 function dialogForm(title, html, submit) {
   modal(
@@ -1249,18 +1279,58 @@ function mountAdmin() {
       (b.onclick = () =>
         catalogForm(a.catalog.find((x) => x.id === b.dataset.editCatalog))),
   );
-  const resourceForm = (r) =>
+  const resourceForm = (r) => {
+    const presets = [1, 2, 3, 4].map((n) => `assets/interior/${n}.jpg`),
+      current = r ? resourcePhoto(r) : presets[0],
+      choices = presets.includes(current) ? presets : [current, ...presets],
+      option = (src) => `<label class="photo-choice"><input type="radio" name="photoChoice" value="${esc(src)}" ${src === current ? "checked" : ""}><img src="${esc(src)}" alt="" loading="lazy"></label>`;
     dialogForm(
       r ? "Рабочее место" : "Новое рабочее место",
-      `${field("name", "Название", r?.name || "", "text", "required")}${select("city", "Город", CITY_IDS.map((id) => [id, CITY_LABELS[id]]), r ? resourceCity(r) : adminCity)}${field("calendarId", "Google Calendar ID", r?.calendar_id || "")}<label class="check"><input name="active" type="checkbox" ${r?.active !== false ? "checked" : ""}> Принимать записи</label>`,
-      (d) =>
-        api("/admin/resources", "POST", {
-          ...d,
-          id: r?.id,
-          active: d.active === "on",
-        }),
+      `${field("name", "Название", r?.name || "", "text", 'required maxlength="100"')}<fieldset class="photo-picker"><legend>Фотография</legend><div class="photo-picker__grid" id="photo-choices">${choices.map(option).join("")}</div><input type="hidden" name="photo" value="${esc(current)}"><input type="file" id="workspace-photo-file" accept="image/jpeg,image/png,image/webp" hidden><button type="button" class="chrome" id="workspace-photo-upload">Загрузить своё фото</button><p class="small muted" id="workspace-photo-status" role="status" aria-live="polite">JPG, PNG или WebP до 12 МБ.</p></fieldset>${select("city", "Город", CITY_IDS.map((id) => [id, CITY_LABELS[id]]), r ? resourceCity(r) : adminCity)}${field("calendarId", "Google Calendar ID", r?.calendar_id || "")}<label class="check"><input name="active" type="checkbox" ${r?.active !== false ? "checked" : ""}> Принимать записи</label>`,
+      (d) => {
+        const { photoChoice, ...data } = d;
+        return api("/admin/resources", "POST", { ...data, id: r?.id, active: d.active === "on" });
+      },
     );
+    const form = $("#dialog-form"), status = $("#workspace-photo-status"), file = $("#workspace-photo-file"), upload = $("#workspace-photo-upload");
+    const choose = () => (form.elements.photo.value = form.querySelector('[name="photoChoice"]:checked')?.value || "");
+    form.addEventListener("change", (e) => { if (e.target.name === "photoChoice") choose(); });
+    upload.onclick = () => file.click();
+    file.onchange = async () => {
+      const picked = file.files[0];
+      file.value = "";
+      if (!picked) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(picked.type) || picked.size > 12 * 1024 * 1024) { status.textContent = "Выберите JPG, PNG или WebP до 12 МБ"; return; }
+      upload.disabled = true; status.textContent = "Загружаем фотографию…";
+      try {
+        const image = await compressImage(picked, 900000, 1600), thumbnail = await compressImage(picked, 60000, 400);
+        const { src } = await api("/admin/media", "POST", { image, thumbnail });
+        $("#photo-choices").insertAdjacentHTML("afterbegin", option(src));
+        form.querySelector(`[name="photoChoice"][value="${src}"]`).checked = true;
+        choose();
+        status.textContent = "Фото загружено. Нажмите «Сохранить».";
+      } catch (error) { status.textContent = error.message; }
+      finally { upload.disabled = false; }
+    };
+  };
   if ($("#add-resource")) $("#add-resource").onclick = () => resourceForm();
+  $$("[data-delete-resource]").forEach(
+    (b) =>
+      (b.onclick = async () => {
+        const r = a.resources.find((x) => x.id === b.dataset.deleteResource);
+        if (!r || !confirm(`Удалить рабочее место «${r.name}»?`)) return;
+        b.disabled = true;
+        try {
+          const result = await api("/admin/resources/" + r.id, "DELETE");
+          await refresh();
+          await render();
+          notify(result.archived ? "Место удалено. История записей сохранена." : "Место удалено");
+        } catch (error) {
+          b.disabled = false;
+          notify(error.message);
+        }
+      }),
+  );
   $$("[data-edit-resource]").forEach(
     (b) =>
       (b.onclick = () =>

@@ -1819,3 +1819,27 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 @media (min-width:701px) and (max-width:1366px) {
   body.admin-session[data-page="admin"] .admin-feedback-dock {width:var(--rail-width);}
 }
+
+/* Админка → Workspaces: карточки мест и выбор фотографии. */
+.workspace-tools {margin-top:4px;}
+.workspace-list {display:grid;gap:14px;margin-top:18px;}
+.workspace-card {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:20px;padding:14px 18px 14px 14px;border:1px solid var(--panel-edge);border-radius:20px;background:linear-gradient(var(--panel),var(--panel-2));box-shadow:0 2px 6px #0000000f;}
+.workspace-card__photo {display:block;width:150px;aspect-ratio:4/3;object-fit:cover;border-radius:12px;}
+.workspace-card h3 {margin:0 0 6px;font-size:clamp(17px,1.5vw,22px);font-weight:400;}
+.workspace-card small {color:var(--ink-3);}
+.workspace-card.is-off .workspace-card__photo {filter:grayscale(1);opacity:.55;}
+.workspace-card__actions {display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
+.office-feature .workspace-delete {color:#b3261e;}
+.photo-picker {margin:6px 0 14px;padding:0;border:0;}
+.photo-picker legend {margin-bottom:8px;font-size:13px;color:var(--ink-2);}
+.photo-picker__grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-bottom:12px;}
+.photo-choice {position:relative;display:block;cursor:pointer;}
+.photo-choice input {position:absolute;opacity:0;pointer-events:none;}
+.photo-choice img {display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border:2px solid transparent;border-radius:10px;}
+.photo-choice input:checked+img {border-color:var(--ink);box-shadow:0 0 0 2px var(--panel) inset;}
+.photo-choice input:focus-visible+img {outline:2px solid var(--ink-2);outline-offset:2px;}
+@media (max-width:700px) {
+  .workspace-card {grid-template-columns:96px minmax(0,1fr);gap:12px;padding:10px;}
+  .workspace-card__photo {width:96px;}
+  .workspace-card__actions {grid-column:1/-1;justify-content:flex-start;}
+}
