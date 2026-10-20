@@ -1744,3 +1744,33 @@ body[data-page="ranking"] #stage {container-type:inline-size;}
 .club-heading-tail.has-help {white-space:nowrap;}
 
 .ranking-list--compact .ranking-meta {min-height:23px;}
+
+/* Бегущая строка и ABOUT — тем же кеглем, что и «Menu:» (clamp 18–24px). */
+@media (min-width:701px) {
+  .fringe__label,.marquee__track {font-size:clamp(18px,1.35vw,24px);}
+  .marquee__track {line-height:1.3;}
+  .marquee {height:calc(clamp(18px,1.35vw,24px) * 1.3 + 2px);}
+}
+
+/* Админка → «Пользователи»: счётчик «Все», переключатель «Мастера | Админы», кнопка добавления. */
+.users-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:clamp(16px,4vw,56px);margin:6px 0 34px;}
+.users-count {display:inline-flex;align-items:baseline;gap:14px;min-width:120px;min-height:50px;padding:10px 26px;border:1px solid #9a9a9a;border-radius:14px;background:linear-gradient(#fdfdfd,#f3f3f3);box-shadow:none;color:var(--ink);font:inherit;font-size:20px;cursor:pointer;}
+.users-count b {font-weight:700;}
+.users-count[aria-pressed="false"] {border-color:var(--panel-edge);}
+.users-segment {display:inline-flex;overflow:hidden;min-height:50px;border:1px solid #b9b9b9;border-radius:999px;background:linear-gradient(#fff,#f1f1f1);}
+.users-segment button {min-width:150px;padding:10px 30px;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--ink);font:inherit;font-size:18px;cursor:pointer;}
+.users-segment button+button {border-left:1px solid #8f8f8f;}
+.users-segment button[aria-pressed="true"] {background:linear-gradient(#e9e9e9,#f6f6f6);box-shadow:inset 0 2px 4px #00000022;font-weight:600;}
+.users-count:focus-visible,.users-segment button:focus-visible {outline:2px solid var(--ink-2);outline-offset:-3px;}
+.users-cards-title {margin:40px 0 6px;}
+:root[data-theme="dark"] .users-count,:root[data-theme="dark"] .users-segment {border-color:var(--panel-edge);background:var(--control-fill);color:var(--ink);}
+:root[data-theme="dark"] .users-segment button+button {border-left-color:var(--panel-edge);}
+:root[data-theme="dark"] .users-segment button[aria-pressed="true"] {background:var(--panel-2);}
+@media (max-width:700px) {
+  .users-toolbar {gap:12px;}
+  .users-count {min-height:44px;font-size:17px;padding:8px 18px;}
+  .users-segment {min-height:44px;}
+  .users-segment button {min-width:0;padding:8px 18px;font-size:16px;}
+}
+.office-feature .users-toolbar #add-user,:root[data-theme="dark"] .office-feature .users-toolbar #add-user {min-height:50px;padding:10px 28px;border:1px solid #c9c9c9;border-radius:18px;background:linear-gradient(#fff,#f1f1f1);box-shadow:0 3px 8px #0000001f;color:var(--ink);text-shadow:none;font-size:17px;font-weight:600;}
+:root[data-theme="dark"] .office-feature .users-toolbar #add-user {border-color:var(--panel-edge);background:var(--control-fill);}

@@ -58,7 +58,7 @@ try{
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
   await page.screenshot({path:`${output}/admin-settings.png`});
   await context.request.put(base+'/api/admin/content/master-2',{data:{title:'Mr.A',body:'',portfolio:[],drafts:[],published:true,featured:true}});
-  await page.locator('[data-admintab=masters]').first().click();await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
+  await page.locator('[data-admintab=users]').first().click();await page.locator('[data-users-filter=master]').click();await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
   const beforeMaster=(await (await context.request.get(base+'/api/directory')).json()).masters.find(m=>m.id==='mr-a');
   assert.equal(await page.locator('#dialog [name=body]').inputValue(),beforeMaster.bio);
   assert.equal(await page.locator('#dialog [name=portfolio]').inputValue(),'tattoo-1, tattoo-2, tattoo-3, tattoo-4, tattoo-5, tattoo-6, tattoo-7, tattoo-8');

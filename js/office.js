@@ -896,7 +896,8 @@ function mountCabinet() {
   });
 }
 let adminData,
-  adminDate = today();
+  adminDate = today(),
+  usersFilter = "all";
 const cityTabs = () =>
   `<div class="tabs admin-city-tabs" role="tablist" aria-label="Студия">${CITY_IDS.map((id) => `<button type="button" role="tab" data-admin-city="${id}" aria-selected="${id === adminCity}">${CITY_LABELS[id]}${cityInfo(id).open ? "" : " · скоро"}</button>`).join("")}</div>`;
 const table = (heads, rows) =>
@@ -912,11 +913,12 @@ async function adminPage() {
     tabs = [
       ["home", "Главная"],
       ["schedule", "Расписание"], ["bookings", "Записи"],
-      ["users", "Люди"], ["catalog", "Склад и услуги"],
+      ["users", "Пользователи"], ["catalog", "Склад и услуги"],
       ["finance", "Финансы"], ["feedback", "Обращения"],
-      ["masters", "Мастера"], ["content", "Публикации"],
+      ["content", "Публикации"],
       ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
     ];
+  if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   const menu = $("#menuList");
   menu.innerHTML = tabs.map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
@@ -984,14 +986,26 @@ async function adminPage() {
           `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
     );
-  if (adminTab === "users")
-    body = `<div class="admin-tools"><button class="chrome" id="add-user">+ Пользователь</button></div>${table(
+  if (adminTab === "users") {
+    // «Пользователи»: все аккаунты (мастера, админы, клиенты) и карточки мастеров на сайте.
+    const isAdmin = (u) => u.role === "admin" || u.account_type === "admin",
+      isMaster = (u) => !isAdmin(u) && u.account_type === "master",
+      shown = a.users.filter((u) => usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true),
+      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : roleName[u.role]) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
+    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div>${table(
       ["Имя", "Почта", "Роль", "Баланс", "Доступ"],
-      a.users.map(
+      shown.map(
         (u) =>
-          `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${roleName[u.role]}${u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : ""}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>` : ""}</td></tr>`,
+          `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${roleLabel(u)}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>` : ""}</td></tr>`,
       ),
-    )}`;
+    )}${usersFilter === "master" ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
+      ["Фото", "Мастер", "На главной", ""],
+      masters.map(
+        (m) =>
+          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
+      ),
+    )}` : ""}`;
+  }
   if (adminTab === "catalog")
     body = `<div class="admin-tools"><button class="chrome" id="add-catalog">+ Товар или услуга</button></div>${table(
       ["Позиция", "Тип", "Цена", "Остаток", ""],
@@ -1016,14 +1030,6 @@ async function adminPage() {
           `<tr><td>${dateLabel(f.created_at)}</td><td style="white-space:pre-wrap;max-width:400px">${esc(f.message)}</td><td>${statusName[f.status]}</td><td><button data-feedback="${f.id}" data-status="${f.status === "new" ? "done" : "new"}">${f.status === "new" ? "Обработано" : "Вернуть"}</button></td></tr>`,
       ),
     );
-  if (adminTab === "masters")
-    body = `<p data-help class="small muted">Укажите реальные имена и распределите загруженные работы по авторам.</p>${table(
-      ["Фото", "Мастер", "На главной", ""],
-      masters.map(
-        (m) =>
-          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
-      ),
-    )}<p data-help class="small muted">Выберите мастеров для главной. Их личные страницы и работы сохранятся, даже если карточка скрыта.</p>`;
   if (adminTab === "content")
     body = `<p data-help class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><h3>Новая публикация</h3><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
       ["Заголовок", "Статус", ""],
@@ -1125,11 +1131,9 @@ function mountAdmin() {
     });
     const summaries = {
       bookings: [["Всего записей", a.bookings.length], ["Подтверждено", a.bookings.filter(b => b.status === "confirmed").length], ["Ожидают отмены", a.bookings.filter(b => b.status === "cancel_requested").length]],
-      users: [["Пользователей", a.users.length], ["Активны", a.users.filter(u => u.active).length]],
       catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
       finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
       feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]],
-      masters: [["Мастеров", masters.length], ["На главной", masters.filter(m => m.featured).length]],
       content: [["Материалов", a.content.filter(c => !/^master-/.test(c.id)).length]],
       audit: [["Действий", a.audit.length], ["Событий в очереди", a.outbox.length]]
     };
@@ -1164,7 +1168,7 @@ function mountAdmin() {
       adminDate = e.target.value || today();
       render();
     };
-  const userForm = (u) =>
+  const userForm = (u, defaultRole = "guest") =>
     dialogForm(
       u ? "Права и почта" : "Новое личное дело",
       `${!u ? field("name", "Имя", "", "text", "required") : ""}${field("email", "Email", u?.email || "", "email", "required")}${!u ? field("password", "Временный пароль", "", "password", 'required minlength="12" maxlength="128"') : ""}${select(
@@ -1173,7 +1177,7 @@ function mountAdmin() {
         Object.entries(roleName).filter(
           ([r]) => me.role === "admin" || r === "guest",
         ),
-        u?.role || "guest",
+        u?.role || defaultRole,
       )}${(!u || u.account_type === "master") ? field("bookingLink","Ссылка на чат в Telegram",u?.booking_link||"","url",'maxlength="2048" placeholder="https://t.me/имя"') : ""}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
       (d) =>
         api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
@@ -1181,7 +1185,14 @@ function mountAdmin() {
           ...(u ? { active: d.active === "on", depositWaived: d.role === "resident" && d.depositWaived === "on" } : {}),
         }),
     );
-  if ($("#add-user")) $("#add-user").onclick = () => userForm();
+  if ($("#add-user")) $("#add-user").onclick = () => userForm(null, adminTab === "users" && usersFilter === "admin" ? "admin" : "guest");
+  $$("[data-users-filter]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        usersFilter = b.dataset.usersFilter;
+        render();
+      }),
+  );
   $$("[data-edit-user]").forEach(
     (b) =>
       (b.onclick = () =>
