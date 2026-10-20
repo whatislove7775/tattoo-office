@@ -915,7 +915,6 @@ async function adminPage() {
       ["schedule", "Расписание"], ["bookings", "Записи"],
       ["users", "Пользователи"], ["catalog", "Склад и услуги"],
       ["finance", "Финансы"], ["feedback", "Обращения"],
-      ["content", "Публикации"],
       ["settings", "Настройки"], ["profile", "Профиль"], ["audit", "Журнал"],
     ];
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
@@ -1030,16 +1029,6 @@ async function adminPage() {
           `<tr><td>${dateLabel(f.created_at)}</td><td style="white-space:pre-wrap;max-width:400px">${esc(f.message)}</td><td>${statusName[f.status]}</td><td><button data-feedback="${f.id}" data-status="${f.status === "new" ? "done" : "new"}">${f.status === "new" ? "Обработано" : "Вернуть"}</button></td></tr>`,
       ),
     );
-  if (adminTab === "content")
-    body = `<p data-help class="small muted">Обычные публикации отображаются в Event Archive. Коды <b>interior</b>, <b>find</b> и <b>about</b> меняют вводный текст соответствующих страниц. Текст публикуется без HTML.</p><form id="content-form"><h3>Новая публикация</h3><div class="form-grid">${field("id", "Код публикации (латиница)", "", "text", 'required pattern="[a-zA-Z0-9_-]{1,50}"')}${field("title", "Заголовок", "", "text", 'required maxlength="150"')}${field("date", "Подпись даты для архива", "", "text", 'maxlength="40" placeholder="10.2026"')}${select("photo", "Фото карточки", [["1", "01 / общая зона"], ["2", "02 / кабинет"], ["3", "03 / студия"], ["4", "04 / рабочие места"]], "1")}<div class="wide">${textarea("body", "Текст")}</div></div><label class="check"><input name="published" type="checkbox"><span>Опубликовать</span></label><button type="submit" class="chrome">Сохранить публикацию</button></form><h3 style="margin-top:30px">Материалы</h3>${table(
-      ["Заголовок", "Статус", ""],
-      a.content
-        .filter((c) => !/^master-/.test(c.id))
-        .map(
-          (c) =>
-            `<tr><td>${esc(c.data.title)}</td><td>${c.data.published ? "Опубликован" : "Черновик"}</td><td><button data-edit-content="${c.id}">Редактировать</button></td></tr>`,
-        ),
-    )}`;
   if (adminTab === "settings")
     body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места (вкладка «Расписание») и свои тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
@@ -1134,7 +1123,6 @@ function mountAdmin() {
       catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
       finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
       feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]],
-      content: [["Материалов", a.content.filter(c => !/^master-/.test(c.id)).length]],
       audit: [["Действий", a.audit.length], ["Событий в очереди", a.outbox.length]]
     };
     function safemodeLabel() { return pub.settings.mode === "test" ? "Тестовые оплаты" : "Успешные оплаты"; }
@@ -1405,30 +1393,6 @@ function mountAdmin() {
                 .filter(Boolean),
             }),
         );
-      }),
-  );
-  onForm("#content-form", async (d) => {
-    await api("/admin/content/" + d.id, "PUT", {
-      ...d,
-      published: d.published === "on",
-    });
-    await refresh();
-    render();
-    notify("Публикация сохранена");
-  });
-  $$("[data-edit-content]").forEach(
-    (b) =>
-      (b.onclick = () => {
-        const c = a.content.find((c) => c.id === b.dataset.editContent),
-          f = $("#content-form");
-        f.elements.id.value = c.id;
-        f.elements.title.value = c.data.title;
-        f.elements.body.value = c.data.body;
-        f.elements.date.value = c.data.date || "";
-        f.elements.photo.value = String(c.data.photo || 1);
-        f.elements.photo.dispatchEvent(new Event("change", { bubbles: true }));
-        f.elements.published.checked = c.data.published;
-        f.scrollIntoView({ block: "center" });
       }),
   );
   const settingsForm = $("#settings-form");
