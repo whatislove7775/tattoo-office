@@ -1830,10 +1830,6 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
   .workspace-card__actions {grid-column:1/-1;justify-content:flex-start;}
 }
 
-.ranking-rules {margin:14px 0 24px;font-size:12px;line-height:1.6;color:var(--ink-2);}
-.ranking-rules summary {cursor:pointer;width:fit-content;color:var(--ink);text-decoration:underline;text-underline-offset:3px;}
-.ranking-rules>div {max-width:720px;padding-top:8px;}
-.ranking-rules p {margin:8px 0;}
 .ranking-sessions {overflow-wrap:anywhere;}
 
 .personal-ranking {margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--panel-edge);}
