@@ -10,8 +10,8 @@ const expected = {
   closeHour: 22,
   cancelHours: 24,
   lateCancellation: "review",
-  rulesVersion: "2026-10-16",
-  rulesHash: "32b01dbf8de343b6f8d6b552812748a78cd6f48cef84703c9699b2378112b6c5",
+  rulesVersion: "2026-10-22",
+  rulesHash: "c1e81e49e61a2e05aae2bea0998fb3c6bb29627bcae8c094d890077a8535fc56",
   offerHash: "158e3490bf13184c4c07f97fb40a4b2978a0b4b53cfc80328a57149b81b7588b",
 };
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
