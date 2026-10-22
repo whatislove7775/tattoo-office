@@ -755,6 +755,48 @@ async function paymentPage(id) {
 
 const pointsWord = n => n%100>=11&&n%100<=14?"баллов":n%10===1?"балл":n%10>=2&&n%10<=4?"балла":"баллов";
 const scoreLabels={bookings:"Брони",services:"Услуги",products:"Товары",profile:"Профиль",works:"Работы",drafts:"Эскизы"};
+let residentInfoCleanup=()=>{};
+addEventListener("hashchange",()=>residentInfoCleanup());
+function mountResidentInfo(){
+  residentInfoCleanup();
+  const triggers=$$('.ranking-resident');
+  if(!triggers.length)return;
+  const controller=new AbortController(),options={signal:controller.signal};
+  const panel=document.createElement('div');
+  panel.id='resident-info-popover';panel.className='resident-info-popover';panel.setAttribute('popover','manual');panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Резидент Tattoo Office Private Club');
+  panel.innerHTML=`<p>Этот мастер является резидентом Tattoo Office Private Club.</p>${managerLink('Хотите вступить?')}`;
+  document.body.append(panel);
+  let active=null,timer,returningFocus=false;
+  const cancel=()=>clearTimeout(timer);
+  const hide=()=>{cancel();if(panel.matches(':popover-open'))panel.hidePopover();active?.setAttribute('aria-expanded','false');};
+  const position=()=>{
+    if(!active||!panel.matches(':popover-open'))return;
+    const r=active.getBoundingClientRect(),p=panel.getBoundingClientRect(),gap=10;
+    panel.style.left=Math.max(12,Math.min(r.left,innerWidth-p.width-12))+'px';
+    panel.style.top=Math.max(12,Math.min(r.bottom+gap+p.height>innerHeight-12?r.top-p.height-gap:r.bottom+gap,innerHeight-p.height-12))+'px';
+  };
+  const show=button=>{cancel();if(active!==button)active?.setAttribute('aria-expanded','false');active=button;active.setAttribute('aria-expanded','true');if(!panel.matches(':popover-open'))panel.showPopover();position();};
+  const delayHide=()=>{cancel();timer=setTimeout(()=>{if(!panel.matches(':hover')&&!panel.contains(document.activeElement)&&!active?.matches(':focus-visible'))hide();},180);};
+  for(const button of triggers){
+    button.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')show(button);},options);
+    button.addEventListener('pointerleave',delayHide,options);
+    button.addEventListener('focus',()=>{if(!returningFocus)show(button);},options);
+    button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();show(button);},options);
+    button.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();hide();}else if((e.key==='Tab'&&!e.shiftKey)||e.key==='ArrowDown'){e.preventDefault();show(button);panel.querySelector('a').focus();}},options);
+    button.addEventListener('blur',e=>{if(!panel.contains(e.relatedTarget))delayHide();},options);
+  }
+  panel.addEventListener('pointerenter',cancel,options);
+  panel.addEventListener('pointerleave',delayHide,options);
+  panel.addEventListener('focusout',e=>{if(!panel.contains(e.relatedTarget)&&e.relatedTarget!==active)hide();},options);
+  panel.addEventListener('keydown',e=>{if(e.key==='Escape'||(e.key==='Tab'&&e.shiftKey)){e.preventDefault();e.stopPropagation();const button=active;hide();returningFocus=true;button?.focus();returningFocus=false;}},options);
+  panel.addEventListener('toggle',()=>{if(!panel.matches(':popover-open'))active?.setAttribute('aria-expanded','false');},options);
+  document.addEventListener('pointerdown',e=>{if(!panel.contains(e.target)&&!e.target.closest('.ranking-resident'))hide();},options);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.matches(':popover-open')){e.preventDefault();const restore=panel.contains(document.activeElement),button=active;hide();if(restore){returningFocus=true;button?.focus();returningFocus=false;}}},options);
+  addEventListener('resize',position,options);
+  addEventListener('scroll',position,{...options,capture:true});
+  residentInfoCleanup=()=>{hide();controller.abort();panel.remove();residentInfoCleanup=()=>{};};
+}
+
 async function rankingPage() {
   const data = await api("/ranking?period=all");
   data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
@@ -763,7 +805,7 @@ async function rankingPage() {
     const fill={1:"#c49a32",2:"#98a3af",3:"#b4784f"}[rank];
     return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M3 6.5 7.5 10 12 3l4.5 7L21 6.5l-2 11H5zM5 19h14v3H5z"/></svg>`;
   };
-  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><a href="${esc(m.profileUrl)}" class="ranking-row"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><span class="ranking-avatar">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</span><div class="ranking-person"><div class="ranking-name"><span class="ranking-name-text">${esc(m.name)}</span>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<span class="ranking-resident is-resident"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="">резидент</span>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></a></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -1586,6 +1628,7 @@ function legalPage(key) {
 }
 async function render() {
   if (!$("#office-view")) return;
+  residentInfoCleanup();
   const version = ++routeVersion;
   const path = (location.hash || "#/masters").replace(/^#\//, "").split("/");
   paintShell();
@@ -1604,7 +1647,9 @@ async function render() {
             $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query);if(!row.hidden)count++;});
             if($('#ranking-empty'))$('#ranking-empty').hidden=count>0;
           };
-          $('#ranking-search').oninput=filter;
+          $('#ranking-search').oninput=()=>{residentInfoCleanup();filter();mountResidentInfo();};
+          $$('.ranking-row[data-profile-url]').forEach(row=>row.onclick=e=>{if(!e.target.closest('a,button'))location.hash=row.dataset.profileUrl;});
+          mountResidentInfo();
         };
         break;
       case "masters":

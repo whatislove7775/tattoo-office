@@ -1838,3 +1838,13 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 .personal-ranking dt {font-size:12px;color:var(--ink-2);}
 .personal-ranking dd {margin:0;font-weight:600;}
 .personal-ranking p {font-size:12px;line-height:1.6;}
+
+.ranking-name-text,.ranking-avatar {color:inherit;text-decoration:none;}
+.ranking-name-text:hover {text-decoration:underline;text-underline-offset:3px;}
+.ranking-row[data-profile-url] {cursor:pointer;}
+.ranking-row[data-profile-url]:hover {background:color-mix(in srgb,var(--ink) 7%,transparent);}
+.ranking-meta button.ranking-resident.is-resident {appearance:none;box-shadow:none;font-family:inherit;cursor:help;}
+.ranking-meta button.ranking-resident.is-resident:focus-visible {outline:2px solid var(--ink);outline-offset:3px;border-radius:3px;}
+.resident-info-popover {position:fixed;inset:auto;margin:0;width:min(280px,calc(100vw - 24px));box-sizing:border-box;padding:16px 18px;border:1px solid var(--panel-edge);border-radius:16px;background:var(--panel);color:var(--ink);font-family:inherit;font-size:13px;line-height:1.55;box-shadow:0 8px 28px #0002;}
+.resident-info-popover p {margin:0 0 10px;}
+.resident-info-popover a {color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;}
