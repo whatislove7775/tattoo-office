@@ -52,11 +52,34 @@ try{
   const club=await page.evaluate(()=>{const join=document.querySelector('.club-join').getBoundingClientRect(),column=document.querySelector('.club-offer__prices').getBoundingClientRect();return Math.abs(join.bottom-column.bottom);});assert.ok(club<2,'Join action must align with column bottom');assert.ok(await page.locator('.club-join').evaluate(el=>document.querySelector('#stage').getBoundingClientRect().bottom-el.getBoundingClientRect().bottom<65),'Join action must be near the panel bottom'); await page.screenshot({path:`${output}/club.png`});
   await page.goto(base+'/#/safety');await page.locator('.rules-full summary').click();await page.waitForFunction(()=>{const el=document.querySelector('.rules-full__text');return el&&el.getBoundingClientRect().top<200;});assert.match(await page.locator('.rules-full__text').innerText(),/8. Поддержка/);assert.equal(await page.locator('.rules-full small').count(),0);
   await db.query("UPDATE users SET role='admin' WHERE id=$1",[me.id]);
-  await page.goto(base+'/#/admin');await page.reload();await page.locator('[data-admintab=settings]').first().click();await page.locator('#settings-form').waitFor();
+  await page.goto(base+'/#/admin');await page.reload();await page.locator('[data-admintab=workspaces]').first().click();await page.locator('[data-admintab=settings]').first().click();await page.locator('#settings-form').waitFor();
   assert.equal(await page.locator('[name=points_bookingPoints]').inputValue(),'70');assert.equal(await page.locator('[name=resident_3]').evaluate(el=>!!el.closest('.quantity-control')),false);await page.locator('[name=resident_3]').fill('1800');
   assert.equal(await page.locator('[name=openHour]').getAttribute('type'),null);await page.locator('[name=openHour]').selectOption('23',{force:true});assert.equal(await page.locator('[name=closeHour]').inputValue(),'24');assert.match(await page.locator('#studio-hours-summary').innerText(),/1 ч/);
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
+  assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
+  assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Обзор','Брони и оплаты','Пользователи','Студия']);
+  assert.equal(await page.locator('.admin-settings-section').count(),3);
+  assert.equal(await page.locator('.admin-settings-section:not([open])').count(),2);
+  await page.locator('.admin-settings-section').nth(1).locator('summary').click();
+  await page.locator('[name=points_bookingPoints]').fill('71');
+  await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/settings')&&r.request().method()==='PATCH'),page.locator('#settings-form button[type=submit]').click()]);
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent==='Настройки студии сохранены');
+  assert.equal((await (await context.request.get(base+'/api/public')).json()).settings.rankingRules.bookingPoints,71);
   await page.screenshot({path:`${output}/admin-settings.png`});
+  for(const width of [390,1440]) {
+    await page.setViewportSize({width,height:1000});
+    for(const tab of ['home','schedule','finance','users','workspaces','catalog','settings']) {
+      // Mobile primary navigation lives in the menu; reveal it when necessary.
+      let target=page.locator(`[data-admintab=${tab}]`).first();
+      if(!await target.count()) {await page.locator(`[data-admintab=${tab==='finance'?'schedule':'workspaces'}]`).first().evaluate(b=>b.click());target=page.locator(`[data-admintab=${tab}]`).first();}
+      await target.evaluate(b=>b.click());
+      await page.locator(`[data-admin-section=${tab}]`).waitFor();
+      assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`Admin overflow: ${tab} at ${width}`);
+      if(tab==='home'||tab==='settings') await page.screenshot({path:`${output}/admin-${tab}-${width}.png`});
+    }
+  }
+  await page.setViewportSize({width:1440,height:1000});
   await context.request.put(base+'/api/admin/content/master-2',{data:{title:'Mr.A',body:'',portfolio:[],drafts:[],published:true,featured:true}});
   await page.locator('[data-admintab=users]').first().click();await page.locator('[data-users-filter=master]').click();await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
   const beforeMaster=(await (await context.request.get(base+'/api/directory')).json()).masters.find(m=>m.id==='mr-a');
