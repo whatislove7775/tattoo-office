@@ -111,7 +111,7 @@ function enhanceRankingIcon(){
   const link=path.closest('a');
   const arrow='M5 12h14M12 5l7 7-7 7';
   let hovered=false,focused=false;
-  const update=()=>instance.morphTo(hovered||focused?arrow:base,'smooth');
+  const update=()=>instance.morphTo(hovered||focused?arrow:base,'snappy');
   link.addEventListener('pointerenter',()=>{hovered=true;update();});
   link.addEventListener('pointerleave',()=>{hovered=false;update();});
   link.addEventListener('focus',()=>{focused=true;update();});

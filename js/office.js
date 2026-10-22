@@ -1021,7 +1021,7 @@ async function adminPage() {
     copyButton = (value,label) => `<button type="button" class="admin-copy" data-copy-value="${esc(value)}" data-copy-label="${label}" aria-label="Скопировать ${label}" title="Скопировать ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button>`,
     pointsButton = id => {
       const master = a.masterPoints?.find(m => m.id === id || m.userId === id);
-      return master ? `<button type="button" data-edit-points="${esc(master.id)}">${master.score.toLocaleString("ru-RU")} · изменить</button>` : "—";
+      return master ? `<button type="button" class="admin-points-button" data-edit-points="${esc(master.id)}" aria-label="Изменить баллы: ${esc(master.name)}" title="Изменить баллы"><span>${master.score.toLocaleString("ru-RU")}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg></button>` : "—";
     },
     s = pub.settings,
     tabs = [
@@ -1123,14 +1123,14 @@ async function adminPage() {
     const isAdmin = (u) => u.role === "admin" || u.account_type === "admin",
       isMaster = (u) => !isAdmin(u) && u.account_type === "master",
       shown = a.users.filter((u) => usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true),
-      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : roleName[u.role]) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
-    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div>${table(
-      ["Имя", "Почта", "Роль", "Баллы", "Баланс", "Доступ"],
+      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : ({resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
+    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div><div class="admin-users-list">${table(
+      ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
         (u) =>
-          `<tr><td><span class="admin-copy-value">${esc(u.name)}${copyButton(u.name,"имя")}</span></td><td><span class="admin-copy-value">${esc(u.email)}${copyButton(u.email,"email")}</span></td><td>${roleLabel(u)}</td><td>${pointsButton(u.id)}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-delete-user" data-delete-user="${u.id}">Удалить</button>` : ""}` : ""}</td></tr>`,
+          `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><span>${esc(u.name)}</span>${copyButton(u.name,"имя")}</span><span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
       ),
-    )}${usersFilter === "master" ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
+    )}</div>${usersFilter === "master" ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
       ["Фото", "Мастер", "Баллы", "На главной", ""],
       masters.map(
         (m) =>

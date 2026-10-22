@@ -76,6 +76,8 @@ try{
   const club=await page.evaluate(()=>{const join=document.querySelector('.club-join').getBoundingClientRect(),column=document.querySelector('.club-offer__prices').getBoundingClientRect();return Math.abs(join.bottom-column.bottom);});assert.ok(club<2,'Join action must align with column bottom');assert.ok(await page.locator('.club-join').evaluate(el=>document.querySelector('#stage').getBoundingClientRect().bottom-el.getBoundingClientRect().bottom<65),'Join action must be near the panel bottom'); await page.screenshot({path:`${output}/club.png`});
   await page.goto(base+'/#/safety');await page.locator('.rules-full summary').click();await page.waitForFunction(()=>{const el=document.querySelector('.rules-full__text');return el&&el.getBoundingClientRect().top<200;});assert.match(await page.locator('.rules-full__text').innerText(),/8. Поддержка/);assert.equal(await page.locator('.rules-full small').count(),0);
   await db.query("UPDATE users SET role='admin' WHERE id=$1",[me.id]);
+  for(const [name,email,role,active] of [['Екатерина','ekaterina@test.invalid','guest',true],['Александра Никитична','resident-booking@long-example.test.invalid','resident',true],['Мастер без доступа','inactive@test.invalid','guest',false]])await db.query("INSERT INTO users(id,email,password,name,role,account_type,active) VALUES($1,$2,'test-only',$3,$4,'master',$5)",[crypto.randomUUID(),email,name,role,active]);
+
   await page.goto(base+'/#/admin');await page.reload();await page.locator('[data-admintab=workspaces]').first().click();await page.locator('[data-admintab=settings]').first().click();await page.locator('#settings-form').waitFor();
   assert.equal(await page.locator('[name=points_bookingPoints]').inputValue(),'70');assert.equal(await page.locator('[name=resident_3]').evaluate(el=>!!el.closest('.quantity-control')),false);await page.locator('[name=resident_3]').fill('1800');
   assert.equal(await page.locator('[name=openHour]').getAttribute('type'),null);await page.locator('[name=openHour]').selectOption('23',{force:true});assert.equal(await page.locator('[name=closeHour]').inputValue(),'24');assert.match(await page.locator('#studio-hours-summary').innerText(),/1 ч/);
@@ -100,6 +102,15 @@ try{
       await page.locator(`[data-admin-section=${tab}]`).waitFor();
       assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`Admin overflow: ${tab} at ${width}`);
+      if(tab==='users') {
+        assert.deepEqual((await page.locator('.admin-users-list th').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Пользователь','Роль и доступ','Баллы','Баланс','Действия']);
+        assert.equal(await page.locator('.admin-users-list tbody tr').count(),4);
+        for(const theme of ['light','dark']) {
+          await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);await page.waitForTimeout(400);
+          await page.screenshot({path:`${output}/users-refined-${width}-${theme}.png`});
+        }
+        await page.evaluate(()=>document.documentElement.dataset.theme='light');
+      }
       if(tab==='workspaces') {
         const edit=page.locator('.workspace-card__actions [data-edit-resource]').first();
         assert.notEqual(await edit.evaluate(b=>getComputedStyle(b).backgroundImage),'none');

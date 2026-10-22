@@ -1910,3 +1910,57 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 .office-feature .workspace-card__actions .workspace-delete {color:#b3261e;}
 :root[data-theme="dark"] .office-feature .workspace-card__actions .workspace-delete {color:#ff9993;}
 #dialog #workspace-photo-status {margin:14px 0 0;line-height:1.5;}
+
+/* Compact account directory: identity, access, figures and a single action row. */
+.admin-users-list {container-type:inline-size;min-width:0;}
+.office-feature .admin-users-list .table-wrap {border:1px solid var(--panel-edge);border-radius:16px;background:var(--panel);box-shadow:none;overflow:hidden;}
+.office-feature .admin-users-list table {table-layout:fixed;width:100%;border-collapse:collapse;}
+.office-feature .admin-users-list th {padding:12px 16px;background:var(--panel-2);font-size:11px;font-weight:500;color:var(--ink-3);}
+.admin-users-list th:first-child {width:35%;}
+.admin-users-list th:nth-child(2) {width:21%;}
+.admin-users-list th:nth-child(3) {width:11%;text-align:right;}
+.admin-users-list th:nth-child(4) {width:13%;text-align:right;}
+.admin-users-list th:last-child {width:20%;text-align:right;}
+.office-feature .admin-users-list tbody tr {background:transparent;}
+.office-feature .admin-users-list td {padding:15px 16px;font-size:13px;background:transparent;}
+.office-feature .admin-users-list td:nth-child(3),.office-feature .admin-users-list td:nth-child(4) {text-align:right;font-variant-numeric:tabular-nums;}
+.admin-user-identity {display:grid;gap:3px;min-width:0;}
+.admin-user-name,.admin-user-email {display:flex;align-items:center;gap:7px;min-width:0;}
+.admin-user-name>span,.admin-user-email>span {min-width:0;overflow-wrap:anywhere;}
+.admin-user-name {font-size:14px;font-weight:600;line-height:1.4;}
+.admin-user-email {font-size:11px;line-height:1.4;color:var(--ink-2);}
+.admin-user-role {font-size:12px;line-height:1.45;}
+.admin-user-role small {color:var(--ink-3);font-size:10px;}
+.admin-user-status {display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:10px;color:var(--ink-3);}
+.admin-user-status::before {content:"";width:5px;height:5px;border-radius:50%;background:var(--ink-3);}
+.admin-user-status.is-active::before {background:var(--ink);}
+.admin-user-balance {white-space:nowrap;font-size:13px;}
+.admin-user-actions {display:flex;align-items:center;justify-content:flex-end;gap:6px;}
+.office-feature .admin-content td .admin-points-button {gap:7px;min-height:30px;padding:4px 0 4px 7px;border:0;border-radius:7px;background:transparent;box-shadow:none;font-size:13px;font-weight:500;white-space:nowrap;}
+.admin-points-button svg {width:13px;height:13px;flex:none;fill:none;stroke:var(--ink-3);stroke-width:1.6;stroke-linejoin:round;}
+.office-feature .admin-users-list td .admin-copy {width:24px;height:24px;padding:4px;}
+.office-feature .admin-users-list .admin-user-actions button {min-height:30px;padding:6px 9px;font-size:11px;border-radius:8px;white-space:nowrap;box-shadow:none;}
+.office-feature .admin-users-list .admin-user-actions .admin-user-remove {width:30px;padding:6px;border-color:transparent;background:transparent;color:var(--ink-3);}
+.admin-user-remove svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.office-feature .admin-users-list .admin-user-actions .admin-user-remove:hover {color:#b3261e;background:#b3261e0a;}
+@container (max-width:680px) {
+  .office-feature .admin-users-list .table-wrap {border:0;background:none;overflow:visible;}
+  .office-feature .admin-users-list table,.office-feature .admin-users-list tbody {display:block;}
+  .office-feature .admin-users-list thead {display:none;}
+  .office-feature .admin-users-list tbody tr {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px;margin:0 0 12px;padding:16px;border:1px solid var(--panel-edge);border-radius:16px;background:var(--panel);}
+  .office-feature .admin-users-list td {display:block;padding:10px 0;min-width:0;border:0;text-align:left;}
+  .office-feature .admin-users-list td::before {display:block;font-size:10px;line-height:1.4;color:var(--ink-3);margin-bottom:5px;content:attr(data-label);}
+  .office-feature .admin-users-list td>.admin-cell-value {min-width:0;}
+  .office-feature .admin-users-list td:first-child {grid-column:1/-1;padding-top:0;}
+  .office-feature .admin-users-list td:first-child::before,.office-feature .admin-users-list td:nth-child(2)::before,.office-feature .admin-users-list td:last-child::before {display:none;}
+  .office-feature .admin-users-list td:nth-child(2) {grid-column:1/-1;padding-top:3px;}
+  .admin-user-role {display:inline;}
+  .admin-user-status {margin:0 0 0 10px;}
+  .office-feature .admin-users-list td:last-child {grid-column:1/-1;border-top:1px solid var(--panel-edge);padding:12px 0 0;margin-top:4px;}
+  .office-feature .admin-users-list td .admin-points-button {padding-left:0;}
+  .admin-user-name {font-size:15px;}
+  .admin-user-email {font-size:12px;}
+}
+.office-feature .admin-shortcut,:root[data-theme="dark"] .office-feature .admin-shortcut {background:var(--action-fill);border-color:#222;color:#fff;box-shadow:inset 0 1px #ffffff25,0 3px 8px #0002;text-shadow:none;}
+.office-feature .admin-shortcut .ui-icon {opacity:1;}
+.ranking-crown {width:1.15em;height:1.15em;max-width:20px;max-height:20px;align-self:center;transform:translateY(-.04em);}
