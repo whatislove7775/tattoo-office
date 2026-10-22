@@ -1964,3 +1964,10 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 .office-feature .admin-shortcut,:root[data-theme="dark"] .office-feature .admin-shortcut {background:var(--action-fill);border-color:#222;color:#fff;box-shadow:inset 0 1px #ffffff25,0 3px 8px #0002;text-shadow:none;}
 .office-feature .admin-shortcut .ui-icon {opacity:1;}
 .ranking-crown {width:1.15em;height:1.15em;max-width:20px;max-height:20px;align-self:center;transform:translateY(-.04em);}
+
+@media (min-width:701px) {
+  .ranking-launch.chrome,.cookie-notice {height:48px;box-sizing:border-box;}
+  .ranking-launch.chrome {padding-block:10px;}
+  .cookie-notice {padding:5px 7px 5px 20px;gap:20px;font-size:15px;}
+  .cookie-notice button {height:36px;min-height:36px;min-width:64px;padding:6px 17px;font-size:14px;}
+}
