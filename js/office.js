@@ -217,7 +217,7 @@ function paintShell() {
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><a class="who__name" title="${esc(me.name)}" href="#/${me.role === "admin" ? "admin" : "cabinet"}"><span class="who__label">${esc(me.name)}</span>${me.role === "resident" ? '<img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="Резидент">' : ""}</a><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
   if (me?.role === "admin") {
@@ -755,11 +755,12 @@ async function paymentPage(id) {
 
 const pointsWord = n => n%100>=11&&n%100<=14?"баллов":n%10===1?"балл":n%10>=2&&n%10<=4?"балла":"баллов";
 const scoreLabels={bookings:"Брони",services:"Услуги",products:"Товары",profile:"Профиль",works:"Работы",drafts:"Эскизы"};
-let residentInfoCleanup=()=>{};
+let residentInfoCleanup=()=>{},residentInfoTriggers=[];
 addEventListener("hashchange",()=>residentInfoCleanup());
 function mountResidentInfo(){
   residentInfoCleanup();
-  const triggers=$$('.ranking-resident');
+  const triggers=$$('.ranking-resident,.resident-info-trigger');
+  residentInfoTriggers=triggers;
   if(!triggers.length)return;
   const controller=new AbortController(),options={signal:controller.signal};
   const panel=document.createElement('div');
@@ -790,20 +791,26 @@ function mountResidentInfo(){
   panel.addEventListener('focusout',e=>{if(!panel.contains(e.relatedTarget)&&e.relatedTarget!==active)hide();},options);
   panel.addEventListener('keydown',e=>{if(e.key==='Escape'||(e.key==='Tab'&&e.shiftKey)){e.preventDefault();e.stopPropagation();const button=active;hide();returningFocus=true;button?.focus();returningFocus=false;}},options);
   panel.addEventListener('toggle',()=>{if(!panel.matches(':popover-open'))active?.setAttribute('aria-expanded','false');},options);
-  document.addEventListener('pointerdown',e=>{if(!panel.contains(e.target)&&!e.target.closest('.ranking-resident'))hide();},options);
+  document.addEventListener('pointerdown',e=>{if(!panel.contains(e.target)&&!e.target.closest('.ranking-resident,.resident-info-trigger'))hide();},options);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.matches(':popover-open')){e.preventDefault();const restore=panel.contains(document.activeElement),button=active;hide();if(restore){returningFocus=true;button?.focus();returningFocus=false;}}},options);
   addEventListener('resize',position,options);
   addEventListener('scroll',position,{...options,capture:true});
-  residentInfoCleanup=()=>{hide();controller.abort();panel.remove();residentInfoCleanup=()=>{};};
+  residentInfoCleanup=()=>{hide();controller.abort();panel.remove();residentInfoTriggers=[];residentInfoCleanup=()=>{};};
 }
+
+// Account cards and public profiles are also rendered by the main site router.
+new MutationObserver(()=>{
+  const next=$$('.ranking-resident,.resident-info-trigger');
+  if(next.length!==residentInfoTriggers.length||next.some((el,i)=>el!==residentInfoTriggers[i]))mountResidentInfo();
+}).observe(document.body,{childList:true,subtree:true});
 
 async function rankingPage() {
   const data = await api("/ranking?period=all");
   data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
   const podiumCrown = rank => {
     if (![1,2,3].includes(rank)) return "";
-    const fill={1:"#c49a32",2:"#98a3af",3:"#b4784f"}[rank];
-    return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M3 6.5 7.5 10 12 3l4.5 7L21 6.5l-2 11H5zM5 19h14v3H5z"/></svg>`;
+    const fill={1:"#e6b422",2:"#aeb8c4",3:"#c9854b"}[rank];
+    return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M11.2 3.6Q12 2.3 12.8 3.6l3.3 5.3q.4.7 1.1.2l3.4-2.5q1.2-.9.9.6l-1.9 9.3q-.2 1-1.2 1H5.6q-1 0-1.2-1L2.5 7.2q-.3-1.5.9-.6l3.4 2.5q.7.5 1.1-.2ZM6 19h12a1.2 1.2 0 0 1 0 2.4H6a1.2 1.2 0 0 1 0-2.4Z"/></svg>`;
   };
   return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }

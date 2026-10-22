@@ -119,7 +119,7 @@
              '<div class="master">' +
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
-                 '<div class="master__name"><span>' + esc(name) + (m.resident ? '<img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="Резидент">' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
+                 '<div class="master__name"><span>' + esc(name) + (m.resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt=""></button>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
                    (m.age ? '<span class="master__age">' + esc(ageLabel(m.age)) + '</span>' : '') +
