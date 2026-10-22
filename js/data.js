@@ -241,7 +241,7 @@
 
   /* Рабочий день офиса, по часам. */
   var HOURS = [];
-  for (var h = 11; h <= 22; h++) HOURS.push(h);
+  for (var h = 0; h < 24; h++) HOURS.push(h);
 
   var CONTACTS = {
     tg: '@tattoooffice',

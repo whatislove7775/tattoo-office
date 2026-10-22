@@ -68,7 +68,7 @@
       'find.address': 'Адрес',
       'find.addressValue': 'Санкт-Петербург, ул. Примерная, 1, кв. 7 — 2 этаж, звонок в домофон 7',
       'find.hours': 'Часы работы',
-      'find.hoursValue': 'ежедневно 11:00 — 23:00, по записи',
+      'find.hoursValue': 'круглосуточно, по записи',
       'find.route': 'Как дойти',
       'find.routeSteps': [
         'от метро — 7 минут пешком в сторону канала',
@@ -301,7 +301,7 @@
       'find.address': 'Address',
       'find.addressValue': 'St. Petersburg, Primernaya st. 1, apt. 7 — 2nd floor, intercom 7',
       'find.hours': 'Opening hours',
-      'find.hoursValue': 'daily 11:00 — 23:00, by appointment',
+      'find.hoursValue': 'open 24/7, by appointment',
       'find.route': 'Directions',
       'find.routeSteps': [
         'a 7 minute walk from the metro, towards the canal',

@@ -218,6 +218,30 @@ test("closed times and past slots are unavailable", async () => {
     409,
   );
 });
+test("round-the-clock booking includes midnight and sessions crossing into the next day", async () => {
+  const date = tomorrow(20), resourceId = pub.resources[0].id;
+  const [start, end] = slot(date, 23, 3, defaults);
+  assert.equal(start, new Date(`${date}T23:00:00+03:00`).toISOString());
+  assert.equal(+new Date(end) - +new Date(start), 3 * 3600000);
+  assert.throws(() => slot("2026-02-30", 0, 3, defaults));
+  const available = await request(`/availability?date=${date}&duration=3`);
+  assert.equal(available.status, 200);
+  assert.ok(available.data.slots.some((entry) => entry.hour === 0));
+  assert.ok(available.data.slots.some((entry) => entry.hour === 23));
+  const bookingAtNight = await request("/bookings", "POST", booking(resourceId, date, 23), other);
+  assert.equal(bookingAtNight.status, 201, JSON.stringify(bookingAtNight.data));
+});
+test("cancellation inside 48 hours retains the deposit; earlier cancellation credits it", async () => {
+  const before = (await request("/me", "GET", null, other)).data.user.balance;
+  for (const [hours, credit] of [[47, 0], [49, 50000]]) {
+    const booked = await request("/bookings", "POST", booking(pub.resources[1].id, tomorrow(30 + hours)), other);
+    assert.equal(booked.status, 201, JSON.stringify(booked.data));
+    assert.equal((await request(`/payments/${booked.data.paymentId}/test`, "POST", {}, other)).status, 200);
+    await db.query("UPDATE bookings SET starts_at=now()+($2::int * interval '1 hour'),ends_at=now()+($3::int * interval '1 hour') WHERE id=$1", [booked.data.bookingId, hours, hours + 3]);
+    assert.equal((await request(`/bookings/${booked.data.bookingId}/cancel`, "POST", {}, other)).status, 200);
+    assert.equal((await request("/me", "GET", null, other)).data.user.balance, before + credit);
+  }
+});
 test("manual bookings have no deposit; final invoice cannot be issued before start", async () => {
   const user = (await request("/me", "GET", null, other)).data.user;
   const b = await request(
@@ -282,7 +306,7 @@ test("manual bookings have no deposit; final invoice cannot be issued before sta
     "completed",
   );
 });
-test("late cancellation remains reserved until manager decision", async () => {
+test("an earlier booking's review policy remains valid until manager decision", async () => {
   const b = await request(
     "/bookings",
     "POST",
@@ -296,7 +320,7 @@ test("late cancellation remains reserved until manager decision", async () => {
     resident,
   );
   await db.query(
-    "UPDATE bookings SET starts_at=now()+interval '2 hours',ends_at=now()+interval '5 hours' WHERE id=$1",
+    "UPDATE bookings SET starts_at=now()+interval '2 hours',ends_at=now()+interval '5 hours',policy=jsonb_set(policy,'{lateCancellation}','\"review\"') WHERE id=$1",
     [b.data.bookingId],
   );
   await request(

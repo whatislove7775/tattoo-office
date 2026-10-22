@@ -557,7 +557,8 @@ export async function createApp(db) {
           )
         ).rows,
         result = [];
-      for (let hour = s.openHour; hour + duration <= s.closeHour; hour++) {
+      for (let hour = s.openHour; hour < s.closeHour &&
+        (s.openHour === 0 && s.closeHour === 24 || hour + duration <= s.closeHour); hour++) {
         let range;
         try {
           range = slot(date, hour, duration, s);

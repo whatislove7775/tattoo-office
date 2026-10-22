@@ -1969,3 +1969,21 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
   .cookie-notice {padding:5px 7px 5px 20px;gap:20px;font-size:15px;}
   .cookie-notice button {height:36px;min-height:36px;min-width:64px;padding:6px 17px;font-size:14px;}
 }
+
+body[data-page="legal"] .window-head h1 {min-width:0;flex:1;}
+body[data-page="legal"] .window-head .back {flex-shrink:0;white-space:nowrap;}
+@media(max-width:700px) {
+  body[data-page="legal"] .office-feature .window>.window-head {display:grid;grid-template-columns:16px minmax(0,1fr);width:46%;align-items:start;}
+  body[data-page="legal"] .window-head .back {grid-column:1/-1;justify-self:start;margin:6px 0 0;}
+}
+
+/* Center the Private Club hint against the full two-line title. */
+body[data-page="club"] .window-head h1 {display:flex;align-items:center;gap:5px;min-width:0;}
+body[data-page="club"] .club-heading-label {min-width:0;}
+body[data-page="club"] .club-heading-help.has-help {flex:none;align-self:center;}
+body[data-page="club"] .club-heading-help>.help-alert {width:20px;height:20px;min-width:20px;min-height:20px;margin:0;padding:1px;}
+body[data-page="club"] .club-heading-help>.help-alert svg {width:18px;height:18px;}
+
+/* The feedback shortcut uses a quiet, compact envelope icon. */
+body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
+.admin-feedback-dock__icon svg {width:22px;height:18px;stroke-width:1.7;stroke-linecap:round;}

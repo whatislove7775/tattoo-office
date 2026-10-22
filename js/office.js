@@ -29,6 +29,8 @@ const timeLabel = (d) =>
     minute: "2-digit",
     timeZone: "Europe/Moscow",
   }).format(new Date(d));
+const bookingTimeRange = (hour, duration) =>
+  `${String(hour).padStart(2, "0")}:00—${String((hour + duration) % 24).padStart(2, "0")}:00${hour + duration >= 24 ? " (следующий день)" : ""}`;
 const today = () =>
   new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(
     new Date(),
@@ -117,9 +119,24 @@ function go(path) {
     else window.TO?.go(location.hash);
   } else location.hash = "#/" + path;
 }
+// Keep one return destination while switching between legal documents.
+let legalReturnRoute = "#/masters";
+try {
+  const saved = sessionStorage.getItem("to.legalReturnRoute");
+  if (saved?.startsWith("#/") && !saved.startsWith("#/legal/")) legalReturnRoute = saved;
+} catch {}
+let previousSiteRoute = location.hash || "#/masters";
+window.addEventListener("hashchange", () => {
+  const next = location.hash || "#/masters";
+  if (next.startsWith("#/legal/") && !previousSiteRoute.startsWith("#/legal/")) {
+    legalReturnRoute = previousSiteRoute;
+    try { sessionStorage.setItem("to.legalReturnRoute", legalReturnRoute); } catch {}
+  }
+  previousSiteRoute = next;
+});
 function head(title, back = "") {
-  const heading = title === "Tattoo Office Private Club" ? 'Tattoo Office Private <span class="club-heading-tail">Club</span>' : esc(title);
-  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${heading}</h1>${back ? `<a class="back" href="#/${back}">← Назад</a>` : ""}</div>`;
+  const heading = title === "Tattoo Office Private Club" ? '<span class="club-heading-label">Tattoo Office Private Club</span><span class="club-heading-help"></span>' : esc(title);
+  return `<div class="window-head"><img src="assets/pin-active.png" alt=""><h1>${heading}</h1>${back ? `<a class="back" href="#/${esc(back)}">← Назад</a>` : ""}</div>`;
 }
 function icon(name) {
   const paths = {gift:'M20 12v8H4v-8M2 7h20v5H2zM12 7v13M12 7H7.5A2.5 2.5 0 1 1 10 4.5L12 7zm0 0h4.5A2.5 2.5 0 1 0 14 4.5L12 7z',receipt:'M5 3v18l3-2 4 2 4-2 3 2V3l-3 2-4-2-4 2-3-2zM9 9h6M9 13h6'};
@@ -447,7 +464,7 @@ const demoArchive = [
 ];
 function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
-  const hours=`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
+  const hours=s.openHour===0&&s.closeHour===24?"круглосуточно":`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
   return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div>${officePicker()}</div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map-v6.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
 
@@ -471,7 +488,7 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("sun")}</span><div><h3>До сеанса</h3><p>Подготовьте и обработайте рабочее место. Одноразовые расходники открывайте при клиенте.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
-    </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>Поздняя отмена — ${s.lateCancellation === "review" ? "по решению администратора" : "по регламенту студии"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
+    </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3><dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.</p><a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
     <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<svg class="rules-toggle-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 2v12M2 8h12"/></svg></summary><div class="rules-full__text legal-document">${documentSections(s.rules, [], "h3")}</div></details>
   </section>`);
 }
@@ -483,7 +500,7 @@ function aboutPage() {
 function clubPage() {
   const rates = pub.settings.rates;
   const priceRows = [3, 6, 12].map((hours) => `<div class="club-prices__row"><span>${hours === 12 ? "От 6 до 12 часов" : `До ${hours} часов`}</span><s class="club-prices__old">${money(rates.guest[hours])}</s><b>${money(rates.resident[hours])}</b></div>`).join("");
-  return win("Tattoo Office Private Club",`<p data-help data-help-for=".club-heading-tail" data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
+  return win("Tattoo Office Private Club",`<p data-help data-help-for=".club-heading-help" data-help-label="Private Club">Private Club — мастера, которых мы регулярно видим в Tattoo Office. Они выбирают и поддерживают студию, а мы отвечаем взаимностью: специальными ценами, бонусами и привилегиями.
 
 Статус участника присваивает команда студии; если надолго пропасть, его можно потерять.</p><div class="club-offer"><div class="club-offer__prices"><h2>Специальные цены для участников клуба!</h2><div class="club-prices"><div class="club-prices__row club-prices__row--head"><span>Время сеанса</span><b>Обычный тариф</b><b>Private Club</b></div>${priceRows}</div><div class="club-join"><h3>Как попасть?</h3><p>Работать в Tattoo Office.</p><a class="chrome" href="#/signup/master">Начать работать в офисе →</a></div></div><figure class="club-offer__frame"><img class="club-offer__photo" src="assets/club/private-club.jpg" alt="Мастер Tattoo Office Private Club"><figcaption>Tattoo Office Private Club</figcaption></figure></div>`);
 }
@@ -604,7 +621,7 @@ function bookingPage() {
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.hour}:00—${draft.hour + draft.duration}:00</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. Поздняя отмена: ${s.lateCancellation === "review" ? "решение администратора" : "удержание согласно регламенту"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${bookingTimeRange(draft.hour, draft.duration)}</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
@@ -897,7 +914,7 @@ function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 function mountCabinet() {
   if (!me) {
@@ -925,8 +942,12 @@ function mountCabinet() {
   $$("[data-cancel]").forEach(
     (b) =>
       (b.onclick = () => {
+        const hours = Number(b.dataset.cancelHours);
+        const late = b.dataset.lateCancellation === "review"
+          ? "Позднюю отмену рассмотрит администратор."
+          : `При отмене менее чем за ${hours} часов предоплата не возвращается на баланс.`;
         modal(
-          `<h2>Отменить запись?</h2><p>При отмене не менее чем за ${pub.settings.cancelHours} часов предоплата вернётся на баланс. Позднюю отмену обработаем по правилам студии.</p><button class="chrome" id="confirm-cancel">Да, отменить</button>`,
+          `<h2>Отменить запись?</h2><p>При отмене не менее чем за ${hours} часов предоплата вернётся на баланс. ${late}</p><button class="chrome" id="confirm-cancel">Да, отменить</button>`,
         );
         $("#confirm-cancel").onclick = async (e) => {
           e.currentTarget.disabled = true;
@@ -1005,7 +1026,7 @@ function paintFeedbackDock(hasNew) {
   dock.classList.toggle("has-new", hasNew);
   dock.setAttribute("aria-current", adminTab === "feedback" ? "page" : "false");
   dock.setAttribute("aria-label", hasNew ? "Обращения — есть новые обращения" : "Обращения");
-  dock.innerHTML = `<span class="admin-feedback-dock__icon" aria-hidden="true"><svg viewBox="0 0 28 20"><rect x="1" y="1" width="26" height="18" rx="2"/><path d="m1.5 2 12.5 10L26.5 2M1.5 18l9-8M26.5 18l-9-8"/></svg>${hasNew ? '<i class="admin-feedback-dock__dot"></i>' : ""}</span><u>Обращения</u>`;
+  dock.innerHTML = `<span class="admin-feedback-dock__icon" aria-hidden="true"><svg viewBox="0 0 24 20"><rect x="2" y="3" width="20" height="14" rx="2.5"/><path d="m3 5 9 7 9-7"/></svg>${hasNew ? '<i class="admin-feedback-dock__dot"></i>' : ""}</span><u>Обращения</u>`;
 }
 const cityTabs = () =>
   `<div class="tabs admin-city-tabs" role="tablist" aria-label="Студия">${CITY_IDS.map((id) => `<button type="button" role="tab" data-admin-city="${id}" aria-selected="${id === adminCity}">${CITY_LABELS[id]}${cityInfo(id).open ? "" : " · скоро"}</button>`).join("")}</div>`;
@@ -1629,7 +1650,9 @@ function mountAdmin() {
         closing.value = String(Number(opening.value) + 1);
         closing.dispatchEvent(new Event("change", {bubbles:true}));
       }
-      $("#studio-hours-summary").textContent = `Рабочий день — ${Number(closing.value) - Number(opening.value)} ч. Время по Москве.`;
+      $("#studio-hours-summary").textContent = Number(opening.value) === 0 && Number(closing.value) === 24
+        ? "Студия работает круглосуточно. Время по Москве."
+        : `Рабочий день — ${Number(closing.value) - Number(opening.value)} ч. Время по Москве.`;
     };
     opening.addEventListener("change", syncHours); closing.addEventListener("change", syncHours); syncHours();
   }
@@ -1690,7 +1713,7 @@ function legalPage(key) {
   const intro = key === "info"
     ? '<div class="document-intro"><p>Tattoo Office — тату-студия и рабочее пространство для мастеров.</p><p>The Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.</p></div>'
     : documentSections(s[key === "data" ? "consent" : key],headings[key]);
-  return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`);
+  return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`, legalReturnRoute.slice(2));
 }
 async function render() {
   if (!$("#office-view")) return;

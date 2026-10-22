@@ -601,14 +601,14 @@
       ru: {
         h: 'Оферта',
         p: ['Бронирование рабочего места в Tattoo Office означает согласие с правилами резиденции.',
-            'Место закрепляется за мастером на выбранные часы. Отмена — не позднее чем за 12 часов.',
+            'Место закрепляется за мастером на выбранные часы. При отмене менее чем за 48 часов предоплата не возвращается на баланс.',
             'Мастер отвечает за стерильность своего рабочего места и за собственные расходники.',
             'Офис вправе отказать в аренде без объяснения причин.']
       },
       en: {
         h: 'Terms',
         p: ['Booking a workstation at Tattoo Office means accepting the residence rules.',
-            'The station is reserved for the chosen hours. Cancellation no later than 12 hours before.',
+            'The station is reserved for the chosen hours. A cancellation less than 48 hours in advance does not return the deposit to the balance.',
             'The master is responsible for the sterility of their station and for their own supplies.',
             'The office may refuse a rental without explanation.']
       }

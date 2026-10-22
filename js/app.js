@@ -3,6 +3,7 @@
    ========================================================================= */
 (function (global) {
   "use strict";
+  console.info('%cTATTOO OFFICE%c\nИщете скрытые знаки? Здесь каждый пиксель на своём месте. ✦', 'font:bold 21px/1.4 Arial,sans-serif;color:#fff;background:#111;padding:4px 10px;border-radius:8px', 'font:13px/1.6 Arial,sans-serif;color:#777');
   var mobileLayoutQuery = global.matchMedia("(max-width:700px)");
   global.isMobileLayout = function () { return mobileLayoutQuery.matches; };
 
