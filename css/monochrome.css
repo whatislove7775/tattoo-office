@@ -1713,6 +1713,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 }
 
 .office-feature .ranking-tools {grid-template-columns:minmax(0,1fr);}
+.office-feature .ranking-tools #ranking-search {padding-right:48px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238b8b8b' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m16 16 4.5 4.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;background-size:20px 20px;}
 
 /* Residency is independent of the three ranking awards. */
 .resident-mark {display:inline-block;width:16px;height:16px;flex:none;vertical-align:middle;object-fit:contain;}
