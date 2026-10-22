@@ -217,7 +217,7 @@ function paintShell() {
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
   if (me?.role === "admin") {
@@ -754,7 +754,7 @@ async function paymentPage(id) {
 }
 
 const pointsWord = n => n%100>=11&&n%100<=14?"баллов":n%10===1?"балл":n%10>=2&&n%10<=4?"балла":"баллов";
-const scoreLabels={bookings:"Брони",services:"Услуги",products:"Товары",profile:"Профиль",works:"Работы",drafts:"Эскизы"};
+const scoreLabels={bookings:"Брони",services:"Услуги",products:"Товары",profile:"Профиль",works:"Работы",drafts:"Эскизы",adjustment:"Корректировка администратора"};
 let residentInfoCleanup=()=>{},residentInfoTriggers=[];
 addEventListener("hashchange",()=>residentInfoCleanup());
 function mountResidentInfo(){
@@ -810,9 +810,9 @@ async function rankingPage() {
   const podiumCrown = rank => {
     if (![1,2,3].includes(rank)) return "";
     const fill={1:"#e6b422",2:"#aeb8c4",3:"#c9854b"}[rank];
-    return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M11.2 3.6Q12 2.3 12.8 3.6l3.3 5.3q.4.7 1.1.2l3.4-2.5q1.2-.9.9.6l-1.9 9.3q-.2 1-1.2 1H5.6q-1 0-1.2-1L2.5 7.2q-.3-1.5.9-.6l3.4 2.5q.7.5 1.1-.2ZM6 19h12a1.2 1.2 0 0 1 0 2.4H6a1.2 1.2 0 0 1 0-2.4Z"/></svg>`;
+    return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M11.2 3.6Q12 2.1 12.8 3.6l3.3 5.3q.55.85 1.3.3l3.2-2.4q1.5-1.1 1.15.85l-1.9 9.3q-.2 1-1.2 1H5.6q-1 0-1.2-1L2.25 7.45q-.35-1.95 1.15-.85l3.2 2.4q.75.55 1.3-.3ZM6 19h12a1.2 1.2 0 0 1 0 2.4H6a1.2 1.2 0 0 1 0-2.4Z"/></svg>`;
   };
-  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -1018,6 +1018,11 @@ async function adminPage() {
   adminData = await api("/admin");
   syncMasters(adminData.content);
   const a = adminData,
+    copyButton = (value,label) => `<button type="button" class="admin-copy" data-copy-value="${esc(value)}" data-copy-label="${label}" aria-label="Скопировать ${label}" title="Скопировать ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button>`,
+    pointsButton = id => {
+      const master = a.masterPoints?.find(m => m.id === id || m.userId === id);
+      return master ? `<button type="button" data-edit-points="${esc(master.id)}">${master.score.toLocaleString("ru-RU")} · изменить</button>` : "—";
+    },
     s = pub.settings,
     tabs = [
       ["home", "Обзор"],
@@ -1049,8 +1054,8 @@ async function adminPage() {
   requestAnimationFrame(() => window.TO?.refreshLayout());
   let body = "";
   if (adminTab === "home") {
-    const active = a.bookings.filter(b => !["cancelled","expired","completed"].includes(b.status));
-    body = `<div class="admin-home"><h2>Обзор</h2><p class="muted">Брони, пользователи и настройки студии — всё под рукой.</p><div class="admin-overview"><button data-admintab="schedule"><strong>${active.length}</strong><span>Активных записей</span></button><button data-admintab="users"><strong>${a.users.length}</strong><span>Пользователей</span></button><button data-admintab="feedback"><strong>${a.feedback.filter(f=>f.status === "new").length}</strong><span>Новых обращений</span></button></div><div class="admin-shortcuts"><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span>Новая бронь</button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span>Новый пользователь</button></div></div>`;
+    const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
+    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="settings">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
@@ -1120,16 +1125,16 @@ async function adminPage() {
       shown = a.users.filter((u) => usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true),
       roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : roleName[u.role]) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
     body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div>${table(
-      ["Имя", "Почта", "Роль", "Баланс", "Доступ"],
+      ["Имя", "Почта", "Роль", "Баллы", "Баланс", "Доступ"],
       shown.map(
         (u) =>
-          `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${roleLabel(u)}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>` : ""}</td></tr>`,
+          `<tr><td><span class="admin-copy-value">${esc(u.name)}${copyButton(u.name,"имя")}</span></td><td><span class="admin-copy-value">${esc(u.email)}${copyButton(u.email,"email")}</span></td><td>${roleLabel(u)}</td><td>${pointsButton(u.id)}</td><td>${money(u.balance)}</td><td>${u.active ? "Активен" : "Закрыт"}${me.role === "admin" ? `<br><button data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-delete-user" data-delete-user="${u.id}">Удалить</button>` : ""}` : ""}</td></tr>`,
       ),
     )}${usersFilter === "master" ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
-      ["Фото", "Мастер", "На главной", ""],
+      ["Фото", "Мастер", "Баллы", "На главной", ""],
       masters.map(
         (m) =>
-          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
+          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td>${pointsButton(legacyMasters[m.id-1].id)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
       ),
     )}` : ""}`;
   }
@@ -1219,6 +1224,28 @@ function mountAdmin() {
   }
   if (!adminData) return;
   const a = adminData;
+  $$("[data-copy-value]").forEach(button => button.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(button.dataset.copyValue);
+      notify(button.dataset.copyLabel === "имя" ? "Имя скопировано" : "Email скопирован");
+    } catch { notify("Не удалось скопировать. Выделите текст и скопируйте вручную."); }
+  });
+  $$("[data-delete-user]").forEach(button => button.onclick = () => {
+    const user=a.users.find(u=>u.id===button.dataset.deleteUser);
+    modal(`<h2>Удалить пользователя?</h2><p>${esc(user.name)} · ${esc(user.email)}</p><p>Пользователь исчезнет из списка и потеряет доступ к аккаунту. История броней и платежей сохранится.</p><div class="admin-delete-actions"><button type="button" class="chrome" id="confirm-delete-user">Удалить пользователя</button><button type="button" class="chrome" id="cancel-delete-user">Отмена</button></div>`);
+    $("#cancel-delete-user").onclick=()=>$("#dialog").close();
+    $("#confirm-delete-user").onclick=async event=>{
+      event.currentTarget.disabled=true;
+      try {
+        await api("/admin/users/"+encodeURIComponent(user.id),"DELETE");
+        $("#dialog").close();await refresh();await render();notify("Пользователь удалён");
+      } catch(error) {notify(error.message);if($("#confirm-delete-user"))$("#confirm-delete-user").disabled=false;}
+    };
+  });
+  $$("[data-edit-points]").forEach(button => button.onclick = () => {
+    const master = a.masterPoints.find(m => m.id === button.dataset.editPoints);
+    dialogForm("Баллы мастера", `<p>${esc(master.name)}</p>${field("score","Количество баллов",master.score,"number",'required min="0" max="10000000" step="1" data-plain-number="true"')}<p class="small muted">Укажите новый итог. За следующие оплаченные брони и действия баллы продолжат начисляться автоматически.</p>`, d => api("/admin/masters/"+encodeURIComponent(master.id)+"/points","PATCH",{score:Number(d.score)}));
+  });
   const content = $(".admin-content");
   if (content) {
     const settings = content.querySelector("#settings-form");

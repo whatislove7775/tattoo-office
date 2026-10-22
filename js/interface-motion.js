@@ -109,7 +109,13 @@ function enhanceRankingIcon(){
   rankingMorphs.add(path);
   const base=path.getAttribute('d'),instance=createMorph(path,base,{reducedMotion:'user'});
   const link=path.closest('a');
-  link.addEventListener('pointerenter',()=>instance.morphTo(base,'smooth'));
+  const arrow='M5 12h14M12 5l7 7-7 7';
+  let hovered=false,focused=false;
+  const update=()=>instance.morphTo(hovered||focused?arrow:base,'smooth');
+  link.addEventListener('pointerenter',()=>{hovered=true;update();});
+  link.addEventListener('pointerleave',()=>{hovered=false;update();});
+  link.addEventListener('focus',()=>{focused=true;update();});
+  link.addEventListener('blur',()=>{focused=false;update();});
 }
 new MutationObserver(enhanceRankingIcon).observe(document.getElementById('view'),{childList:true,subtree:true});
 enhanceRankingIcon();

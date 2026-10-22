@@ -1881,3 +1881,33 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
   .admin-subnav {gap:6px;}
   .office-feature .admin-subnav button {padding:9px 10px;font-size:13px;}
 }
+
+.cookie-notice {position:fixed;z-index:70;left:50%;bottom:var(--cookie-bottom,16px);transform:translateX(-50%);display:flex;align-items:center;gap:24px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:10px 12px 10px 24px;border:1px solid var(--panel-edge);border-radius:999px;background:linear-gradient(var(--panel),var(--panel-2));box-shadow:0 5px 22px #0002;color:var(--ink);font:17px/1.4 "Helvetica Neue",Helvetica,Arial,sans-serif;}
+.cookie-notice[hidden] {display:none;}
+.cookie-notice p {margin:0;min-width:0;}
+.cookie-notice a {color:inherit;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}
+.cookie-notice button {flex:none;min-width:76px;min-height:46px;padding:10px 20px;border:1px solid #171717;border-radius:999px;background:var(--action-fill);color:#fff;box-shadow:inset 0 1px #ffffff30;font-family:inherit;font-size:16px;font-weight:600;line-height:1;cursor:pointer;}
+.cookie-notice button:focus-visible,.cookie-notice a:focus-visible {outline:2px solid var(--ink-3);outline-offset:4px;}
+:root[data-theme="dark"] .cookie-notice button {background:linear-gradient(#fff,#ddd);border-color:#ddd;color:#111;}
+@media(max-width:700px) {
+  .cookie-notice {gap:12px;padding:8px 8px 8px 16px;max-width:90vw;font-size:14px;}
+  .cookie-notice button {min-width:56px;min-height:40px;padding:8px 14px;font-size:14px;}
+}
+.cookie-notice p,.cookie-notice a {color:#171717;}
+:root[data-theme="dark"] .cookie-notice p,:root[data-theme="dark"] .cookie-notice a {color:#f3f3f3;}
+.cookie-notice #cookieAccept {color:#fff;}
+:root[data-theme="dark"] .cookie-notice #cookieAccept {color:#111;}
+.cookie-notice button:focus-visible,.cookie-notice a:focus-visible {box-shadow:0 0 0 3px var(--ink-3);}
+.ranking-crown {width:22px;height:22px;}
+.ranking-list--compact .ranking-podium .ranking-position {color:#111;font-weight:700;}
+:root[data-theme="dark"] .ranking-list--compact .ranking-podium .ranking-position {color:var(--ink);}
+.admin-copy-value {display:inline-flex;align-items:center;gap:7px;max-width:100%;overflow-wrap:anywhere;}
+.office-feature .admin-content td .admin-copy {display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;min-height:0;padding:5px;border:0;border-radius:7px;background:none;box-shadow:none;color:var(--ink-3);}
+.admin-copy svg {display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.office-feature .admin-content td .admin-copy:hover {background:var(--panel-2);color:var(--ink);}
+.office-feature .admin-content td .admin-delete-user {margin-top:6px;}
+.admin-delete-actions {display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;}
+.office-feature .workspace-card__actions button {min-height:38px;padding:9px 15px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);font:inherit;font-size:14px;cursor:pointer;}
+.office-feature .workspace-card__actions .workspace-delete {color:#b3261e;}
+:root[data-theme="dark"] .office-feature .workspace-card__actions .workspace-delete {color:#ff9993;}
+#dialog #workspace-photo-status {margin:14px 0 0;line-height:1.5;}

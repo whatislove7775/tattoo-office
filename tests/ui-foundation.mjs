@@ -7,6 +7,30 @@ const base='http://127.0.0.1:'+server.address().port,browser=await chromium.laun
 const output=join(tmpdir(),'tattoo-foundation-qa');await mkdir(output,{recursive:true});
 const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&r.url().includes('/api/'))console.log('API failure',r.status(),r.url());});page.setDefaultTimeout(10000);
 try{
+  await page.goto(base+'/#/masters');await page.locator('.polaroid__img').first().waitFor();
+  for(const width of [320,390,1440]) {
+    await page.setViewportSize({width,height:900});await page.waitForTimeout(150);
+    const cookie=page.locator('#cookieNotice');await cookie.waitFor({state:'visible'});
+    const geometry=await cookie.evaluate(el=>{const r=el.getBoundingClientRect(),slider=document.querySelector('#rentSlider').getBoundingClientRect();return {center:r.x+r.width/2,left:r.left,right:r.right,bottom:r.bottom,sliderTop:slider.top};});
+    assert.ok(Math.abs(geometry.center-width/2)<1);assert.ok(geometry.left>=0&&geometry.right<=width);
+    if(width<=700)assert.ok(geometry.sliderTop-geometry.bottom>=13,'Cookie notice must sit above slider');
+    for(const theme of ['light','dark']) {
+      await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);await page.waitForTimeout(400);
+      const textColor=await page.locator('#cookieNotice a').evaluate(a=>getComputedStyle(a).color);assert.equal(textColor,theme==='light'?'rgb(23, 23, 23)':'rgb(243, 243, 243)');
+      await page.screenshot({path:`${output}/cookies-${width}-${theme}.png`});
+    }
+  }
+  await page.evaluate(()=>document.documentElement.dataset.theme='light');
+  const people=await page.locator('.ranking-users-path').getAttribute('d');await page.locator('.ranking-launch').hover();
+  await page.waitForFunction(async()=>{const {canonicalD}=await import('/js/vendor/morphicons/dom.js');return document.querySelector('.ranking-users-path').getAttribute('d')===canonicalD('M5 12h14M12 5l7 7-7 7');});
+  await page.mouse.move(700,300);await page.waitForFunction(d=>document.querySelector('.ranking-users-path').getAttribute('d')===d,people);
+  await page.locator('#cookieNotice a').click();await page.waitForURL('**/#/legal/privacy');await page.locator('.prose').waitFor();
+  assert.equal(await page.evaluate(()=>localStorage.getItem('to.cookieConsent')),null,'Opening policy must not accept cookies');
+  const second=await context.newPage();await second.goto(base+'/#/masters');await second.locator('#cookieNotice').waitFor({state:'visible'});
+  await page.locator('#cookieAccept').focus();await page.keyboard.press('Enter');
+  await page.locator('#cookieNotice').waitFor({state:'hidden'});await second.locator('#cookieNotice').waitFor({state:'hidden'});await second.close();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('to.cookieConsent')).accepted),true);
+  await page.reload();await page.locator('.prose').waitFor();assert.equal(await page.locator('#cookieNotice').isVisible(),false,'Consent must survive reload');
   await page.goto(base+'/#/signup/master');await page.locator('#auth-form').waitFor();
   await page.locator('[name=name]').fill('Тестовый Мастер');await page.locator('[name=email]').fill('ui-master@test.invalid');await page.locator('[name=password]').fill('Only-test-password-2026');await page.locator('[name=rules]').check();await page.locator('[name=consent]').check();await page.locator('#auth-form button[type=submit]').click();
   await page.waitForURL('**/#/cabinet');await page.locator('[data-cabtab=profile]').click();await page.locator('#profile-form').waitFor();
@@ -76,12 +100,19 @@ try{
       await page.locator(`[data-admin-section=${tab}]`).waitFor();
       assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`Admin overflow: ${tab} at ${width}`);
+      if(tab==='workspaces') {
+        const edit=page.locator('.workspace-card__actions [data-edit-resource]').first();
+        assert.notEqual(await edit.evaluate(b=>getComputedStyle(b).backgroundImage),'none');
+        await edit.click();await page.locator('#workspace-photo-upload').waitFor();
+        const gap=await page.evaluate(()=>document.querySelector('#workspace-photo-status').getBoundingClientRect().top-document.querySelector('#workspace-photo-upload').getBoundingClientRect().bottom);assert.ok(gap>=13);
+        await page.screenshot({path:`${output}/workspace-editor-${width}.png`});await page.locator('#dialog .close').click();
+      }
       if(tab==='home'||tab==='settings') await page.screenshot({path:`${output}/admin-${tab}-${width}.png`});
     }
   }
   await page.setViewportSize({width:1440,height:1000});
   await context.request.put(base+'/api/admin/content/master-2',{data:{title:'Mr.A',body:'',portfolio:[],drafts:[],published:true,featured:true}});
-  await page.locator('[data-admintab=users]').first().click();await page.locator('[data-users-filter=master]').click();await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
+  await page.locator('[data-admintab=users]').first().click();await page.locator('[data-users-filter=master]').click();await page.locator('[data-edit-points="mr-a"]').click();await page.locator('#dialog [name=score]').fill('731');await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/masters/mr-a/points')&&r.request().method()==='PATCH'),page.locator('#dialog button[type=submit]').click()]);await page.locator('#dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>document.querySelector('[data-edit-points="mr-a"]')?.textContent.includes('731'));await page.locator('[data-edit-master="2"]').click();await page.locator('#dialog[open]').waitFor();
   const beforeMaster=(await (await context.request.get(base+'/api/directory')).json()).masters.find(m=>m.id==='mr-a');
   assert.equal(await page.locator('#dialog [name=body]').inputValue(),beforeMaster.bio);
   assert.equal(await page.locator('#dialog [name=portfolio]').inputValue(),'tattoo-1, tattoo-2, tattoo-3, tattoo-4, tattoo-5, tattoo-6, tattoo-7, tattoo-8');
@@ -92,5 +123,11 @@ try{
   await page.locator('[data-admintab=home]').first().click();await page.locator('#add-user').click();await page.locator('#dialog [name=name]').fill('Новый мастер Telegram');await page.locator('#dialog [name=email]').fill('new-tg-master@test.invalid');await page.locator('#dialog [name=password]').fill('New-master-password-2026');await page.locator('#dialog [name=role]').selectOption('resident',{force:true});await page.locator('#dialog [name=bookingLink]').fill('https://t.me/test_manager');
   const [createdResponse]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/users')&&r.request().method()==='POST'),page.locator('#dialog button[type=submit]').click()]);assert.equal(createdResponse.status(),201);const createdMaster=await createdResponse.json();await page.locator('#dialog').waitFor({state:'hidden'});
   await page.goto(base+'/#/master/'+createdMaster.id);await page.locator('.master-profile__action a').waitFor();assert.equal(new URL(await page.locator('.master-profile__action a').getAttribute('href')).pathname,'/test_manager');
+  await page.goto(base+'/#/admin');await page.locator('[data-admintab=users]').first().click();await page.locator('[data-users-filter=master]').click();
+  await context.grantPermissions(['clipboard-read','clipboard-write']);
+  await page.locator('[data-copy-value="new-tg-master@test.invalid"]').click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'new-tg-master@test.invalid');
+  await page.locator('[data-copy-value="Новый мастер Telegram"]').click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'Новый мастер Telegram');
+  await page.locator(`[data-delete-user="${createdMaster.id}"]`).click();await page.locator('#cancel-delete-user').click();assert.equal(await page.locator(`[data-delete-user="${createdMaster.id}"]`).count(),1);
+  await page.locator(`[data-delete-user="${createdMaster.id}"]`).click();await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/users/'+createdMaster.id)&&r.request().method()==='DELETE'),page.locator('#confirm-delete-user').click()]);await page.locator('#dialog').waitFor({state:'hidden'});await page.waitForFunction(id=>!document.querySelector(`[data-delete-user="${id}"]`),createdMaster.id);
   assert.deepEqual(errors,[]);console.log('PASS: registration → profile → photo upload → public portfolio → ranking → booking → test payment → next booking; 5 viewport sizes without overflow.');
 }catch(e){console.log('Notice:',await page.locator('#notice').textContent());console.log('Errors:',errors);await page.screenshot({path:join(output,'failure.png')});throw e;}finally{await browser.close();await new Promise(r=>server.close(r));await db.close();}

@@ -52,3 +52,6 @@ CREATE TABLE IF NOT EXISTS site_media(id uuid PRIMARY KEY,image text NOT NULL,th
 
 -- NULL preserves unknown legacy payments. Only explicit real payments earn points.
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_test boolean;
+
+-- Keep booking and payment records when removing an account from the admin list.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;

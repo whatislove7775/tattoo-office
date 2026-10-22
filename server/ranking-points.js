@@ -39,3 +39,10 @@ export async function rankingFacts(db,{period="all"}={}) {
   for(const [kind,rows] of [['bookings',bookings.rows],['media',media.rows]]) for(const row of rows){if(!byUser.has(row.user_id))byUser.set(row.user_id,{bookings:[],media:[]});byUser.get(row.user_id)[kind].push(row);}
   return {rules:pointRules(settings.rows[0]?.data),byUser};
 }
+
+// An admin correction is an offset, so future activity still adds points.
+export function applyPointsAdjustment(master, adjustment=0) {
+  const amount=Number.isSafeInteger(adjustment)?adjustment:0;
+  if(!amount)return master;
+  return {...master,score:Math.max(0,master.score+amount),pointsBreakdown:{...master.pointsBreakdown,adjustment:amount}};
+}

@@ -2,7 +2,7 @@ import {POINT_RULES,pointRules} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import {updateOperatorDetails} from "./operator-details.js";
 import {ageFromBirthDate} from "./profile-age.js";
-import {masterDirectory,catalogIds,bookingContact} from "./master-directory.js";
+import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
@@ -807,7 +807,7 @@ export async function createApp(db) {
       Object.assign(result, {
         users: (
           await db.query(
-            "SELECT id,email,name,role,account_type,active,balance,deposit_waived,created_at,profile->>'adminBookingLink' AS booking_link FROM users ORDER BY created_at DESC",
+            "SELECT id,email,name,role,account_type,active,balance,deposit_waived,created_at,profile->>'adminBookingLink' AS booking_link FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
           )
         ).rows,
         bookings: (
@@ -828,6 +828,8 @@ export async function createApp(db) {
       });
     }
     if (role === "admin") {
+      const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;
+      result.masterPoints=(await masterDirectory(db,{includeInactive:true})).map(m=>({id:m.id,name:m.name,score:m.score,userId:m.registered?(pointLinks.find(l=>l.master_id===m.id)?.user_id||m.id):null}));
       result.audit = (
         await db.query("SELECT * FROM audit ORDER BY created_at DESC LIMIT 100")
       ).rows;
@@ -984,7 +986,7 @@ export async function createApp(db) {
       const u = await one(q, "SELECT * FROM users WHERE id=$1", [
         req.params.id,
       ]);
-      if (!u) fail("Пользователь не найден", 404);
+      if (!u || u.deleted_at) fail("Пользователь не найден", 404);
       const role = req.body.role || u.role,
         active = req.body.active ?? u.active;
       if (
@@ -1014,6 +1016,46 @@ export async function createApp(db) {
       await audit(q, req.user.id, "user.update", { id: u.id, role, active, depositWaived: waived });
     });
     res.json({ ok: true });
+  });
+  app.delete("/api/admin/users/:id",roles("admin"),async(req,res)=>{
+    if(!/^[0-9a-f-]{36}$/i.test(req.params.id))fail("Пользователь не найден",404);
+    if(req.params.id===req.user.id)fail("Нельзя удалить собственный аккаунт администратора",403);
+    await db.transaction(async q=>{
+      await lock(q);
+      const user=await one(q,"SELECT id,role,deleted_at FROM users WHERE id=$1",[req.params.id]);
+      if(!user)fail("Пользователь не найден",404);
+      if(user.deleted_at)return;
+      if(user.role==='admin') {
+        const admins=await one(q,"SELECT COUNT(*)::int AS count FROM users WHERE role='admin' AND active=true AND deleted_at IS NULL");
+        if(admins.count<=1)fail("Нельзя удалить последнего администратора",409);
+      }
+      await q.query("UPDATE users SET active=false,deleted_at=now() WHERE id=$1",[user.id]);
+      await q.query("DELETE FROM sessions WHERE user_id=$1",[user.id]);
+      await audit(q,req.user.id,"user.delete",{id:user.id,historyPreserved:true});
+    });
+    res.json({ok:true});
+  });
+  app.patch("/api/admin/masters/:id/points", roles("admin"), async (req,res) => {
+    const target=req.body.score;
+    if(!Number.isSafeInteger(target)||target<0||target>10000000)fail("Укажите целое количество баллов от 0 до 10 000 000");
+    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
+    await db.transaction(async q=>{
+      await lock(q);
+      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
+      if(!master)fail("Мастер не найден",404);
+      if(master.registered) {
+        const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
+        const id=link?.user_id||master.id;
+        // Rebase on earned points, even when an older negative offset clamps the total to zero.
+        const earned=Object.entries(master.pointsBreakdown||{}).filter(([k])=>k!=="adjustment").reduce((sum,[,v])=>sum+v,0);
+        await q.query("UPDATE users SET profile=jsonb_set(profile,'{adminPointsAdjustment}',$1::jsonb) WHERE id=$2",[JSON.stringify(target-earned),id]);
+      } else {
+        const contentId=catalogContentId(master.id);
+        await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[contentId,JSON.stringify({pointsAdjustment:target})]);
+      }
+      await audit(q,req.user.id,"master.points.update",{id:master.id,previous:master.score,score:target});
+    });
+    res.json({ok:true,score:target});
   });
   app.post("/api/admin/resources", roles("admin"), async (req, res) => {
     const id = req.body.id || uuid(),
@@ -1233,6 +1275,9 @@ export async function createApp(db) {
         : [],
     };
     await db.transaction(async (q) => {
+      await lock(q);
+      const previous=await one(q,"SELECT data FROM content WHERE id=$1",[req.params.id]);
+      if(previous?.data?.pointsAdjustment!==undefined)data.pointsAdjustment=previous.data.pointsAdjustment;
       await q.query(
         "INSERT INTO content VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2",
         [req.params.id, JSON.stringify(data)],
