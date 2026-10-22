@@ -49,3 +49,6 @@ CREATE INDEX IF NOT EXISTS master_media_owner ON master_media(user_id,kind,posit
 ALTER TABLE resources ADD COLUMN IF NOT EXISTS photo text NOT NULL DEFAULT '';
 ALTER TABLE resources ADD COLUMN IF NOT EXISTS deleted boolean NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS site_media(id uuid PRIMARY KEY,image text NOT NULL,thumbnail text NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
+
+-- NULL preserves unknown legacy payments. Only explicit real payments earn points.
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_test boolean;

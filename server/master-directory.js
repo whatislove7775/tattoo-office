@@ -1,3 +1,4 @@
+import {rankingFacts,scoreMaster} from "./ranking-points.js";
 import {ageFromBirthDate} from "./profile-age.js";
 import {readFile} from 'node:fs/promises';
 const catalog=JSON.parse(await readFile(new URL('./master-catalog.json',import.meta.url),'utf8'));
@@ -18,18 +19,20 @@ export async function masterDirectory(db,{period='all'}={}) {
     db.query("SELECT id,data FROM content WHERE id LIKE 'master-%'"),db.query('SELECT * FROM master_links'),
     db.query('SELECT id,user_id,kind,caption,position FROM master_media ORDER BY position,created_at,id')
   ]);
+  const points=await rankingFacts(db,{period});
   const byUser=new Map(users.map(u=>[u.id,u])),byContent=new Map(content.map(c=>[c.id,c.data]));
   const gallery=(id,kind)=>media.filter(m=>m.user_id===id&&m.kind===kind).map(m=>({id:m.id,src:'/api/media/'+m.id,thumb:'/api/media/'+m.id+'?size=thumb',cap:m.caption}));
   const fromUser=(u,base={})=>{
     const p=u.profile||{},resident=u.role==='resident';
-    return {...base,id:base.id||u.id,name:u.name,resident,active:u.active,registered:true,
+    const master={...base,id:base.id||u.id,name:u.name,resident,active:u.active,registered:true,
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
       age:p.birthDate?ageFromBirthDate(p.birthDate):(Number.isInteger(p.age)?p.age:base.age||null),exp:text(p.experience,80)||base.exp||'',
       bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
-      completed:u.completed,bookings:u.bookings,score:Math.round((u.bookings*.25+u.completed)*(resident?1.05:1)*100)/100,
+      completed:u.completed,bookings:u.bookings,score:0,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};
+    return {...master,...scoreMaster(master,points.byUser.get(u.id)||{},points.rules)};
   };
   const linked=new Set(links.map(l=>l.user_id));
   const result=catalog.map(m=>{

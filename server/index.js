@@ -1,3 +1,4 @@
+import {POINT_RULES,pointRules} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import {updateOperatorDetails} from "./operator-details.js";
 import {ageFromBirthDate} from "./profile-age.js";
@@ -334,6 +335,12 @@ export async function createApp(db) {
     res.set("Cache-Control", "no-store");
     if(req.query.period && !["all","month"].includes(req.query.period))fail("Выберите период рейтинга");
     res.json(await masterRanking(db,{period:req.query.period||"all"}));
+  });
+  app.get("/api/me/ranking", auth, async (req,res) => {
+    if(req.user.account_type!=="master")fail("Баллы доступны мастерам",403);
+    const master=await registeredMasterProfile(db,req.user.id);
+    if(!master)fail("Мастер не найден",404);
+    res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress:master.profileProgress,rules:pointRules(await settings())});
   });
   app.get("/api/me", async (req, res) => res.json({ user: safe(req.user) }));
   const loginLimit = rateLimit({ windowMs: 900000, limit: 25 });
@@ -874,6 +881,15 @@ export async function createApp(db) {
         ["deposit", 0, 10000000],
       ])
         if (req.body[k] !== undefined) s[k] = integer(req.body[k], min, max, k);
+      if (req.body.rankingRules !== undefined) {
+        if (!req.body.rankingRules || typeof req.body.rankingRules !== "object" || Array.isArray(req.body.rankingRules)) fail("Проверьте правила рейтинга");
+        const rules=pointRules(old);
+        for (const [key,value] of Object.entries(req.body.rankingRules)) {
+          if (!Object.hasOwn(POINT_RULES,key)) fail("Неизвестное правило рейтинга");
+          rules[key]=integer(value,key==="bookingRubles"?1:0,100000,"Баллы рейтинга");
+        }
+        s.rankingRules=rules;
+      }
       if (s.closeHour <= s.openHour)
         fail("Время закрытия должно быть позже открытия");
       if (req.body.rates) {
@@ -1263,8 +1279,8 @@ export async function createApp(db) {
     )
       fail("Статус брони изменился", 409);
     await q.query(
-      "UPDATE payments SET status='paid',provider_id=$1 WHERE id=$2",
-      [provider, p.id],
+      "UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2",
+      [provider, p.id, provider.startsWith("test-") || (provider.startsWith("yookassa:") && yookassaTest())],
     );
     if (p.kind === "deposit") await confirmed(q, b);
     else

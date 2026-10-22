@@ -5,7 +5,7 @@ import {database} from '../server/db.js';
 import {createApp} from '../server/index.js';
 import {hashToken} from '../server/domain.js';
 
-test('ranking uses registered masters, completed work, a 5% resident bonus and private opt-out',async()=>{
+test('ranking uses fully paid completed rentals, equal rules for residents and private opt-out',async()=>{
   process.env.DATA_DIR='memory://';
   const db=await database(), app=await createApp(db), server=app.listen(0,'127.0.0.1');
   await new Promise(r=>server.on('listening',r));
@@ -23,14 +23,14 @@ test('ranking uses registered masters, completed work, a 5% resident bonus and p
     }
     const resource=(await db.query('SELECT id FROM resources LIMIT 1')).rows[0].id;
     for(const [name,statuses] of [['Regular',['completed','completed','cancelled','pending','expired']],['Resident',['completed','completed']],['Busy',['completed','completed','completed']],['Hidden',['completed']],['Customer',['completed']]]) {
-      for(const status of statuses) await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,'2026-01-01T10:00Z','2026-01-01T13:00Z',3,100,100,$4)",[randomUUID(),ids[name],resource,status]);
+      for(const status of statuses) { const bookingId=randomUUID();await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,'2026-01-01T10:00Z','2026-01-01T13:00Z',3,320000,320000,$4)",[bookingId,ids[name],resource,status]);if(status==='completed')await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,is_test) VALUES($1,$2,'final',320000,'paid',$3,false)",[randomUUID(),bookingId,'cash:'+bookingId]);}
     }
     const ranking=async()=>{const r=await fetch(origin+'/api/ranking');assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');const data=await r.json();data.masters=data.masters.filter(m=>Object.values(ids).includes(m.id));return data;};
     let result=await ranking();
-    assert.deepEqual(result.masters.map(m=>m.name),['Busy','Resident','Regular','New']);
-    assert.equal(result.masters[1].score,2.63);assert.equal(result.masters[2].score,2.5);
+    assert.deepEqual(result.masters.map(m=>m.name),['Busy','Regular','Resident','New']);
+    assert.equal(result.masters[0].score,210);assert.equal(result.masters[1].score,140);assert.equal(result.masters[2].score,140);
     assert.equal(result.masters[2].bookings,2);assert.equal(result.masters[2].completed,2);
-    assert.equal(result.masters[1].resident,true);assert.equal(result.masters[3].score,0);
+    assert.equal(result.masters[2].resident,true);assert.equal(result.masters[3].score,0);
     assert.ok(result.masters.every(m=>!('email' in m)&&!('profile' in m)&&!('password' in m)));
     const profile=await fetch(origin+'/api/masters/'+ids.Resident);
     assert.equal(profile.status,200);
@@ -54,9 +54,28 @@ test('ranking uses registered masters, completed work, a 5% resident bonus and p
     assert.equal((await update({rankingVisible:'true'})).status,400);
     assert.equal((await update({rankingVisible:true})).status,200);
     assert.ok((await ranking()).masters.some(m=>m.id===ids.Resident));
-    // A newly confirmed rental contributes 0.25 without claiming completed work.
+    // A newly confirmed rental does not earn points before full settlement.
     await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,'2026-01-02T10:00Z','2026-01-02T13:00Z',3,100,100,'confirmed')",[randomUUID(),ids.New,resource]);
     const newcomer=(await ranking()).masters.find(m=>m.id===ids.New);
-    assert.equal(newcomer.score,0.25);assert.equal(newcomer.completed,0);
+    assert.equal(newcomer.score,0);assert.equal(newcomer.completed,0);
+    // Unknown legacy online payments and test payments are not proof of revenue.
+    for(const [provider,isTest] of [[null,null],['yookassa:old-test',null],['test-old',true],['cash:legacy',null],['yookassa:verified-live',false]]){
+      const id=randomUUID();await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status) VALUES($1,$2,$3,'2026-01-03T10:00Z','2026-01-03T13:00Z',3,320000,320000,'completed')",[id,ids.New,resource]);
+      await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,is_test) VALUES($1,$2,'final',320000,'paid',$3,$4)",[randomUUID(),id,provider,isTest]);
+    }
+    assert.equal((await ranking()).masters.find(m=>m.id===ids.New).score,140);
+    assert.equal((await fetch(origin+'/api/me/ranking')).status,401);
+    const own=await fetch(origin+'/api/me/ranking',{headers:{Cookie:'office_session='+token}});
+    assert.equal(own.status,200);assert.equal((await own.json()).score,140);
+    const config=async rules=>fetch(origin+'/api/admin/settings',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:'office_session='+token},body:JSON.stringify({rankingRules:rules})});
+    assert.equal((await config({bookingPoints:900})).status,403);
+    assert.equal((await update({score:999999,rankingPoints:999999})).status,200);
+    assert.equal((await (await fetch(origin+'/api/me/ranking',{headers:{Cookie:'office_session='+token}})).json()).score,140);
+    await db.query("UPDATE users SET role='admin' WHERE id=$1",[ids.Resident]);
+    assert.equal((await config({bookingRubles:0})).status,400);
+    assert.equal((await config({bookingPoints:1.5})).status,400);
+    assert.equal((await config({unknown:1})).status,400);
+    assert.equal((await config({bookingPoints:140})).status,200);
+    assert.equal((await ranking()).masters.find(m=>m.id===ids.Regular).score,280);
   } finally {await new Promise(r=>server.close(r));await db.close();}
 });

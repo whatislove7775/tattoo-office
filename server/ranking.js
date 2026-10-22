@@ -1,9 +1,10 @@
 import {masterDirectory} from './master-directory.js';
-export const RANKING_RULES=Object.freeze({bookingPoints:.25,completedPoints:1,residentBonus:.05});
+import {pointRules} from "./ranking-points.js";
 export async function masterRanking(db,{period='all'}={}) {
   const masters=(await masterDirectory(db,{period})).filter(m=>m.rankingVisible && (m.registered||m.featured))
-    .sort((a,b)=>b.score-a.score||b.completed-a.completed||a.name.localeCompare(b.name,'ru')||a.id.localeCompare(b.id));
-  return {rules:RANKING_RULES,period,masters:masters.map(({rankingVisible,portfolio,drafts,bio,...m},i)=>({...m,rank:i+1}))};
+    .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'ru')||a.id.localeCompare(b.id));
+  const rules=pointRules((await db.query("SELECT data FROM settings WHERE id=1")).rows[0]?.data);
+  return {rules,period,masters:masters.map(({rankingVisible,portfolio,drafts,bio,...m},i)=>({...m,rank:i+1}))};
 }
 export async function registeredMasterProfile(db,id) {
   if(!/^[\w-]{1,50}$/.test(id))return null;
