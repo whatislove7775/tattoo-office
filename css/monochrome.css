@@ -1987,3 +1987,12 @@ body[data-page="club"] .club-heading-help>.help-alert svg {width:18px;height:18p
 /* The feedback shortcut uses a quiet, compact envelope icon. */
 body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .admin-feedback-dock__icon svg {width:22px;height:18px;stroke-width:1.7;stroke-linecap:round;}
+
+/* Сегментированные переключатели: подложка-«бегунок» (js/tabs-glider.js). */
+.tabs.tabs--glider {position:relative;isolation:isolate;}
+.tabs__glider,.office-feature .tabs > .tabs__glider:first-child {position:absolute;left:0;top:0;z-index:0;width:0;height:0;padding:0;border:0!important;border-radius:17px!important;background:var(--panel)!important;box-shadow:0 2px 6px #0000001a,0 0 0 1px #0000000a!important;pointer-events:none;will-change:transform,width;transition:transform .28s cubic-bezier(.22,1,.36,1),width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1);}
+.office-feature .tabs.tabs--glider > button,.office-feature .tabs.tabs--glider > a,
+.tabs.tabs--glider > button,.tabs.tabs--glider > a {position:relative;z-index:1;background:transparent!important;box-shadow:none!important;transition:color .2s ease;}
+.tabs.tabs--glider > :is(button,a):hover {color:var(--ink);}
+:root[data-theme="dark"] .tabs__glider,:root[data-theme="dark"] .office-feature .tabs > .tabs__glider:first-child {background:#3a3a3a!important;box-shadow:0 2px 6px #0006!important;}
+@media (prefers-reduced-motion:reduce) {.tabs__glider {transition:none;}}
