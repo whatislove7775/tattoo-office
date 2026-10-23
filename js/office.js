@@ -1,5 +1,6 @@
 import {bindFileUpload} from "./file-upload.js";
 import {mountGallery} from "./profile-media.js";
+import * as AP from "./admin-pro.js";
 const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) =>
@@ -55,6 +56,8 @@ const statusName = {
   paid: "Оплачено",
   new: "Новое",
   done: "Обработано",
+  in_progress: "В работе",
+  no_show: "Неявка",
 };
 let me = null,
   pub = null,
@@ -562,17 +565,26 @@ function mountAuth(signup) {
     storage.set("returnTo", "cabinet");
   });
 }
-const bookingDeposit = () => me?.loyalty?.freeNext ? 0 : me?.role === "resident" && me.depositWaived ? 0 : pub.settings.deposit;
+const bookingDeposit = (total) => me?.loyalty?.freeNext ? 0 : me?.role === "resident" && me.depositWaived ? 0 : me?.profile?.fullPrepay && total ? total : pub.settings.deposit;
+// Наценка за ночь или выходные из правил цен (сервер считает так же) и скидка промокода.
+let promoInfo = null;
+const slotPercent = () => availability?.slots.find((x) => x.hour === draft.hour)?.pricePercent || 0;
+const adjustedRate = () => {
+  if (me?.loyalty?.freeNext) return 0;
+  const base = roleRates()[draft.duration], pct = draft.hour === null ? 0 : slotPercent();
+  return Math.max(0, Math.round((base * (100 + pct)) / 100 / 100) * 100);
+};
+const promoDiscountOf = (rate) => !promoInfo ? 0 : promoInfo.kind === "percent" ? Math.round((rate * Math.min(100, promoInfo.value)) / 100) : Math.min(rate, promoInfo.value);
 function receipt() {
   const s = pub.settings,
-    rate = me?.loyalty?.freeNext ? 0 : roleRates()[draft.duration],
+    rate = adjustedRate() - promoDiscountOf(adjustedRate()),
     extras = draft.extras.reduce(
       (a, x) =>
         a + (pub.catalog.find((c) => c.id === x.id)?.price || 0) * x.qty,
       0,
     ),
     r = pub.resources.find((x) => x.id === draft.resourceId);
-  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Город</span><span>${esc(CITY_LABELS[draft.city] || "не выбран")}</span></div><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit())}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit()))}. Остаток — после сеанса.`}</p></aside>`;
+  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Город</span><span>${esc(CITY_LABELS[draft.city] || "не выбран")}</span></div><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>Предоплата сейчас</span><b>${money(bookingDeposit(rate + extras))}</b></div><p class="small muted" style="margin-top:15px">${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extras)))}. Остаток — после сеанса.`}</p></aside>`;
 }
 function calendarHTML() {
   const [y, m] = month.split("-").map(Number),
@@ -605,7 +617,7 @@ function bookingPage() {
     body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(roleRates()[h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
-    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span></button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div><div class="choices">${pub.resources
+    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span>${x.pricePercent ? ` <em class="pro-surcharge">${x.pricePercent > 0 ? "+" : "−"}${Math.abs(x.pricePercent)}%</em>` : ""}</button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div>${me && ["resident", "guest"].includes(me.role) && availability?.slots.some((x) => !x.free.length) ? '<p class="pro-waitlist"><button type="button" class="chrome" id="waitlist-join">Нужное время занято? Встать в лист ожидания</button></p>' : ""}<div class="choices">${pub.resources
       .filter((x) => x.active && resourceCity(x) === draft.city)
       .map(
         (r) =>
@@ -616,12 +628,12 @@ function bookingPage() {
   if (draft.step === 2)
     body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
-    const rate = roleRates()[draft.duration],
+    const base = adjustedRate(), discount = promoDiscountOf(base), rate = base - discount,
       extra = draft.extras.reduce(
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${bookingTimeRange(draft.hour, draft.duration)}</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(rate)}</p>${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>Предоплата</span><strong>${money(bookingDeposit())}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit()))}, картой ${money(Math.max(0, bookingDeposit() - (me?.balance || 0)))}`}</small></p></div><p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${bookingTimeRange(draft.hour, draft.duration)}</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(base)}${slotPercent() ? ` <small class="muted">(${slotPercent() > 0 ? "наценка" : "скидка"} ${Math.abs(slotPercent())}% за ночь/выходной)</small>` : ""}</p>${discount ? `<p>Промокод ${esc(promoInfo.code)} · −${money(discount)}</p>` : ""}${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>${me?.profile?.fullPrepay ? "Полная предоплата" : "Предоплата"}</span><strong>${money(bookingDeposit(rate + extra))}</strong></div><p class="booking-review__split"><small>${me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extra)))}, картой ${money(Math.max(0, bookingDeposit(rate + extra) - (me?.balance || 0)))}`}</small></p></div>${me && !me.loyalty?.freeNext ? `<form class="pro-promo" id="promo-form"><label class="field"><span>Промокод или сертификат</span><input name="code" value="${esc(promoInfo?.code || "")}" maxlength="32" autocomplete="off"></label><button type="submit" class="chrome">${promoInfo ? "Обновить" : "Применить"}</button>${promoInfo ? '<button type="button" class="chrome" id="promo-clear">Убрать</button>' : ""}</form>` : ""}<p class="small muted">${me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank">правила бронирования</a> и условия отмены</span></label>'}`;
   }
   return win(
     "Rent a workspace",
@@ -690,7 +702,18 @@ async function mountBooking() {
           render();
         }),
     );
+    if ($("#waitlist-join")) $("#waitlist-join").onclick = async () => {
+      const busy = availability.slots.filter((x) => !x.free.length), mine = (await api("/waitlist")).items;
+      dialogForm("Лист ожидания", `<p>${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · ${esc(CITY_LABELS[draft.city])}</p>${select("hour", "Желаемое время", busy.map((x) => [x.hour, bookingTimeRange(x.hour, draft.duration)]), busy[0].hour)}<p data-help class="small muted">Как только место освободится, придёт уведомление в кабинет, на почту и в Telegram. Забронировать нужно будет самостоятельно — кто первый, тот и занял.</p>${mine.length ? `<h3>Ваши заявки</h3><ul class="pro-waitlist-list">${mine.map((w) => `<li>${dateLabel(w.date + "T12:00:00+03:00")} · ${w.hour}:00 · ${w.duration} ч${w.notified_at ? " · место освобождалось" : ""} <button type="button" class="small" data-waitlist-remove="${w.id}"><u>убрать</u></button></li>`).join("")}</ul>` : ""}`, (d) => api("/waitlist", "POST", { city: draft.city, date: draft.date, duration: draft.duration, hour: Number(d.hour) }));
+      $$("[data-waitlist-remove]").forEach((b) => (b.onclick = async () => { await api("/waitlist/" + b.dataset.waitlistRemove, "DELETE"); b.closest("li").remove(); notify("Заявка убрана"); }));
+    };
   }
+  onForm("#promo-form", async (d) => {
+    promoInfo = d.code.trim() ? await api("/promo/check", "POST", { code: d.code }) : null;
+    notify(promoInfo ? "Промокод применён" : "Промокод убран");
+    render();
+  });
+  if ($("#promo-clear")) $("#promo-clear").onclick = () => { promoInfo = null; render(); };
   if (draft.step === 2)
     $$("[data-extra]").forEach(
       (el) =>
@@ -728,7 +751,8 @@ async function mountBooking() {
       if (draft.step === 3) {
         if (!$("#booking-agree")?.checked)
           throw Error("Подтвердите условия бронирования");
-        bookingResult = await api("/bookings", "POST", draft);
+        bookingResult = await api("/bookings", "POST", { ...draft, promo: promoInfo?.code || undefined });
+        promoInfo = null;
         draft.step = 0;
         draft.resourceId = null;
         draft.hour = null;
@@ -996,6 +1020,7 @@ function mountCabinet() {
 let adminData,
   adminDate = today(),
   usersFilter = "all",
+  usersTag = "",
   adminScrollTo = "";
 // Обращения доступны отдельно от основного меню; точка отмечает новые.
 function paintFeedbackDock(hasNew) {
@@ -1055,6 +1080,7 @@ async function adminPage() {
       ["settings", "Настройки"],
       ["feedback", "Обращения"], ["profile", "Профиль"],
     ];
+  if (AP.isShift()) for (const hidden of ["finance", "settings"]) tabs.splice(tabs.findIndex((t) => t[0] === hidden), 1);
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   // Сохраняем переходы со старых кнопок к истории записей.
   if (adminTab === "bookings") { adminTab = "schedule"; adminScrollTo = "admin-bookings"; }
@@ -1069,6 +1095,7 @@ async function adminPage() {
     {label:"Пользователи", target:"users", tabs:["users"]},
     {label:"Студия", target:"workspaces", tabs:["workspaces","catalog","settings"]},
   ];
+  for (const g of groups) g.tabs = g.tabs.filter((t) => tabs.some((x) => x[0] === t));
   const group = groups.find(g => g.tabs.includes(adminTab));
   const navigation = groups.map(g => [g.tabs.includes(adminTab) ? adminTab : g.target, g.label]);
   menu.innerHTML = navigation.map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
@@ -1076,7 +1103,7 @@ async function adminPage() {
   let body = "";
   if (adminTab === "home") {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
-    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="settings">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
+    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="settings">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div>${AP.overviewHTML(await api("/admin/overview"))}</div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
@@ -1092,7 +1119,7 @@ async function adminPage() {
           }).format(new Date(b.starts_at)) === adminDate &&
           !["cancelled", "expired"].includes(b.status),
       );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button></div>${cityTabs()}<p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в разделе «Студия → Рабочие места».</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
+    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button></div>${cityTabs()}<p data-help class="small muted">Будущую запись можно перетащить мышью на свободную ячейку — мастер получит уведомление о переносе.</p><p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в разделе «Студия → Рабочие места».</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
       { length: s.closeHour - s.openHour },
       (_, i) => {
         const h = s.openHour + i,
@@ -1115,7 +1142,8 @@ async function adminPage() {
                     new Date(b.starts_at) <= time &&
                     new Date(b.ends_at) > time,
                 );
-              return `<div class="${b ? "busy" : block ? "closed" : ""}">${b ? `${esc(b.user_name)}<br><small>${statusName[b.status]}</small>` : block ? "Закрыто" : '<span class="schedule-free">Свободно</span>'}</div>`;
+              const movable = b && ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > Date.now();
+              return `<div class="${b ? "busy" : block ? "closed" : ""}${movable ? " is-movable" : ""}" ${movable ? `draggable="true" data-move-booking="${b.id}" title="Перетащите, чтобы перенести"` : ""} ${!b && !block && time > Date.now() ? `data-drop="${r.id}|${h}"` : ""}>${b ? `${esc(b.user_name)}<br><small>${statusName[b.status]}</small>` : block ? "Закрыто" : '<span class="schedule-free">Свободно</span>'}</div>`;
             })
             .join("")
         );
@@ -1130,26 +1158,26 @@ async function adminPage() {
       ["Сеанс", "Мастер / место", "Сумма", "Статус", "Действие"],
       a.bookings.filter((b) => cityIds.has(b.resource_id)).map(
         (b) =>
-          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td>${esc(b.user_name)}<br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
+          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > Date.now() ? `<button data-move-booking="${b.id}">Перенести</button> ` : ""}${b.status === "confirmed" && new Date(b.starts_at) <= Date.now() ? `<button data-no-show="${b.id}">Неявка</button> ` : ""}${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
       ),
     )}`;
   }
   if (adminTab === "workspaces") {
     // Рабочие места студии в выбранном городе — так их видят мастера при аренде.
     const list = a.resources.filter((r) => resourceCity(r) === adminCity);
-    body = `${cityTabs()}<div class="admin-tools workspace-tools"><button class="chrome" id="add-resource">+ Рабочее место</button></div><p data-help class="small muted">Места показываются мастерам при аренде в выбранном городе — с этой фотографией и названием. Место можно временно выключить («Принимать записи») или удалить. Место с прошлыми записями при удалении скрывается, история записей сохраняется.</p>${list.length ? `<div class="workspace-list">${list.map((r) => `<article class="workspace-card${r.active ? "" : " is-off"}"><img class="workspace-card__photo" src="${esc(resourcePhoto(r))}" alt="" loading="lazy"><div class="workspace-card__copy"><h3>${esc(r.name)}</h3><small>${r.active ? "Принимает записи" : "Не принимает записи"}</small></div><div class="workspace-card__actions"><button type="button" data-edit-resource="${r.id}">Изменить</button><button type="button" class="workspace-delete" data-delete-resource="${r.id}">Удалить</button></div></article>`).join("")}</div>` : `<div class="empty">В городе ${esc(CITY_LABELS[adminCity])} пока нет рабочих мест. Добавьте первое кнопкой «+ Рабочее место».</div>`}`;
+    body = `${cityTabs()}<div class="admin-tools workspace-tools"><button class="chrome" id="add-resource">+ Рабочее место</button></div><p data-help class="small muted">Места показываются мастерам при аренде в выбранном городе — с этой фотографией и названием. Место можно временно выключить («Принимать записи») или удалить. Место с прошлыми записями при удалении скрывается, история записей сохраняется.</p>${list.length ? `<div class="workspace-list">${list.map((r) => `<article class="workspace-card${r.active ? "" : " is-off"}"><img class="workspace-card__photo" src="${esc(resourcePhoto(r))}" alt="" loading="lazy"><div class="workspace-card__copy"><h3>${esc(r.name)}</h3><small>${r.active ? "Принимает записи" : "Не принимает записи"}</small>${AP.placeInfo(r, a)}</div><div class="workspace-card__actions"><button type="button" data-edit-resource="${r.id}">Изменить</button>${AP.isShift() ? "" : `<button type="button" data-place-hours="${r.id}">Часы работы</button>`}<button type="button" class="workspace-delete" data-delete-resource="${r.id}">Удалить</button></div></article>`).join("")}</div>` : `<div class="empty">В городе ${esc(CITY_LABELS[adminCity])} пока нет рабочих мест. Добавьте первое кнопкой «+ Рабочее место».</div>`}`;
   }
   if (adminTab === "users") {
     // «Пользователи»: все аккаунты (мастера, админы, клиенты) и карточки мастеров на сайте.
     const isAdmin = (u) => u.role === "admin" || u.account_type === "admin",
       isMaster = (u) => !isAdmin(u) && u.account_type === "master",
-      shown = a.users.filter((u) => usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true),
+      shown = a.users.filter((u) => (usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true) && (!usersTag || AP.userTags(u).some(([k]) => k === usersTag))),
       roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : ({resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
-    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div><div class="admin-users-list">${table(
+    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div><div class="pro-tag-filter" role="group" aria-label="Метки">${AP.TAG_FILTERS.map(([value, label]) => `<button type="button" data-users-tag="${value}" aria-pressed="${usersTag === value}">${label} <b>${a.users.filter((u) => AP.userTags(u).some(([k]) => k === value)).length}</b></button>`).join("")}${AP.isShift() ? "" : '<button type="button" class="pro-tag-filter__action" id="broadcast">Рассылка ✉</button>'}</div><p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="admin-users-list">${table(
       ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
         (u) =>
-          `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><span>${esc(u.name)}</span>${copyButton(u.name,"имя")}</span><span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
+          `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><button type="button" class="pro-link" data-user-card="${u.id}">${esc(u.name)}</button>${copyButton(u.name,"имя")}</span><span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span><span class="pro-tags">${AP.tagChips(u)}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${u.balance === null ? "—" : money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
       ),
     )}</div>${usersFilter === "master" ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
       ["Фото", "Мастер", "Баллы", "На главной", ""],
@@ -1160,29 +1188,15 @@ async function adminPage() {
     )}` : ""}`;
   }
   if (adminTab === "catalog")
-    body = `<div class="admin-tools"><button class="chrome" id="add-catalog">+ Товар или услуга</button></div>${table(
+    body = `<div class="admin-tools">${AP.isShift() ? "" : '<button class="chrome" id="add-catalog">+ Товар или услуга</button>'}</div>${table(
       ["Позиция", "Тип", "Цена", "Остаток", ""],
       a.catalog.map(
         (x) =>
-          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Расходник" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? x.stock : "—"}</td><td><button data-edit-catalog="${x.id}">Изменить</button></td></tr>`,
+          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Расходник" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? `<span class="${x.stock <= (x.min_stock ?? 5) ? "pro-low" : ""}">${x.stock}</span> <small class="muted">мин. ${x.min_stock ?? 5}</small>` : "—"}</td><td>${x.kind === "product" ? `<button data-stock="${x.id}">Приход / списание</button> ` : ""}${AP.isShift() ? "" : `<button data-edit-catalog="${x.id}">Изменить</button>`}</td></tr>`,
       ),
-    )}`;
-  if (adminTab === "finance")
-    body = `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>${table(
-      ["Дата", "Платёж", "Назначение", "Сумма", "Статус"],
-      a.payments.map(
-        (p) =>
-          `<tr><td>${dateLabel(p.created_at)}</td><td>${p.id.slice(0, 8)}</td><td>${p.kind === "deposit" ? "Предоплата" : "Итоговый счёт"}</td><td>${money(p.amount)}</td><td>${statusName[p.status] || esc(p.status)}</td></tr>`,
-      ),
-    )}`;
-  if (adminTab === "feedback")
-    body = table(
-      ["Дата", "Обращение", "Статус", ""],
-      a.feedback.map(
-        (f) =>
-          `<tr><td>${dateLabel(f.created_at)}</td><td style="white-space:pre-wrap;max-width:400px">${esc(f.message)}</td><td>${statusName[f.status]}</td><td><button data-feedback="${f.id}" data-status="${f.status === "new" ? "done" : "new"}">${f.status === "new" ? "Обработано" : "Вернуть"}</button></td></tr>`,
-      ),
-    );
+    )}${AP.catalogExtrasHTML(a)}`;
+  if (adminTab === "finance") body = AP.financeHTML(a, s);
+  if (adminTab === "feedback") body = AP.feedbackHTML(a);
   if (adminTab === "settings")
     body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места и тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
@@ -1192,13 +1206,13 @@ async function adminPage() {
         ["retain", "Удержать предоплату по регламенту"],
       ],
       s.lateCancellation,
-    )}</div></fieldset><fieldset class="admin-group"><legend>Рейтинговые баллы</legend><p class="small muted">Финансовые баллы — после полного расчёта. Изменение весов пересчитывает весь рейтинг. Баллы не являются деньгами или скидкой.</p><div class="form-grid">${field("points_bookingPoints", "Баллы за базовую стоимость аренды", s.rankingRules?.bookingPoints ?? 70, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_bookingRubles", "Базовая стоимость аренды, ₽", s.rankingRules?.bookingRubles ?? 3200, "number", 'required min="1" max="100000" step="1" data-plain-number="true"')}${field("points_servicePoints", "Баллы за одну оплаченную услугу", s.rankingRules?.servicePoints ?? 20, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_productPointsPer1000", "Баллы за 1 000 ₽ товаров", s.rankingRules?.productPointsPer1000 ?? 5, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_profilePoints", "Полный профиль", s.rankingRules?.profilePoints ?? 5, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_workPoints", "Одна уникальная работа", s.rankingRules?.workPoints ?? 2, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_draftPoints", "Один уникальный эскиз", s.rankingRules?.draftPoints ?? 1, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_workLimit", "Лимит работ с баллами", s.rankingRules?.workLimit ?? 100, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_draftLimit", "Лимит эскизов с баллами", s.rankingRules?.draftLimit ?? 20, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}</div></fieldset><fieldset class="admin-group"><legend>Реквизиты и документы</legend><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("ogrnip", "ОГРНИП", s.ogrnip || "")}${field("bankName", "Банк", s.bankName || "")}${field("bankBik", "БИК", s.bankBik || "")}${field("bankCorrespondent", "Корреспондентский счёт", s.bankCorrespondent || "")}${field("bankAccount", "Расчётный счёт", s.bankAccount || "")}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label></fieldset><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
+    )}</div></fieldset>${AP.settingsFieldset(s)}<fieldset class="admin-group"><legend>Рейтинговые баллы</legend><p class="small muted">Финансовые баллы — после полного расчёта. Изменение весов пересчитывает весь рейтинг. Баллы не являются деньгами или скидкой.</p><div class="form-grid">${field("points_bookingPoints", "Баллы за базовую стоимость аренды", s.rankingRules?.bookingPoints ?? 70, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_bookingRubles", "Базовая стоимость аренды, ₽", s.rankingRules?.bookingRubles ?? 3200, "number", 'required min="1" max="100000" step="1" data-plain-number="true"')}${field("points_servicePoints", "Баллы за одну оплаченную услугу", s.rankingRules?.servicePoints ?? 20, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_productPointsPer1000", "Баллы за 1 000 ₽ товаров", s.rankingRules?.productPointsPer1000 ?? 5, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_profilePoints", "Полный профиль", s.rankingRules?.profilePoints ?? 5, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_workPoints", "Одна уникальная работа", s.rankingRules?.workPoints ?? 2, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_draftPoints", "Один уникальный эскиз", s.rankingRules?.draftPoints ?? 1, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_workLimit", "Лимит работ с баллами", s.rankingRules?.workLimit ?? 100, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}${field("points_draftLimit", "Лимит эскизов с баллами", s.rankingRules?.draftLimit ?? 20, "number", 'required min="0" max="100000" step="1" data-plain-number="true"')}</div></fieldset><fieldset class="admin-group"><legend>Реквизиты и документы</legend><div class="form-grid">${field("legalName", "Наименование ИП / ООО", s.legalName)}${field("inn", "ИНН", s.inn)}${field("ogrnip", "ОГРНИП", s.ogrnip || "")}${field("bankName", "Банк", s.bankName || "")}${field("bankBik", "БИК", s.bankBik || "")}${field("bankCorrespondent", "Корреспондентский счёт", s.bankCorrespondent || "")}${field("bankAccount", "Расчётный счёт", s.bankAccount || "")}${field("legalAddress", "Юридический адрес", s.legalAddress)}${field("rulesVersion", "Версия правил", s.rulesVersion)}<div class="wide">${textarea("rules", "Правила студии", s.rules)}${textarea("privacy", "Политика обработки данных", s.privacy)}${textarea("consent", "Отдельное согласие на обработку данных", s.consent)}${textarea("offer", "Оферта", s.offer)}</div></div><label class="check"><input name="legalApproved" type="checkbox" ${s.legalApproved ? "checked" : ""}><span>Документы проверены владельцем студии</span></label></fieldset><button type="submit" class="chrome">Сохранить настройки</button></form><h3 style="margin-top:35px">Подключения</h3>${table(
       ["Сервис", "Ключи"],
       Object.entries(a.integrations || {}).map(
         ([k, v]) =>
           `<tr><td>${esc(k)}</td><td>${v ? "заданы на сервере" : "не подключён"}</td></tr>`,
       ),
-    )}<div class="note-paper">Режим: тестовый. Боевые платежи заблокированы до проверки кассы, документов и инфраструктуры в РФ. Секретные ключи задаются на сервере, в браузере не хранятся.</div>`;
+    )}<div class="note-paper">Режим: тестовый. Боевые платежи заблокированы до проверки кассы, документов и инфраструктуры в РФ. Секретные ключи задаются на сервере, в браузере не хранятся.</div>${AP.settingsLogHTML(a)}`;
   return win(
     "Управление студией",
     `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${group?.label || tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
@@ -1274,8 +1288,9 @@ function mountAdmin() {
       const fields = [...settings.querySelectorAll(":scope > fieldset")];
       const sections = [
         ["Студия, тарифы и бронирование", fields.slice(0,3)],
-        ["Рейтинг мастеров", fields.slice(3,4)],
-        ["Документы и подключения", fields.slice(4)],
+        ["Автоматизация и цены", fields.slice(3,4)],
+        ["Рейтинг мастеров", fields.slice(4,5)],
+        ["Документы и подключения", fields.slice(5)],
       ];
       sections.forEach(([title, nodes], index) => {
         const section = document.createElement("details");
@@ -1286,7 +1301,7 @@ function mountAdmin() {
         section.append(summary);
         nodes[0].before(section);
         section.append(...nodes);
-        if (index === 2) while (settings.nextSibling) section.append(settings.nextSibling);
+        if (index === 3) while (settings.nextSibling) section.append(settings.nextSibling);
       });
       settings.addEventListener("invalid", event => {
         const section = event.target.closest("details");
@@ -1328,8 +1343,7 @@ function mountAdmin() {
     });
     const summaries = {
       catalog: [["Расходники", a.catalog.filter(x => x.kind === "product" && x.active).length], ["Услуги", a.catalog.filter(x => x.kind !== "product" && x.active).length]],
-      finance: [[safemodeLabel(), money(a.payments.filter(p => p.status === "paid").reduce((sum,p) => sum + Number(p.amount), 0))], ["Платежей", a.payments.length]],
-      feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]]
+      feedback: [["Новые обращения", a.feedback.filter(f => f.status === "new").length], ["В работе", a.feedback.filter(f => f.status === "in_progress").length], ["Обработано", a.feedback.filter(f => f.status === "done").length]]
     };
     function safemodeLabel() { return pub.settings.mode === "test" ? "Тестовые оплаты" : "Успешные оплаты"; }
     if (summaries[adminTab]) {
@@ -1387,6 +1401,8 @@ function mountAdmin() {
         render();
       }),
   );
+  $$("[data-users-tag]").forEach((b) => (b.onclick = () => { usersTag = usersTag === b.dataset.usersTag ? "" : b.dataset.usersTag; render(); }));
+  AP.mount(adminTab);
   $$("[data-edit-user]").forEach(
     (b) =>
       (b.onclick = () =>
@@ -1403,13 +1419,14 @@ function mountAdmin() {
           ["service", "Услуга"],
         ],
         x?.kind || "product",
-      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Показывать при записи</label>`,
+      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}${field("minStock", "Минимальный остаток (предупреждение)", x?.min_stock ?? 5, "number", 'required min="0" step="1" data-plain-number="true"')}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Показывать при записи</label>`,
       (d) =>
         api("/admin/catalog", "POST", {
           ...d,
           id: x?.id,
           price: Math.round(Number(d.price) * 100),
           stock: Number(d.stock),
+          minStock: Number(d.minStock),
           active: d.active === "on",
         }),
     );
@@ -1524,15 +1541,8 @@ function mountAdmin() {
           "Место",
           a.resources.filter((r) => r.active).map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name]),
           "",
-        )}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется.</p>`,
-        (d) =>
-          api("/bookings", "POST", {
-            ...d,
-            hour: Number(d.hour),
-            duration: Number(d.duration),
-            extras: [],
-            manual: true,
-          }),
+        )}${select("repeat", "Повторять", [[1, "Не повторять"], [4, "Каждую неделю · 4 раза"], [8, "Каждую неделю · 8 раз"], [12, "Каждую неделю · 12 раз"]], 1)}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется. При повторе занятые даты пропускаются.</p>`,
+        (d) => AP.manualRepeat(d),
       );
   $$("[data-cash-payment]").forEach(button => button.onclick = () => dialogForm("Подтвердить наличный расчёт", '<p>Отметьте оплату только после получения наличных. Запись будет закрыта как оплаченная.</p>', () => api("/admin/payments/" + button.dataset.cashPayment + "/cash", "POST", {})));
   $$("[data-invoice]").forEach(
@@ -1661,6 +1671,7 @@ function mountAdmin() {
     for (const r of ["resident", "guest"])
       for (const h of [3, 6, 12])
         rates[r][h] = Math.round(Number(d[r + "_" + h]) * 100);
+    const automation = AP.settingsPayload(d);
     const { cityAddress, cityOpen, ...rest } = d,
       city = { open: cityOpen === "on", address: cityAddress || "" };
     if (adminCity !== "spb") city.rates = rates;
@@ -1675,6 +1686,7 @@ function mountAdmin() {
       reminderHours: Number(d.reminderHours),
       rankingRules:Object.fromEntries(["bookingPoints","bookingRubles","servicePoints","productPointsPer1000","profilePoints","workPoints","draftPoints","workLimit","draftLimit"].map(k=>[k,Number(d["points_"+k])])),
       legalApproved: d.legalApproved === "on",
+      ...automation,
     });
     await refresh();
     notify("Настройки студии сохранены");
@@ -1854,7 +1866,7 @@ async function render() {
       case "feedback":
         html = win(
           "Feedback",
-          `<form id="feedback-form" class="auth-form"><h2>Как Tattoo Office стать лучше?</h2><p data-help class="small muted">Пожалуйста, оставьте свой искренний честный комментарий, который поможет нам стать лучше. Ваше анонимное сообщение увидит команда студии. Мы изучим вашу идею/предложение/замечание.\n\nЕсли нужен ответ, оставьте способ связи.\n\nС любовью и заботой, ваш T.Office ❤️</p>${textarea("message", "Ваше мнение формирует наш путь. Поделитесь им.")}<button class="chrome" type="submit">Отправить анонимно →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
+          `<form id="feedback-form" class="auth-form"><h2>Как Tattoo Office стать лучше?</h2><p data-help class="small muted">Пожалуйста, оставьте свой искренний честный комментарий, который поможет нам стать лучше. Ваше анонимное сообщение увидит команда студии. Мы изучим вашу идею/предложение/замечание.\n\nЕсли нужен ответ, оставьте способ связи.\n\nС любовью и заботой, ваш T.Office ❤️</p>${textarea("message", "Ваше мнение формирует наш путь. Поделитесь им.")}${field("contact", "Email или Telegram для ответа (необязательно)", "", "text", 'maxlength="200" autocomplete="email"')}<button class="chrome" type="submit">Отправить →</button><p class="manager-contact">Связь и все вопросы — ${managerLink()}.</p></form>`,
         );
         mount = () => {
           if (path[0] === "book") {
@@ -1900,6 +1912,10 @@ async function render() {
     $("#retry").onclick = render;
   }
 }
+AP.init({
+  api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity,
+  state: () => ({ me, pub, adminData, adminDate, adminCity }),
+});
 window.Office = { render, paintAccount: paintShell, current: () => me };
 window.Store = {
   current: () => me,
