@@ -1,5 +1,5 @@
-/* Сегментированные переключатели (.tabs): белая подложка-«бегунок» плавно
-   следует за курсором и останавливается на опции после клика. Без курсора
+/* Сегментированные переключатели (.tabs): белая подложка-«бегунок» переезжает
+   под опцию, на которую наведён курсор, и встаёт на неё после клика. Без курсора
    подложка стоит под выбранной опцией. Работает и после перерисовки страницы:
    последняя позиция запоминается, и подложка доезжает до новой опции. */
 (() => {
@@ -39,18 +39,17 @@
     if (previous) { set(previous, true); requestAnimationFrame(() => rest(false)); }
     else rest(true);
 
-    // Следует за курсором: ширина — как у опции под курсором, центр — у курсора,
-    // но не выходит за края переключателя и строку этой опции.
+    // Следует за курсором от опции к опции: подложка всегда целиком под одной
+    // опцией (по центру её текста), между опциями не останавливается.
+    let hovered = null;
     tabs.addEventListener("pointermove", (e) => {
       if (e.pointerType !== "mouse") return;
       const b = e.target.closest("button, a");
-      if (!b || b.parentElement !== tabs || b.disabled) return;
-      const box = boxOf(b), area = tabs.getBoundingClientRect(), pad = options(tabs)[0].offsetLeft;
-      const cursor = e.clientX - area.left - tabs.clientLeft;
-      const x = Math.max(pad, Math.min(cursor - box.w / 2, tabs.clientWidth - box.w - pad));
-      set({ ...box, x });
+      if (!b || b.parentElement !== tabs || b.disabled || b === hovered) return;
+      hovered = b;
+      set(boxOf(b));
     });
-    tabs.addEventListener("pointerleave", () => rest(false));
+    tabs.addEventListener("pointerleave", () => { hovered = null; rest(false); });
     tabs.addEventListener("click", (e) => {
       const b = e.target.closest("button, a");
       if (!b || b.parentElement !== tabs || b.disabled) return;
