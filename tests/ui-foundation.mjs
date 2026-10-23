@@ -84,9 +84,9 @@ try{
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
   assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
   assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Обзор','Брони и оплаты','Пользователи','Студия']);
-  assert.equal(await page.locator('.admin-settings-section').count(),3);
-  assert.equal(await page.locator('.admin-settings-section:not([open])').count(),2);
-  await page.locator('.admin-settings-section').nth(1).locator('summary').click();
+  assert.equal(await page.locator('.admin-settings-section').count(),4);
+  assert.equal(await page.locator('.admin-settings-section:not([open])').count(),3);
+  await page.locator('.admin-settings-section').nth(2).locator('summary').click();
   await page.locator('[name=points_bookingPoints]').fill('71');
   await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/settings')&&r.request().method()==='PATCH'),page.locator('#settings-form button[type=submit]').click()]);
   await page.waitForFunction(()=>document.querySelector('#notice').textContent==='Настройки студии сохранены');
