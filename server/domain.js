@@ -141,3 +141,49 @@ export function allowedOrigin(origin, { appOrigin, host, previewPattern = DEFAUL
   if (!previewPattern) return false;
   try { return new RegExp(previewPattern).test(origin); } catch { return false; }
 }
+
+// --- Цены по времени, расписание мест, промокоды (общие для сервера и тестов) ---
+// День недели даты в календаре Москвы: 1 — понедельник … 7 — воскресенье.
+export function weekday(date) {
+  const day = new Date(`${date}T12:00:00+03:00`).getUTCDay();
+  return day === 0 ? 7 : day;
+}
+export const defaultPriceRules = { nightPercent: 0, nightFrom: 22, nightTo: 8, weekendPercent: 0 };
+// Надбавка (или скидка) к аренде: ночные часы и выходные. Округление до рубля.
+export function priceAdjust(base, date, hour, rules = {}) {
+  const r = { ...defaultPriceRules, ...(rules || {}) };
+  const night = r.nightPercent && (r.nightFrom > r.nightTo ? hour >= r.nightFrom || hour < r.nightTo : hour >= r.nightFrom && hour < r.nightTo);
+  const weekend = r.weekendPercent && weekday(date) >= 6;
+  const percent = (night ? r.nightPercent : 0) + (weekend ? r.weekendPercent : 0);
+  const rate = Math.max(0, Math.round((base * (100 + percent)) / 100 / 100) * 100);
+  return { rate, percent, night: !!night, weekend: !!weekend };
+}
+// Работает ли конкретное место в выбранные день и часы (своё расписание места).
+export function resourceOpen(resource, date, hour, duration) {
+  const s = resource?.schedule || {};
+  if (Array.isArray(s.days) && s.days.length && !s.days.includes(weekday(date))) return false;
+  if (Number.isInteger(s.openHour) && Number.isInteger(s.closeHour) && !(s.openHour === 0 && s.closeHour === 24))
+    if (hour < s.openHour || hour + duration > s.closeHour) return false;
+  return true;
+}
+export function validSchedule(value) {
+  if (!value || typeof value !== "object") return {};
+  const days = Array.isArray(value.days) ? [...new Set(value.days.map(Number))].filter((d) => Number.isInteger(d) && d >= 1 && d <= 7).sort() : [];
+  const out = {};
+  if (days.length && days.length < 7) out.days = days;
+  if (value.openHour !== undefined && value.closeHour !== undefined && !(Number(value.openHour) === 0 && Number(value.closeHour) === 24)) {
+    out.openHour = integer(Number(value.openHour), 0, 23, "Открытие места");
+    out.closeHour = integer(Number(value.closeHour), 1, 24, "Закрытие места");
+    if (out.closeHour <= out.openHour) fail("Закрытие места должно быть позже открытия");
+  }
+  return out;
+}
+export function promoDiscount(promo, rate) {
+  if (!promo) return 0;
+  return promo.kind === "percent" ? Math.round((rate * Math.min(100, promo.value)) / 100) : Math.min(rate, promo.value);
+}
+export function normalizePromoCode(code) {
+  const value = String(code || "").trim().toUpperCase();
+  if (!/^[A-Z0-9А-ЯЁ_-]{3,32}$/u.test(value)) fail("Промокод: от 3 до 32 букв, цифр, дефисов");
+  return value;
+}

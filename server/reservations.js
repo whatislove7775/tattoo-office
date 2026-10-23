@@ -18,6 +18,8 @@ export async function expireReservations(q) {
         "Резерв истёк: возврат баланса",
       ]);
     }
+    if (b.policy?.promo?.code)
+      await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1", [b.policy.promo.code]);
     for (const x of b.extras)
       if (x.kind === "product")
         await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [

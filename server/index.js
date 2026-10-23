@@ -5,6 +5,8 @@ import {ageFromBirthDate} from "./profile-age.js";
 import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
+import {createInvoice} from "./invoicing.js";
+import {adminProRoutes,ownerOnly,isOwner} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -34,6 +36,11 @@ import {
   withCities,
   cityRates,
   cityOpen,
+  priceAdjust,
+  resourceOpen,
+  promoDiscount,
+  normalizePromoCode,
+  validSchedule,
   allowedOrigin,
   DEFAULT_PREVIEW_ORIGIN_PATTERN,
 } from "./domain.js";
@@ -222,6 +229,7 @@ export async function createApp(db) {
           sequence: u.sequence,
           profile: u.profile,
           telegramLinked: !!u.telegram_id,
+          staffLevel: u.role === "admin" ? (u.profile?.staffLevel === "shift" ? "shift" : "owner") : undefined,
         }
       : null;
   const session = async (res, u) => {
@@ -242,6 +250,8 @@ export async function createApp(db) {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
   };
   const release = async (q, b, status) => {
+    if (b.policy?.promo?.code)
+      await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1", [b.policy.promo.code]);
     if (b.balance_used)
       await ledger(
         q,
@@ -300,6 +310,7 @@ export async function createApp(db) {
     ));
   };
   telegramRoutes(app, { db, session, auth });
+  adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
   app.get("/api/health", async (req, res) => {
     await db.query("SELECT 1");
     res.json({ ok: true });
@@ -552,7 +563,7 @@ export async function createApp(db) {
       await expire(q);
       const resources = (
           await q.query(
-            "SELECT id,name FROM resources WHERE active=true AND city=$1 ORDER BY name",
+            "SELECT id,name,schedule FROM resources WHERE active=true AND city=$1 ORDER BY name",
             [city],
           )
         ).rows,
@@ -567,8 +578,9 @@ export async function createApp(db) {
         }
         const free = [];
         for (const r of resources)
-          if (await available(q, r.id, ...range)) free.push(r.id);
-        result.push({ hour, free });
+          if (resourceOpen(r, date, hour, duration) && await available(q, r.id, ...range)) free.push(r.id);
+        const price = priceAdjust(100, date, hour, s.priceRules);
+        result.push({ hour, free, pricePercent: price.percent });
       }
       const n = await one(
         q,
@@ -604,6 +616,8 @@ export async function createApp(db) {
         fail("Это место уже занято. Выберите другое время", 409);
       if (!manual && !cityOpen(s, r.city))
         fail("Студия в этом городе пока не открыта для записи", 409);
+      if (!manual && !resourceOpen(r, req.body.date, Number(req.body.hour), duration))
+        fail("Это место не работает в выбранное время", 409);
       const rates = cityRates(s, r.city)[u.role];
       const extras = [];
       if (!Array.isArray(req.body.extras) || req.body.extras.length > 30)
@@ -640,10 +654,23 @@ export async function createApp(db) {
         });
       }
       const bonus = await loyalty(q, u.id);
-      const rate = bonus.freeNext ? 0 : rates[duration],
+      // Надбавки за ночь и выходные, затем промокод (только на аренду, не на услуги).
+      const adjusted = priceAdjust(rates[duration], req.body.date, Number(req.body.hour), s.priceRules);
+      let promo = null, discount = 0;
+      if (req.body.promo && !bonus.freeNext) {
+        const code = normalizePromoCode(req.body.promo);
+        promo = await one(q, "SELECT * FROM promo_codes WHERE code=$1 FOR UPDATE", [code]);
+        if (!promo || !promo.active || (promo.expires_at && new Date(promo.expires_at) < new Date()) || (promo.max_uses !== null && promo.used >= promo.max_uses))
+          fail("Промокод недействителен или уже использован", 409);
+        discount = promoDiscount(promo, adjusted.rate);
+        await q.query("UPDATE promo_codes SET used=used+1 WHERE code=$1", [code]);
+      }
+      const rate = bonus.freeNext ? 0 : Math.max(0, adjusted.rate - discount),
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
         cash = u.role === "resident" && u.deposit_waived,
-        deposit = cash || bonus.freeNext ? 0 : Math.min(s.deposit, total),
+        // Мастерам с неявками администратор может включить полную предоплату.
+        fullPrepay = u.profile?.fullPrepay === true && !cash,
+        deposit = cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
         used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
@@ -673,6 +700,10 @@ export async function createApp(db) {
           rulesVersion: s.rulesVersion,
           paymentMethod: cash ? "cash" : "online",
           loyaltyFree: bonus.freeNext,
+          pricePercent: adjusted.percent,
+          baseRate: rates[duration],
+          promo: promo ? { code: promo.code, discount } : undefined,
+          fullPrepay: fullPrepay || undefined,
         }),
         id,
       ]);
@@ -787,10 +818,11 @@ export async function createApp(db) {
       const message = String(req.body.message || "").trim();
       if (message.length < 5 || message.length > 4000)
         fail("Сообщение: от 5 до 4000 символов");
-      await db.query(
-        "INSERT INTO feedback(id,user_id,message) VALUES($1,$2,$3)",
-        [uuid(), req.user?.id || null, message],
-      );
+      const contact = String(req.body.contact || "").trim().slice(0, 200), id = uuid();
+      await db.transaction(async (q) => {
+        await q.query("INSERT INTO feedback(id,user_id,message,contact) VALUES($1,$2,$3,$4)", [id, req.user?.id || null, message, contact]);
+        await enqueue(q, "feedback.new", { feedbackId: id });
+      });
       res.status(201).json({ ok: true });
     },
   );
@@ -808,7 +840,15 @@ export async function createApp(db) {
       Object.assign(result, {
         users: (
           await db.query(
-            "SELECT id,email,name,role,account_type,active,balance,deposit_waived,created_at,profile->>'adminBookingLink' AS booking_link FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
+            `SELECT u.id,u.email,u.name,u.role,u.account_type,u.active,u.balance,u.deposit_waived,u.created_at,u.profile->>'adminBookingLink' AS booking_link,
+              COALESCE(u.profile->>'city','') AS city,(u.profile->>'fullPrepay')='true' AS full_prepay,
+              CASE WHEN u.role='admin' THEN COALESCE(u.profile->>'staffLevel','owner') END AS staff_level,
+              COALESCE(u.profile->>'avatar','')<>'' AS has_avatar,
+              (SELECT count(*) FROM bookings b WHERE b.user_id=u.id AND b.status='completed')::int AS completed,
+              (SELECT max(b.starts_at) FROM bookings b WHERE b.user_id=u.id AND b.status IN ('confirmed','invoiced','completed')) AS last_booking,
+              EXISTS(SELECT 1 FROM bookings b WHERE b.user_id=u.id AND b.status='invoiced') AS unpaid,
+              (SELECT count(*) FROM bookings b WHERE b.user_id=u.id AND b.status='no_show' AND b.starts_at>now()-interval '90 days')::int AS no_shows
+              FROM users u WHERE u.deleted_at IS NULL ORDER BY u.created_at DESC`,
           )
         ).rows,
         bookings: (
@@ -826,7 +866,11 @@ export async function createApp(db) {
         ).rows,
         resources: (await db.query("SELECT * FROM resources WHERE NOT deleted ORDER BY name"))
           .rows,
+        promos: (await db.query("SELECT code,kind,value,max_uses,used,to_char(expires_at AT TIME ZONE 'Europe/Moscow','YYYY-MM-DD') AS expires_at,active,note FROM promo_codes ORDER BY created_at DESC")).rows,
+        stockMoves: (await db.query("SELECT m.*,c.name AS item_name FROM stock_moves m JOIN catalog c ON c.id=m.catalog_id ORDER BY m.created_at DESC LIMIT 100")).rows,
+        settingsLog: (await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='settings.update' ORDER BY a.created_at DESC LIMIT 30")).rows,
       });
+      if (!isOwner(req.user)) { result.payments = []; result.promos = []; result.users = result.users.map((u) => ({ ...u, balance: null })); }
     }
     if (role === "admin") {
       const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;
@@ -849,7 +893,7 @@ export async function createApp(db) {
     }
     res.json(result);
   });
-  app.patch("/api/admin/settings", roles("admin"), async (req, res) => {
+  app.patch("/api/admin/settings", ownerOnly, async (req, res) => {
     await db.transaction(async (q) => {
       await lock(q);
       const old = await settings(q),
@@ -884,6 +928,31 @@ export async function createApp(db) {
         ["deposit", 0, 10000000],
       ])
         if (req.body[k] !== undefined) s[k] = integer(req.body[k], min, max, k);
+      if (req.body.priceRules !== undefined) {
+        const p = req.body.priceRules || {};
+        s.priceRules = {
+          nightPercent: integer(Number(p.nightPercent ?? 0), -90, 300, "Ночная надбавка"),
+          nightFrom: integer(Number(p.nightFrom ?? 22), 0, 23, "Начало ночи"),
+          nightTo: integer(Number(p.nightTo ?? 8), 0, 23, "Конец ночи"),
+          weekendPercent: integer(Number(p.weekendPercent ?? 0), -90, 300, "Надбавка выходных"),
+        };
+      }
+      if (req.body.residentRule !== undefined) {
+        const r = req.body.residentRule || {};
+        s.residentRule = {
+          sessions: integer(Number(r.sessions ?? 8), 1, 1000, "Сеансов для резидентства"),
+          days: integer(Number(r.days ?? 60), 7, 3650, "Период для резидентства"),
+          inactiveDays: integer(Number(r.inactiveDays ?? 90), 7, 3650, "Неактивность резидента"),
+        };
+      }
+      if (req.body.autoInvoice !== undefined) {
+        if (typeof req.body.autoInvoice !== "boolean") fail("Проверьте автоматический счёт");
+        s.autoInvoice = req.body.autoInvoice;
+      }
+      if (req.body.replyTemplates !== undefined) {
+        if (!Array.isArray(req.body.replyTemplates) || req.body.replyTemplates.length > 20) fail("До 20 шаблонов ответов");
+        s.replyTemplates = req.body.replyTemplates.map((t) => String(t).trim().slice(0, 1000)).filter(Boolean);
+      }
       if (req.body.rankingRules !== undefined) {
         if (!req.body.rankingRules || typeof req.body.rankingRules !== "object" || Array.isArray(req.body.rankingRules)) fail("Проверьте правила рейтинга");
         const rules=pointRules(old);
@@ -952,11 +1021,14 @@ export async function createApp(db) {
       await q.query("UPDATE settings SET data=$1 WHERE id=1", [
         JSON.stringify(s),
       ]);
-      await audit(q, req.user.id, "settings.update");
+      // Журнал изменений: какие поля поменялись (без длинных текстов документов).
+      const changed = Object.keys(s).filter((k) => JSON.stringify(s[k]) !== JSON.stringify(old[k]));
+      const diff = Object.fromEntries(changed.map((k) => [k, ["rules", "privacy", "offer", "consent"].includes(k) ? "изменён текст" : { from: old[k] ?? null, to: s[k] }]));
+      await audit(q, req.user.id, "settings.update", { changed, diff });
     });
     res.json({ ok: true });
   });
-  app.post("/api/admin/users", staff, async (req, res) => {
+  app.post("/api/admin/users", ownerOnly, async (req, res) => {
     const role = req.body.role || "guest";
     if (!["guest", "resident", "admin"].includes(role))
       fail("Недопустимая роль", 403);
@@ -981,7 +1053,7 @@ export async function createApp(db) {
     });
     res.status(201).json({ id });
   });
-  app.patch("/api/admin/users/:id", roles("admin"), async (req, res) => {
+  app.patch("/api/admin/users/:id", ownerOnly, async (req, res) => {
     await db.transaction(async (q) => {
       await lock(q);
       const u = await one(q, "SELECT * FROM users WHERE id=$1", [
@@ -1018,7 +1090,7 @@ export async function createApp(db) {
     });
     res.json({ ok: true });
   });
-  app.delete("/api/admin/users/:id",roles("admin"),async(req,res)=>{
+  app.delete("/api/admin/users/:id",ownerOnly,async(req,res)=>{
     if(!/^[0-9a-f-]{36}$/i.test(req.params.id))fail("Пользователь не найден",404);
     if(req.params.id===req.user.id)fail("Нельзя удалить собственный аккаунт администратора",403);
     await db.transaction(async q=>{
@@ -1036,7 +1108,7 @@ export async function createApp(db) {
     });
     res.json({ok:true});
   });
-  app.patch("/api/admin/masters/:id/points", roles("admin"), async (req,res) => {
+  app.patch("/api/admin/masters/:id/points", ownerOnly, async (req,res) => {
     const target=req.body.score;
     if(!Number.isSafeInteger(target)||target<0||target>10000000)fail("Укажите целое количество баллов от 0 до 10 000 000");
     if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
@@ -1058,7 +1130,7 @@ export async function createApp(db) {
     });
     res.json({ok:true,score:target});
   });
-  app.post("/api/admin/resources", roles("admin"), async (req, res) => {
+  app.post("/api/admin/resources", ownerOnly, async (req, res) => {
     const id = req.body.id || uuid(),
       name = String(req.body.name || "").trim(),
       city = validCity(String(req.body.city || "spb")),
@@ -1083,7 +1155,7 @@ export async function createApp(db) {
   });
   // Удаление рабочего места: без истории — полностью, с бронями или закрытиями —
   // скрывается (история записей и счета сохраняются).
-  app.delete("/api/admin/resources/:id", roles("admin"), async (req, res) => {
+  app.delete("/api/admin/resources/:id", ownerOnly, async (req, res) => {
     if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Рабочее место не найдено", 404);
     const result = await db.transaction(async (q) => {
       await lock(q);
@@ -1113,19 +1185,23 @@ export async function createApp(db) {
     if (!m) fail("Фотография не найдена", 404);
     res.set("Cache-Control", "public,max-age=86400").type("image/jpeg").send(Buffer.from((req.query.size === "thumb" ? m.thumbnail : m.image).split(",")[1], "base64"));
   });
-  app.post("/api/admin/catalog", staff, async (req, res) => {
+  app.post("/api/admin/catalog", ownerOnly, async (req, res) => {
     const { name, kind, price, stock } = req.body,
       id = req.body.id || uuid();
     if (!name || name.length > 100 || !["service", "product"].includes(kind))
       fail("Проверьте позицию");
     integer(price, 0, 10000000);
     integer(stock, 0, 100000);
+    const minStock = req.body.minStock === undefined ? 5 : integer(Number(req.body.minStock), 0, 100000, "Минимальный остаток");
     await db.transaction(async (q) => {
       await lock(q);
+      const before = await one(q, "SELECT stock FROM catalog WHERE id=$1", [id]);
       await q.query(
-        "INSERT INTO catalog(id,name,kind,price,stock,active) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO UPDATE SET name=$2,price=$4,stock=$5,active=$6",
-        [id, name, kind, price, stock, req.body.active !== false],
+        "INSERT INTO catalog(id,name,kind,price,stock,active,min_stock) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(id) DO UPDATE SET name=$2,price=$4,stock=$5,active=$6,min_stock=$7",
+        [id, name, kind, price, stock, req.body.active !== false, minStock],
       );
+      if (kind === "product" && (before ? before.stock : 0) !== stock)
+        await q.query("INSERT INTO stock_moves(id,catalog_id,delta,reason,actor) VALUES($1,$2,$3,$4,$5)", [uuid(), id, stock - (before ? before.stock : 0), before ? "Исправление остатка" : "Начальный остаток", req.user.id]);
       await audit(q, req.user.id, "catalog.save", { id });
     });
     res.json({ id });
@@ -1172,41 +1248,9 @@ export async function createApp(db) {
   app.post("/api/admin/bookings/:id/invoice", staff, async (req, res) => {
     const result = await db.transaction(async (q) => {
       await lock(q);
-      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [
-        req.params.id,
-      ]);
-      if (!b || b.status !== "confirmed")
-        fail("Счёт доступен для подтверждённой брони");
-      if (new Date(b.starts_at) > new Date()) fail("Сеанс ещё не начался");
-      const duration = Number(req.body.duration || b.tariff);
-      if (![3, 6, 12].includes(duration) || duration < b.tariff)
-        fail("Можно выбрать текущий тариф или выше");
-      const u = await one(q, "SELECT * FROM users WHERE id=$1", [b.user_id]),
-        s = await settings(q),
-        rate =
-          b.policy.loyaltyFree ? 0 : duration === b.tariff
-            ? b.rate
-            : (b.policy.rates ||
-                s.rates[
-                  ["resident", "guest"].includes(u.role) ? u.role : "resident"
-                ])[duration],
-        total = rate + b.extras.reduce((a, x) => a + x.qty * x.price, 0),
-        amount = Math.max(0, total - b.deposit);
-      await q.query(
-        "UPDATE bookings SET tariff=$1,rate=$2,total=$3,status=$4 WHERE id=$5",
-        [duration, rate, total, amount ? "invoiced" : "completed", b.id],
-      );
-      let payment = null;
-      if (amount) {
-        payment = uuid();
-        await q.query(
-          "INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'final',$3)",
-          [payment, b.id, amount],
-        );
-      }
-      await enqueue(q, "invoice.created", { bookingId: b.id });
-      await audit(q, req.user.id, "invoice.create", { id: b.id, total });
-      return { paymentId: payment };
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [req.params.id]);
+      const { paymentId } = await createInvoice(q, b, { duration: req.body.duration, settings: await settings(q), actor: req.user.id });
+      return { paymentId };
     });
     res.json(result);
   });
@@ -1288,7 +1332,7 @@ export async function createApp(db) {
     res.json({ ok: true });
   });
   app.patch("/api/admin/feedback/:id", roles("admin"), async (req, res) => {
-    if (!["new", "done"].includes(req.body.status)) fail("Статус");
+    if (!["new", "in_progress", "done"].includes(req.body.status)) fail("Статус");
     await db.query("UPDATE feedback SET status=$1 WHERE id=$2", [
       req.body.status,
       req.params.id,

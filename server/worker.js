@@ -1,6 +1,7 @@
 import { randomUUID as uuid } from "node:crypto";
 import { expireReservations } from "./reservations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
+import { createInvoice } from "./invoicing.js";
 import {
   syncCalendar,
   sendTelegram,
@@ -17,7 +18,48 @@ const labels = {
   "payment.paid": "Оплата подтверждена",
   "payment.failed": "Оплата не прошла. Попробуйте снова в личном кабинете",
   "booking.reminder": "Напоминание о сеансе",
+  "booking.reminder_soon": "Сеанс начнётся через 2 часа",
+  "booking.moved": "Запись перенесена",
+  "booking.no_show": "Отмечена неявка на сеанс. Предоплата не возвращается",
+  "invoice.reminder": "Напоминание: оплатите итоговый счёт в личном кабинете",
 };
+const BUSY = "('pending','confirmed','invoiced','completed','cancel_requested')";
+// Свободно ли хотя бы одно место города в это время (для листа ожидания).
+async function freePlace(q, city, start, end) {
+  return one(q, `SELECT r.id FROM resources r WHERE r.active AND NOT r.deleted AND r.city=$1
+    AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.resource_id=r.id AND b.status IN ${BUSY} AND b.starts_at<$3 AND b.ends_at>$2)
+    AND NOT EXISTS(SELECT 1 FROM blocks k WHERE (k.resource_id=r.id OR k.resource_id IS NULL) AND k.starts_at<$3 AND k.ends_at>$2)
+    AND NOT EXISTS(SELECT 1 FROM calendar_busy c WHERE c.resource_id=r.id AND c.starts_at<$3 AND c.ends_at>$2) LIMIT 1`, [city, start, end]);
+}
+async function notifyUser(q, user, text) {
+  await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), user.id, text]);
+  await q.query("INSERT INTO outbox(id,kind,payload) VALUES($1,'email.send',$2)", [uuid(), JSON.stringify({ to: user.email, text })]);
+  if (user.telegram_chat_id) await q.query("INSERT INTO outbox(id,kind,payload) VALUES($1,'telegram.send',$2)", [uuid(), JSON.stringify({ chatId: user.telegram_chat_id, text })]);
+}
+// Автоматизация студии: итоговый счёт после сеанса, напоминания, лист ожидания.
+export async function automationTick(q, settings) {
+  if (settings.autoInvoice === true) {
+    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
+    for (const b of done) await createInvoice(q, b, { duration: b.tariff, settings, auto: true });
+  }
+  const remind = async (sql, kind, label) => {
+    for (const b of (await q.query(sql)).rows) {
+      const inserted = await q.query("INSERT INTO reminders_sent(booking_id,kind) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING booking_id", [b.id, kind]);
+      if (inserted.rows.length) await q.query("INSERT INTO outbox(id,kind,payload) VALUES($1,$2,$3)", [uuid(), label, JSON.stringify({ bookingId: b.id })]);
+    }
+  };
+  await remind("SELECT id FROM bookings WHERE status='confirmed' AND starts_at>now() AND starts_at<=now()+interval '2 hours' AND starts_at>now()+interval '15 minutes'", "soon", "booking.reminder_soon");
+  await remind("SELECT id FROM bookings WHERE status='invoiced' AND ends_at<now()-interval '24 hours'", "pay", "invoice.reminder");
+  const waiting = (await q.query("SELECT w.*,to_char(w.date,'YYYY-MM-DD') AS day,u.email,u.telegram_chat_id FROM waitlist w JOIN users u ON u.id=w.user_id WHERE w.notified_at IS NULL AND u.active AND w.date>=(now() AT TIME ZONE 'Europe/Moscow')::date ORDER BY w.created_at LIMIT 50")).rows;
+  for (const w of waiting) {
+    const start = new Date(`${w.day}T${String(w.hour).padStart(2, "0")}:00:00+03:00`), end = new Date(+start + w.duration * 3600000);
+    if (+start <= Date.now()) { await q.query("UPDATE waitlist SET notified_at=now() WHERE id=$1", [w.id]); continue; }
+    if (await freePlace(q, w.city, start.toISOString(), end.toISOString())) {
+      await notifyUser(q, { id: w.user_id, email: w.email, telegram_chat_id: w.telegram_chat_id }, `Освободилось место: ${w.day}, ${String(w.hour).padStart(2, "0")}:00, до ${w.duration} ч. Забронируйте, пока его не заняли: ${process.env.APP_ORIGIN || "http://127.0.0.1:3000"}/#/booking`);
+      await q.query("UPDATE waitlist SET notified_at=now() WHERE id=$1", [w.id]);
+    }
+  }
+}
 export async function workerTick(db) {
   try { await refreshCalendarBusy(db, 30000); }
   catch (e) { console.error("Calendar availability:", e.message); }
@@ -41,6 +83,7 @@ export async function workerTick(db) {
         [uuid(), JSON.stringify({ bookingId: b.id })],
       );
     }
+    await automationTick(q, settings);
     // A lease prevents work being lost if a process crashes. Receipt ambiguity needs human reconciliation.
     await q.query(
       "UPDATE outbox SET status='pending' WHERE status='working' AND next_at<now() AND kind NOT IN ('receipt.create','receipt.send')",
@@ -172,6 +215,16 @@ export async function workerTick(db) {
       } else if (job.kind === "telegram.send") {
         if (settings.mode !== "test")
           await sendTelegram(job.payload.chatId, job.payload.text);
+      } else if (job.kind === "feedback.new") {
+        const f = await one(db, "SELECT message FROM feedback WHERE id=$1", [job.payload.feedbackId]);
+        const admins = (await db.query("SELECT id,email,telegram_chat_id FROM users WHERE active AND role='admin' AND deleted_at IS NULL")).rows;
+        const text = `Новое обращение в Tattoo Office:\n${String(f?.message || "").slice(0, 500)}`;
+        await db.transaction(async (q) => {
+          for (const u of admins) {
+            await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), u.id, text]);
+            if (u.telegram_chat_id) await q.query("INSERT INTO outbox(id,kind,payload) VALUES($1,'telegram.send',$2)", [uuid(), JSON.stringify({ chatId: u.telegram_chat_id, text })]);
+          }
+        });
       } else if (labels[job.kind] && b) {
         const recipients = (
           await db.query(

@@ -55,3 +55,15 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_test boolean;
 
 -- Keep booking and payment records when removing an account from the admin list.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+-- Admin automation: reminders chain, waitlist, promo codes, stock history,
+-- per-place hours and feedback replies.
+CREATE TABLE IF NOT EXISTS reminders_sent(booking_id uuid NOT NULL REFERENCES bookings(id),kind text NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(booking_id,kind));
+CREATE TABLE IF NOT EXISTS waitlist(id uuid PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id),city text NOT NULL DEFAULT 'spb',date date NOT NULL,hour integer NOT NULL,duration integer NOT NULL,notified_at timestamptz,created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS promo_codes(code text PRIMARY KEY,kind text NOT NULL CHECK(kind IN ('percent','amount')),value integer NOT NULL CHECK(value>0),max_uses integer,used integer NOT NULL DEFAULT 0,expires_at timestamptz,active boolean NOT NULL DEFAULT true,note text NOT NULL DEFAULT '',created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS stock_moves(id uuid PRIMARY KEY,catalog_id uuid NOT NULL REFERENCES catalog(id),delta integer NOT NULL,reason text NOT NULL DEFAULT '',actor uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now());
+ALTER TABLE catalog ADD COLUMN IF NOT EXISTS min_stock integer NOT NULL DEFAULT 5;
+ALTER TABLE resources ADD COLUMN IF NOT EXISTS schedule jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS contact text NOT NULL DEFAULT '';
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS reply text NOT NULL DEFAULT '';
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS replied_at timestamptz;
