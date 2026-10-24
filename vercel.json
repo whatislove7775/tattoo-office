@@ -4,8 +4,12 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://tattoo.193.168.46.161.sslip.io/api/:path*"
+      "source": "/api/demo/:path*",
+      "destination": "/api/demo?__p=:path*"
+    },
+    {
+      "source": "/api/:path((?!demo).*)",
+      "destination": "https://tattoo.193.168.46.161.sslip.io/api/:path"
     }
   ],
   "headers": [
@@ -47,5 +51,12 @@
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/demo.js": {
+      "includeFiles": "{server/**,node_modules/@electric-sql/pglite/dist/**}",
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  }
 }

@@ -2064,3 +2064,10 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 }
 .pro-tag-filter__action {margin-left:auto;background:var(--action-fill)!important;color:#fff;border-color:transparent!important;}
 .admin-user-name .pro-link {font-weight:inherit;}
+/* Тестовый режим на превью */
+.demo-bar {position:fixed;left:12px;bottom:12px;z-index:200;display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:min(560px,calc(100vw - 24px));padding:8px 10px;border-radius:16px;background:#111;color:#fff;font-size:12px;box-shadow:0 8px 24px #0004;}
+.demo-bar b {padding:2px 8px;border-radius:10px;background:#ffd400;color:#111;}
+.demo-bar span {opacity:.75;}
+.demo-bar button {padding:5px 10px;border-radius:10px;border:1px solid #fff3;background:#fff1;color:#fff;font:inherit;cursor:pointer;}
+.demo-bar button:hover {background:#fff3;}
+.demo-bar.is-collapsed>:not(b):not(.demo-bar__toggle) {display:none;}

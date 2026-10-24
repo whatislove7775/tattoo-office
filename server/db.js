@@ -22,7 +22,7 @@ export async function database() {
       close: () => pool.end(),
     };
   }
-  if (process.env.NODE_ENV === "production")
+  if (process.env.NODE_ENV === "production" && process.env.DEMO_MODE !== "1")
     throw Error("DATABASE_URL required in production");
   const db = new PGlite(process.env.DATA_DIR || "./work/database");
   await db.waitReady;

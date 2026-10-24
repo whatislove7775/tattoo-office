@@ -105,8 +105,9 @@ function notify(s) {
   clearTimeout(noticeTimer);
   noticeTimer = setTimeout(() => ($("#notice").hidden = true), 6000);
 }
+const API_BASE = window.OFFICE_API_BASE || "/api", DEMO = API_BASE !== "/api";
 async function api(path, method = "GET", body) {
-  const r = await fetch("/api" + path, {
+  const r = await fetch(API_BASE + path, {
     method,
     credentials: "same-origin",
     headers: body ? { "Content-Type": "application/json" } : {},
@@ -1916,6 +1917,33 @@ AP.init({
   api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
 });
+// Тестовый режим (превью Vercel): своя база, вход в тестовые аккаунты одной кнопкой.
+function demoBar() {
+  const bar = document.createElement("aside");
+  bar.className = "demo-bar";
+  bar.setAttribute("aria-label", "Тестовый режим");
+  const accounts = [["owner", "Владелец", "admin"], ["shift", "Админ смены", "admin"], ["master", "Мастер", "cabinet"], ["resident", "Резидент", "cabinet"], ["customer", "Клиент", "cabinet"]];
+  bar.innerHTML = `<b>Тестовый режим</b><span>данные не настоящие · войти как:</span>${accounts.map(([key, label]) => `<button type="button" data-demo-as="${key}" data-demo-go="${key === "customer" ? "masters" : accounts.find((a) => a[0] === key)[2]}">${label}</button>`).join("")}<button type="button" class="demo-bar__toggle" aria-label="Свернуть">–</button>`;
+  document.body.append(bar);
+  bar.addEventListener("click", async (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.classList.contains("demo-bar__toggle")) { bar.classList.toggle("is-collapsed"); b.textContent = bar.classList.contains("is-collapsed") ? "+" : "–"; return; }
+    b.disabled = true;
+    try {
+      await api("/__demo/login?as=" + b.dataset.demoAs, "POST", {});
+      await refresh();
+      if (location.hash === "#/" + b.dataset.demoGo) render(); else go(b.dataset.demoGo);
+      notify("Вы вошли как: " + me.name);
+    } catch (error) { notify(error.message); }
+    finally { b.disabled = false; }
+  });
+  // Загруженные в тесте фото тоже берутся из тестовой базы.
+  const fix = (el) => { const src = el.getAttribute("src"); if (src?.startsWith("/api/") && !src.startsWith("/api/demo/")) el.setAttribute("src", "/api/demo/" + src.slice(5)); };
+  new MutationObserver((list) => list.forEach((m) => { if (m.type === "attributes") fix(m.target); else m.addedNodes.forEach((n) => n.nodeType === 1 && [n, ...n.querySelectorAll("img")].forEach((el) => el.tagName === "IMG" && fix(el))); }))
+    .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+}
+if (DEMO) demoBar();
 window.Office = { render, paintAccount: paintShell, current: () => me };
 window.Store = {
   current: () => me,
