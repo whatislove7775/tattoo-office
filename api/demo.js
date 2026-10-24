@@ -33,12 +33,12 @@ async function restoreSession(db, hashToken, req) {
   await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '7 days') ON CONFLICT DO NOTHING", [hashToken(token), uid]);
 }
 // После обычного входа по паролю добавляем метку к ответу (в нём есть id пользователя).
+// Express подменяет прототип ответа при обработке, поэтому вызываем его json в момент ответа.
 function tagLogin(res) {
-  const json = res.json.bind(res);
-  res.json = (body) => {
-    const set = [].concat(res.getHeader("Set-Cookie") || []), token = set.map((x) => /^office_session=([^;]+)/.exec(x)?.[1]).find(Boolean);
-    if (token && body?.user?.id) res.setHeader("Set-Cookie", [...set, whoCookie(body.user.id, token)]);
-    return json(body);
+  res.json = function (body) {
+    const set = [].concat(this.getHeader("Set-Cookie") || []), token = set.map((x) => /^office_session=([^;]+)/.exec(x)?.[1]).find(Boolean);
+    if (token && body?.user?.id) this.setHeader("Set-Cookie", [...set, whoCookie(body.user.id, token)]);
+    return Object.getPrototypeOf(this).json.call(this, body);
   };
 }
 
