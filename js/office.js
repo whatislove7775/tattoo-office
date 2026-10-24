@@ -533,11 +533,11 @@ function mountRecovery(reset) {
 }
 function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + (DEMO ? field('email','Почта (тестовый режим)','owner@demo.tattoo-office','email','required autocomplete="username"') : '') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
 }
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
-    try { await api('/auth/login','POST',{...d,email:'89615020777@mail.ru',accountType:'admin'}); }
+    try { await api('/auth/login','POST',{...d,email:DEMO ? d.email : '89615020777@mail.ru',accountType:'admin'}); }
     catch(error) { if(error.message === 'Email или пароль не совпадают') throw new Error('Пароль не совпадает. Проверьте раскладку и регистр.'); throw error; }
     await refresh();
     if (me?.role !== 'admin') {
