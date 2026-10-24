@@ -11,7 +11,6 @@ export const DEMO_ACCOUNTS = {
   resident: { password: "Test-resident-2026", name: "Артур Резидент", email: "artur@demo.tattoo-office", role: "resident", account_type: "master", profile: { city: "СПБ", bio: "Резидент Private Club. Крупные проекты, чёрно-серый реализм.", experience: "9 лет" } },
   risky: { password: "Test-misha-2026", name: "Миша Пропускайкин", email: "misha@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
   newbie: { password: "Test-new-2026", name: "Новый Мастер", email: "new@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
-  customer: { password: "Test-client-2026", name: "Клиент Анна", email: "anna@demo.tattoo-office", role: "guest", account_type: "customer", profile: {} },
 };
 
 const MSK = (days, hour) => {

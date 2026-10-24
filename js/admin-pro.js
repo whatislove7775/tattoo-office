@@ -10,7 +10,7 @@ const plural = (n, one, few, many) => {
 };
 const DEFAULT_TEMPLATES = ["Спасибо за обращение! Мы уже разбираемся.", "Спасибо за идею — передали команде студии.", "Извините за неудобство. Свяжемся с вами в ближайшее время."];
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const SEGMENTS = [["masters", "Все мастера"], ["residents", "Резиденты"], ["guests", "Мастера без резидентства"], ["inactive", "Не были 60+ дней"], ["customers", "Клиенты"]];
+const SEGMENTS = [["masters", "Все мастера"], ["residents", "Резиденты"], ["guests", "Мастера без резидентства"], ["inactive", "Не были 60+ дней"]];
 export const isShift = () => c.state().me?.staffLevel === "shift";
 const mskDay = (d) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(d));
 

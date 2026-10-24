@@ -515,7 +515,7 @@ function authPage(signup) {
   const role = location.hash.split('/')[2] === 'customer' ? 'customer' : 'master';
   if (!signup) {
     const caption = role === 'customer' ? 'Эх грустно как то...<br>Пойду забьюсь' : 'Кажется я обрёл дом...<br>Да что там дом - семью';
-    return win(role === 'customer' ? 'Вход / Customer' : 'Вход / Tattoo master', '<form id="auth-form" class="auth-form auth-form--role"><div class="auth-illustration"><div class="auth-photo"><img class="auth-image" src="assets/auth/' + role + '.png" alt="' + (role === 'customer' ? 'Портрет клиента' : 'Собака') + '"></div><p class="auth-caption">' + caption + '</p></div>' + field('email','Почта','','email','required autocomplete="email" placeholder="девственник@mail.ru"') + field('password','Введите пароль','','password','required autocomplete="current-password" placeholder="пароль-пароль***"') + '<div class="auth-switch"><a href="#/signup/' + role + '">No account — Sign up</a><a href="#/forgot/' + role + '">Забыли пароль?</a></div><div class="auth-role-actions"><button type="submit" class="chrome">Войти</button>' + (pub.telegramEnabled ? '<a href="/api/auth/telegram">Войти через Telegram</a>' : '') + '</div></form>');
+    return win(role === 'customer' ? 'Вход / Customer' : 'Вход / Tattoo master', '<form id="auth-form" class="auth-form auth-form--role"><div class="auth-illustration"><div class="auth-photo"><img class="auth-image" src="assets/auth/' + role + '.png" alt="' + (role === 'customer' ? 'Портрет клиента' : 'Собака') + '"></div><p class="auth-caption">' + caption + '</p></div>' + field('email','Почта','','email','required autocomplete="email" placeholder="девственник@mail.ru"') + field('password','Введите пароль','','password','required autocomplete="current-password" placeholder="пароль-пароль***"') + '<div class="auth-switch">' + (role === 'customer' ? '' : '<a href="#/signup/' + role + '">No account — Sign up</a>') + '<a href="#/forgot/' + role + '">Забыли пароль?</a></div><div class="auth-role-actions"><button type="submit" class="chrome">Войти</button>' + (pub.telegramEnabled ? '<a href="/api/auth/telegram">Войти через Telegram</a>' : '') + '</div></form>');
   }
   return win(
     signup ? "Новое личное дело" : "Войти в офис",
@@ -1776,6 +1776,8 @@ async function render() {
         break;
       case "login":
       case "signup":
+        // Профиль создают только тату-мастера.
+        if (path[0] === "signup" && path[1] === "customer") { location.hash = "#/signup/master"; return; }
         html = authPage(path[0] === "signup");
         mount = () => mountAuth(path[0] === "signup");
         break;
@@ -1923,7 +1925,7 @@ function demoBar() {
   const bar = document.createElement("aside");
   bar.className = "demo-bar";
   bar.setAttribute("aria-label", "Тестовый режим");
-  const accounts = [["owner", "Владелец", "admin"], ["shift", "Админ смены", "admin"], ["master", "Мастер", "cabinet"], ["resident", "Резидент", "cabinet"], ["customer", "Клиент", "cabinet"]];
+  const accounts = [["owner", "Владелец", "admin"], ["shift", "Админ смены", "admin"], ["master", "Мастер", "cabinet"], ["resident", "Резидент", "cabinet"]];
   bar.innerHTML = `<b>Тестовый режим</b><span>данные не настоящие · войти как:</span>${accounts.map(([key, label]) => `<button type="button" data-demo-as="${key}" data-demo-go="${key === "customer" ? "masters" : accounts.find((a) => a[0] === key)[2]}">${label}</button>`).join("")}<button type="button" class="demo-bar__toggle" aria-label="Свернуть">–</button>`;
   document.body.append(bar);
   bar.addEventListener("click", async (e) => {

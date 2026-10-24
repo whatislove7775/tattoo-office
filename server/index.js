@@ -364,6 +364,8 @@ export async function createApp(db) {
       fail("Нужно принять правила и дать отдельное согласие");
     const accountType = req.body.accountType === "customer" ? "customer" : "master";
     if (req.body.accountType === "admin") fail("Администратора добавляет команда студии",403);
+    // Сайт для тату-мастеров: личный профиль создают только мастера.
+    if (accountType === "customer") fail("Создать профиль могут только тату-мастера",403);
     const existing = (await db.query("SELECT * FROM users WHERE email=$1", [email])).rows;
     if (existing.some(u => u.account_type === accountType)) fail("Этот профиль уже существует. Войдите или восстановите пароль",409);
     if (existing.length && req.user?.email !== email && !existing.some(u => verifyPassword(password,u.password))) fail("Для добавления профиля войдите в существующий аккаунт на эту почту",409);

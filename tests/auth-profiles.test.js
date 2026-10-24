@@ -15,8 +15,9 @@ test('profiles share an email without shared privileges; recovery expires, runs 
   try {
     const data={name:'Test',email:'profiles@test.invalid',password,rules:true,consent:true};
     const master=await req('/auth/register',{...data,accountType:'master'});assert.equal(master.status,201);
-    assert.equal((await req('/auth/register',{...data,accountType:'customer',password:'Wrong-password-2026'})).status,409);
-    const customer=await req('/auth/register',{...data,accountType:'customer'});assert.equal(customer.status,201);assert.notEqual(customer.data.user.id,master.data.user.id);assert.equal(customer.data.user.accountType,'customer');
+    assert.equal((await req('/auth/register',{...data,accountType:'customer',password:'Wrong-password-2026'})).status,403);
+    assert.equal((await req('/auth/register',{...data,accountType:'customer'})).status,403);
+    const customerId=randomUUID();await db.query("INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,'Test','guest','customer')",[customerId,data.email,hashPassword(password)]);const customer={data:{user:{id:customerId}}};
     assert.equal((await req('/auth/register',{...data,accountType:'admin'})).status,403);
     const adminId=randomUUID();await db.query("INSERT INTO users(id,email,password,name,role,account_type) VALUES($1,$2,$3,'Admin','admin','admin')",[adminId,data.email,hashPassword(password)]);
     assert.equal((await req('/auth/login',{email:data.email,password,accountType:'admin'})).data.user.role,'admin');
