@@ -2071,3 +2071,109 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .demo-bar button {padding:5px 10px;border-radius:10px;border:1px solid #fff3;background:#fff1;color:#fff;font:inherit;cursor:pointer;}
 .demo-bar button:hover {background:#fff3;}
 .demo-bar.is-collapsed>:not(b):not(.demo-bar__toggle) {display:none;}
+
+/* ---------- Единая система админ-панели (admin-ux.js) ---------- */
+/* Кнопки: главная (чёрная, одна на блок), обычная (белая), тихая (текст). */
+.office-feature .admin-content .chrome,#dialog .office-feature .chrome {border:1px solid var(--panel-edge)!important;background:var(--control-fill)!important;color:var(--ink)!important;text-shadow:none!important;box-shadow:var(--control-shadow)!important;border-radius:14px!important;min-height:40px;padding:8px 16px;font-size:14px;font-weight:500;}
+.office-feature .admin-content .chrome.pro-primary,.office-feature .admin-content form button[type="submit"].chrome,#dialog .office-feature button[type="submit"],#dialog .office-feature .pro-primary {border-color:#333!important;background:var(--action-fill)!important;color:#fff!important;text-shadow:0 1px #0005!important;}
+.office-feature .admin-content td button,.office-feature .admin-content .workspace-card__actions button {min-height:34px;padding:6px 12px;border-radius:10px;font-size:12px;}
+/* Сегменты и чипсы одного вида */
+.pro-segment,.pro-tag-filter {display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border:1px solid var(--panel-edge);border-radius:14px;background:var(--panel-2);}
+.pro-segment button,.pro-tag-filter button,.pro-chip {min-height:32px;padding:5px 12px;border:0!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;}
+.pro-segment button[aria-pressed="true"],.pro-tag-filter button[aria-pressed="true"],.pro-chip[aria-pressed="true"] {background:var(--control-fill)!important;color:var(--ink);box-shadow:var(--control-shadow)!important;}
+.pro-tag-filter {display:flex;margin:12px 0;}
+.pro-tag-filter .pro-tag-filter__action {margin-left:auto;background:var(--action-fill)!important;color:#fff!important;}
+.pro-chip {border:1px solid var(--panel-edge)!important;}
+.pro-toolbar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.pro-toolbar__actions {display:flex;flex-wrap:wrap;gap:8px;}
+.pro-daynav {display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:14px 0 6px;}
+.pro-daynav .chrome {min-width:40px;padding:6px 12px!important;}
+.pro-daynav input[type=date] {height:40px;padding:0 10px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;}
+.pro-daynav__label {margin-left:6px;font-size:16px;font-weight:500;}
+.pro-meta {margin:4px 0 12px;}
+/* Статусы: значок + подпись */
+.office-feature .badge[class*="badge--"] {display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;background:var(--panel-2);border:1px solid var(--panel-edge);box-shadow:none;font-size:11px;line-height:1.4;color:var(--ink);white-space:nowrap;}
+.badge[class*="badge--"]::before {content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;box-sizing:border-box;flex:none;}
+.badge--confirmed::before,.badge--completed::before {background:currentColor;}
+.badge--invoiced::before,.badge--cancel_requested::before,.badge--no_show::before {border-color:#c62828;background:#c62828;}
+.badge--cancelled,.badge--expired {color:var(--ink-3)!important;}
+.badge--completed::before {border-radius:2px;}
+/* Лента расписания */
+.tl-legend {display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 10px;color:var(--ink-2);font-size:12px;}
+.tl-legend span {display:inline-flex;align-items:center;gap:6px;}
+.tl-dot {width:12px;height:12px;border-radius:4px;display:inline-block;border:1px dashed var(--ink-3);}
+.tl-dot--booked {background:var(--ink);border:0;}
+.tl-scroll {overflow-x:auto;border:1px solid var(--panel-edge);border-radius:16px;background:var(--bg);scroll-snap-type:x proximity;}
+.tl-grid {--tl-row:46px;display:grid;grid-template-columns:56px repeat(var(--cols),minmax(150px,1fr));position:relative;min-width:max-content;}
+.tl-head {position:sticky;top:0;z-index:3;grid-row:1;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 12px;background:var(--panel-2);border-bottom:1px solid var(--panel-edge);font-size:13px;font-weight:600;scroll-snap-align:start;}
+.tl-corner {grid-column:1;left:0;z-index:4;font-weight:400;color:var(--ink-3);font-size:11px;}
+.tl-head__edit {border:0;background:none;color:var(--ink-3);font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px;}
+.tl-head__edit:hover {background:var(--panel-edge);color:var(--ink);}
+.tl-hour {grid-column:1;position:sticky;left:0;z-index:2;padding:4px 8px;font-size:11px;color:var(--ink-3);background:var(--bg);border-top:1px solid var(--panel-edge);font-variant-numeric:tabular-nums;}
+.tl-cell {border-top:1px solid var(--panel-edge);border-left:1px solid var(--panel-edge);min-height:0;background:transparent;}
+.tl-cell.is-past {background:repeating-linear-gradient(135deg,transparent 0 6px,var(--panel-2) 6px 7px);}
+.tl-cell.is-closed {display:flex;align-items:center;justify-content:center;background:var(--panel-2);color:var(--ink-3);font-size:11px;}
+.tl-free {display:flex;align-items:center;justify-content:center;padding:0;border-right:0;border-bottom:0;cursor:pointer;font:inherit;font-size:12px;color:transparent;}
+.tl-free:hover,.tl-free:focus-visible {background:var(--panel-2);color:var(--ink-2);outline:none;}
+.tl-free.is-drop {background:var(--ink)!important;color:var(--bg)!important;}
+.pro-dragging .tl-free {background:repeating-linear-gradient(135deg,transparent 0 6px,var(--panel-2) 6px 8px);}
+.tl-booking {z-index:2;margin:3px 4px;padding:7px 10px;border-radius:12px;background:var(--ink);color:var(--bg);display:flex;flex-direction:column;gap:2px;overflow:hidden;cursor:pointer;box-shadow:0 2px 6px #0002;font-size:12px;line-height:1.3;}
+.tl-booking b {font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-booking small {opacity:.75;}
+.tl-booking .badge {align-self:flex-start;margin-top:auto;background:#fff2!important;border-color:#fff3!important;color:inherit!important;}
+.tl-booking--pending {background:var(--panel-2);color:var(--ink);border:1.5px dashed var(--ink-2);box-shadow:none;}
+.tl-booking--pending .badge {background:var(--bg)!important;border-color:var(--panel-edge)!important;}
+.tl-booking--completed,.tl-booking--no_show {opacity:.55;}
+.tl-booking[draggable="true"] {cursor:grab;}
+.tl-booking:focus-visible {outline:2px solid #c62828;outline-offset:2px;}
+.tl-now {grid-column:1 / -1;align-self:start;height:2px;margin-top:calc(var(--m) * var(--tl-row));background:#e53935;z-index:5;pointer-events:none;position:relative;}
+.tl-now::before {content:"";position:absolute;left:50px;top:-4px;width:10px;height:10px;border-radius:50%;background:#e53935;}
+/* Панель брони (боковая) */
+#dialog.is-panel {margin:0 0 0 auto;height:100%;max-height:100%;width:min(460px,100vw);border-radius:22px 0 0 22px;}
+.pro-panel h2 {margin:6px 0 16px;font-size:22px;line-height:1.25;}
+.pro-panel h2 span {color:var(--ink-2);font-size:16px;font-weight:400;}
+.pro-panel__eyebrow {display:flex;align-items:center;gap:10px;margin:0;color:var(--ink-2);font-size:12px;}
+.pro-panel__facts {display:grid;gap:0;margin:0 0 18px;}
+.pro-panel__facts div {display:grid;grid-template-columns:110px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--panel-edge);font-size:14px;}
+.pro-panel__facts dt {color:var(--ink-2);font-size:12px;}
+.pro-panel__facts dd {margin:0;}
+.pro-panel__actions {display:grid;gap:8px;}
+.pro-panel__actions .chrome {width:100%;}
+/* Поиск */
+.admin-search {margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:6px 12px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--panel-2);color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;}
+.admin-search svg {width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;}
+.admin-search kbd {font:inherit;font-size:10px;padding:1px 5px;border:1px solid var(--panel-edge);border-radius:5px;color:var(--ink-3);}
+.pro-search__results {list-style:none;margin:10px 0;padding:0;display:grid;gap:4px;max-height:55vh;overflow:auto;}
+.pro-search__results button {width:100%;display:flex;align-items:baseline;gap:10px;padding:10px 12px;border:0;border-radius:10px;background:var(--panel-2);color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.pro-search__results button:hover,.pro-search__results button:focus-visible {background:var(--ink);color:var(--bg);outline:none;}
+.pro-search__results small {opacity:.7;}
+.pro-search__kind {flex:none;width:92px;font-size:11px;opacity:.7;}
+.pro-select-search {width:100%;height:38px;margin:0 0 6px;padding:0 12px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;}
+/* Несохранённые изменения */
+.pro-savebar {position:sticky;bottom:12px;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;padding:10px 12px 10px 18px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 10px 30px #0004;}
+.pro-savebar span {margin-right:auto;font-size:14px;}
+.pro-savebar[hidden] {display:none;}
+.pro-form {display:grid;gap:16px;}
+.pro-more {margin-top:8px;border-top:1px solid var(--panel-edge);padding-top:12px;}
+.pro-more summary {cursor:pointer;font-size:16px;font-weight:500;padding:6px 0;}
+.pro-sub {margin:18px 0 8px;font-size:14px;font-weight:500;}
+.pro-today__time {font-weight:600;font-variant-numeric:tabular-nums;}
+/* Нижняя навигация на телефоне */
+.pro-bottomnav {display:none;}
+@media (max-width:720px) {
+  body.admin-session .pro-bottomnav {position:fixed;left:8px;right:8px;bottom:8px;z-index:90;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:6px;border-radius:20px;background:var(--panel-2);border:1px solid var(--panel-edge);box-shadow:0 10px 30px #0003;}
+  .pro-bottomnav button {display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border:0;border-radius:14px;background:none;color:var(--ink-2);font:inherit;font-size:10px;}
+  .pro-bottomnav svg {width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round;}
+  .pro-bottomnav [aria-current="page"] {background:var(--ink);color:var(--bg);}
+  body.admin-session #view {padding-bottom:96px;}
+  body.admin-session .demo-bar {bottom:86px;}
+  .tl-grid {grid-template-columns:48px repeat(var(--cols),calc(100vw - 120px));}
+  .tl-head {scroll-snap-align:start;}
+  #dialog.is-panel {width:100vw;height:auto;max-height:90vh;margin:auto 0 0;border-radius:22px 22px 0 0;}
+  .admin-search span,.admin-search kbd {display:none;}
+  .pro-daynav__label {width:100%;margin:4px 0 0;}
+}
+@media (max-width:720px) {
+  .admin-search {display:none;}
+  .pro-daynav input[type=date] {flex:1 1 120px;min-width:0;}
+}

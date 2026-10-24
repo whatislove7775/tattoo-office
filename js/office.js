@@ -1,6 +1,7 @@
 import {bindFileUpload} from "./file-upload.js";
 import {mountGallery} from "./profile-media.js";
 import * as AP from "./admin-pro.js";
+import * as UX from "./admin-ux.js";
 const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s) =>
@@ -1022,6 +1023,8 @@ let adminData,
   adminDate = today(),
   usersFilter = "all",
   usersTag = "",
+  scheduleView = "day",
+  listStatus = "all",
   adminScrollTo = "";
 // Обращения доступны отдельно от основного меню; точка отмечает новые.
 function paintFeedbackDock(hasNew) {
@@ -1072,31 +1075,35 @@ async function adminPage() {
     },
     s = pub.settings,
     tabs = [
-      ["home", "Обзор"],
+      ["home", "Сегодня"],
       ["users", "Пользователи"],
-      ["schedule", "Расписание и записи"],
+      ["schedule", "Расписание"],
       ["workspaces", "Рабочие места"],
-      ["catalog", "Товары и услуги"],
+      ["catalog", "Склад и услуги"],
       ["finance", "Платежи"],
+      ["pricing", "Цены и промокоды"],
       ["settings", "Настройки"],
       ["feedback", "Обращения"], ["profile", "Профиль"],
     ];
-  if (AP.isShift()) for (const hidden of ["finance", "settings"]) tabs.splice(tabs.findIndex((t) => t[0] === hidden), 1);
+  if (AP.isShift()) for (const hidden of ["finance", "pricing", "settings"]) tabs.splice(tabs.findIndex((t) => t[0] === hidden), 1);
   if (adminTab === "masters") { adminTab = "users"; usersFilter = "master"; }
   // Сохраняем переходы со старых кнопок к истории записей.
-  if (adminTab === "bookings") { adminTab = "schedule"; adminScrollTo = "admin-bookings"; }
+  if (adminTab === "bookings") { adminTab = "schedule"; scheduleView = "list"; }
   if (!tabs.some((x) => x[0] === adminTab)) adminTab = tabs[0][0];
   const menu = $("#menuList");
   // Обращения доступны отдельной кнопкой под меню.
   paintFeedbackDock(a.feedback.some((f) => f.status === "new"));
   // Профиль администратора открывается через аватар и имя.
   const groups = [
-    {label:"Обзор", target:"home", tabs:["home"]},
-    {label:"Брони и оплаты", target:"schedule", tabs:["schedule","finance"]},
-    {label:"Пользователи", target:"users", tabs:["users"]},
-    {label:"Студия", target:"workspaces", tabs:["workspaces","catalog","settings"]},
+    {label:"Сегодня", target:"home", tabs:["home"], icon:"home"},
+    {label:"Расписание", target:"schedule", tabs:["schedule"], icon:"schedule"},
+    {label:"Пользователи", target:"users", tabs:["users"], icon:"users"},
+    {label:"Деньги", target:"finance", tabs:["finance","pricing"], icon:"finance"},
+    {label:"Студия", target:"workspaces", tabs:["workspaces","catalog","settings"], icon:"workspaces"},
   ];
   for (const g of groups) g.tabs = g.tabs.filter((t) => tabs.some((x) => x[0] === t));
+  for (let i = groups.length - 1; i >= 0; i--) if (!groups[i].tabs.length) groups.splice(i, 1); else if (!groups[i].tabs.includes(groups[i].target)) groups[i].target = groups[i].tabs[0];
+  UX.bottomNav(groups, adminTab);
   const group = groups.find(g => g.tabs.includes(adminTab));
   const navigation = groups.map(g => [g.tabs.includes(adminTab) ? adminTab : g.target, g.label]);
   menu.innerHTML = navigation.map(([value, label]) => `<li class="menu__item" ${value === adminTab ? 'aria-current="true"' : ""}><span class="${value === adminTab ? "bullet" : "pin"}"></span><button class="menu__link" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${label}</button></li>`).join("");
@@ -1104,65 +1111,32 @@ async function adminPage() {
   let body = "";
   if (adminTab === "home") {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
-    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="settings">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div>${await api("/admin/overview").then(AP.overviewHTML, () => '<p class="note-paper" style="margin-top:28px">Пульт дня появится после обновления сервера на Beget.</p>')}</div>`;
+    body = `<div class="admin-home"><h2>Main</h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${icon("edit")}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${icon("calendar")}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div>${await api("/admin/overview").then(AP.overviewHTML, () => '<p class="note-paper" style="margin-top:28px">Пульт дня появится после обновления сервера на Beget.</p>')}</div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
     const cityResources = a.resources.filter((r) => resourceCity(r) === adminCity),
       cityIds = new Set(cityResources.map((r) => r.id)),
-      resources = cityResources.filter((r) => r.active),
       inactive = cityResources.filter((r) => !r.active),
-      bookings = a.bookings.filter(
+      dayCount = a.bookings.filter((b) => cityIds.has(b.resource_id) && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(b.starts_at)) === adminDate && !["cancelled", "expired"].includes(b.status)).length,
+      listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested"].includes(b.status) : b.status === listStatus)));
+    const viewSwitch = `<div class="pro-segment" role="group" aria-label="Вид расписания"><button type="button" data-schedule-view="day" aria-pressed="${scheduleView === "day"}">День</button><button type="button" data-schedule-view="list" aria-pressed="${scheduleView === "list"}">Все брони</button></div>`;
+    const dayNav = `<div class="pro-daynav"><button type="button" class="chrome" data-day-shift="-1" aria-label="Предыдущий день">‹</button><button type="button" class="chrome" data-day-shift="0">Сегодня</button><button type="button" class="chrome" data-day-shift="1" aria-label="Следующий день">›</button><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong></div>`;
+    body = `<div class="pro-toolbar">${viewSwitch}<div class="pro-toolbar__actions"><button class="chrome pro-primary" id="manual-booking">+ Запись</button><button class="chrome" id="add-block">Закрыть время</button></div></div>${cityTabs()}${scheduleView === "day" ? `${dayNav}<p class="small muted pro-meta">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · ${dayCount} ${dayCount === 1 ? "запись" : dayCount > 1 && dayCount < 5 ? "записи" : "записей"} в этот день${inactive.length ? ` · не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}` : ""}</p>${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-filter">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}</div><h3 id="admin-bookings" class="admin-bookings-title">Брони · ${CITY_LABELS[adminCity]}</h3>${table(
+      ["Сеанс", "Мастер / место", "Сумма", "Статус", ""],
+      listed.map(
         (b) =>
-          cityIds.has(b.resource_id) &&
-          new Intl.DateTimeFormat("sv-SE", {
-            timeZone: "Europe/Moscow",
-          }).format(new Date(b.starts_at)) === adminDate &&
-          !["cancelled", "expired"].includes(b.status),
-      );
-    body = `<div class="admin-tools"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button class="chrome" id="manual-booking">+ Ручная запись</button><button class="chrome" id="add-block">Закрыть время</button></div>${cityTabs()}<p data-help class="small muted">Будущую запись можно перетащить мышью на свободную ячейку — мастер получит уведомление о переносе.</p><p class="small muted">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · занято ${bookings.length} записей · ${resources.length} мест</p>${inactive.length ? `<p class="small muted">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${!cityResources.length ? `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в разделе «Студия → Рабочие места».</div>` : ""}<div class="schedule-scroll"><div class="schedule" style="grid-template-columns:64px repeat(${resources.length},minmax(145px,1fr))"><div class="schedule-heading">Время</div>${resources.map((r) => `<div class="schedule-heading">${esc(r.name)}${me.role === "admin" ? `<br><button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>` : ""}</div>`).join("")}${Array.from(
-      { length: s.closeHour - s.openHour },
-      (_, i) => {
-        const h = s.openHour + i,
-          time = new Date(
-            `${adminDate}T${String(h).padStart(2, "0")}:00:00+03:00`,
-          );
-        return (
-          `<div class="schedule-hour">${String(h).padStart(2, "0")}:00</div>` +
-          resources
-            .map((r) => {
-              const b = bookings.find(
-                  (b) =>
-                    b.resource_id === r.id &&
-                    new Date(b.starts_at) <= time &&
-                    new Date(b.ends_at) > time,
-                ),
-                block = a.blocks.find(
-                  (b) =>
-                    (!b.resource_id || b.resource_id === r.id) &&
-                    new Date(b.starts_at) <= time &&
-                    new Date(b.ends_at) > time,
-                );
-              const movable = b && ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > Date.now();
-              return `<div class="${b ? "busy" : block ? "closed" : ""}${movable ? " is-movable" : ""}" ${movable ? `draggable="true" data-move-booking="${b.id}" title="Перетащите, чтобы перенести"` : ""} ${!b && !block && time > Date.now() ? `data-drop="${r.id}|${h}"` : ""}>${b ? `${esc(b.user_name)}<br><small>${statusName[b.status]}</small>` : block ? "Закрыто" : '<span class="schedule-free">Свободно</span>'}</div>`;
-            })
-            .join("")
-        );
-      },
-     ).join("")}</div></div><h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
+          `<tr><td><button type="button" class="pro-link" data-booking-open="${b.id}">${UX.fullDate(b.starts_at)}</button><br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)} · № ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small class="muted">аванс ${money(b.deposit)}</small></td><td>${UX.badge(b.status)}</td><td><button type="button" data-booking-open="${b.id}">Открыть</button></td></tr>`,
+      ),
+    )}<h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
       ["Период", "Причина", ""],
       a.blocks.filter((b) => !b.resource_id || cityIds.has(b.resource_id)).map(
         (b) =>
-          `<tr><td>${dateLabel(b.starts_at)} ${timeLabel(b.starts_at)} — ${dateLabel(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td>${b.external ? '<span class="muted">Изменить в Google Calendar</span>' : `<button data-delete-block="${b.id}">Открыть</button>`}</td></tr>`,
+          `<tr><td>${UX.fullDate(b.starts_at)} ${timeLabel(b.starts_at)} — ${UX.fullDate(b.ends_at)} ${timeLabel(b.ends_at)}</td><td>${esc(b.reason)}</td><td>${b.external ? '<span class="muted">Изменить в Google Calendar</span>' : `<button data-delete-block="${b.id}">Открыть время</button>`}</td></tr>`,
       ),
-    )}<h3 id="admin-bookings" class="admin-bookings-title">Записи · ${CITY_LABELS[adminCity]}</h3>${table(
-      ["Сеанс", "Мастер / место", "Сумма", "Статус", "Действие"],
-      a.bookings.filter((b) => cityIds.has(b.resource_id)).map(
-        (b) =>
-          `<tr><td>${dateLabel(b.starts_at)}<br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}<br>№ ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small>аванс ${money(b.deposit)}</small></td><td><span class="badge">${statusName[b.status]}</span></td><td>${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > Date.now() ? `<button data-move-booking="${b.id}">Перенести</button> ` : ""}${b.status === "confirmed" && new Date(b.starts_at) <= Date.now() ? `<button data-no-show="${b.id}">Неявка</button> ` : ""}${b.status === "confirmed" ? `<button data-invoice="${b.id}">Выставить счёт</button>` : b.status === "invoiced" && b.policy?.paymentMethod === "cash" ? `<button data-cash-payment="${a.payments.find(p => p.booking_id === b.id && p.kind === "final")?.id || ""}">Наличные получены</button>` : b.status === "cancel_requested" ? `<button data-resolve="${b.id}">Решить отмену</button>` : "—"}</td></tr>`,
-      ),
-    )}`;
+    )}`}`;
   }
+  if (adminTab === "pricing") body = UX.pricingHTML(a, s, adminCity);
   if (adminTab === "workspaces") {
     // Рабочие места студии в выбранном городе — так их видят мастера при аренде.
     const list = a.resources.filter((r) => resourceCity(r) === adminCity);
@@ -1199,7 +1173,7 @@ async function adminPage() {
   if (adminTab === "finance") body = AP.financeHTML(a, s);
   if (adminTab === "feedback") body = AP.feedbackHTML(a);
   if (adminTab === "settings")
-    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свои рабочие места и тарифы. Новые цены применяются к новым записям. Тариф существующей брони сохраняется. Предоплата и часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label>${["resident", "guest"].map((r) => [3, 6, 12].map((h) => field(`${r}_${h}`, `${roleName[r]} · до ${h} ч`, cityRatesOf(adminCity, s)[r][h] / 100, "number", 'required min="0" step="1"')).join("")).join("")}</div></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("deposit", "Предоплата, ₽", s.deposit / 100, "number", 'min="0"')}${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
+    body = `<form id="settings-form"><fieldset class="admin-group"><legend>Студия и контакты</legend><div class="form-grid">${field("studioName", "Название", s.studioName)}${field("website", "Сайт в документах", s.website || "https://tattoo-office.com", "url")}${field("phone", "Телефон", s.phone)}${field("email", "Email студии", s.email, "email")}${select("openHour", "Открытие · МСК", Array.from({length:24},(_,h)=>[h,String(h).padStart(2,"0")+":00"]),s.openHour)}${select("closeHour", "Закрытие · МСК", Array.from({length:24},(_,i)=>[i+1,i===23?"00:00 следующего дня":String(i+1).padStart(2,"0")+":00"]),s.closeHour)}<p class="small muted wide" id="studio-hours-summary" aria-live="polite"></p></div></fieldset><fieldset class="admin-group"><legend>Студия по городам</legend><p data-help class="small muted">У каждой студии свой адрес и свои рабочие места. Часы работы общие для всех городов.</p>${cityTabs()}<div class="form-grid">${field("cityAddress", "Адрес студии", cityInfo(adminCity).address || "")}<label class="check wide"><input name="cityOpen" type="checkbox" ${cityInfo(adminCity).open ? "checked" : ""}><span>Запись в этом городе открыта${adminCity === "spb" ? "" : " (если выключено — на сайте «*soon»)"}</span></label></div><p class="small muted">Тарифы, предоплата и наценки — в разделе «Деньги → Цены и промокоды».</p></fieldset><fieldset class="admin-group"><legend>Бронирование</legend><div class="form-grid">${field("cancelHours", "Бесплатная отмена за, ч", s.cancelHours, "number", 'min="1" max="168"')}${field("reminderHours", "Напомнить за, ч", s.reminderHours, "number", 'min="1" max="168"')}${select(
       "lateCancellation",
       "Поздняя отмена",
       [
@@ -1240,6 +1214,7 @@ function dialogForm(title, html, submit) {
   modal(
     `<h2>${title}</h2><form id="dialog-form">${html}<button type="submit" class="chrome">Сохранить</button></form>`,
   );
+  UX.enhanceSelects($("#dialog-form"));
   onForm("#dialog-form", async (d) => {
     await submit(d);
     $("#dialog").close();
@@ -1260,6 +1235,8 @@ function mountAdmin() {
   }
   if (!adminData) return;
   const a = adminData;
+  const head = $(".window-head");
+  if (head && !$("#admin-search")) head.insertAdjacentHTML("beforeend", '<button type="button" class="admin-search" id="admin-search" aria-label="Поиск по админке (Ctrl+K)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Поиск</span><kbd>Ctrl K</kbd></button>');
   $$("[data-copy-value]").forEach(button => button.onclick = async () => {
     try {
       await navigator.clipboard.writeText(button.dataset.copyValue);
@@ -1288,8 +1265,8 @@ function mountAdmin() {
     if (settings) {
       const fields = [...settings.querySelectorAll(":scope > fieldset")];
       const sections = [
-        ["Студия, тарифы и бронирование", fields.slice(0,3)],
-        ["Автоматизация и цены", fields.slice(3,4)],
+        ["Студия и бронирование", fields.slice(0,3)],
+        ["Автоматизация", fields.slice(3,4)],
         ["Рейтинг мастеров", fields.slice(4,5)],
         ["Документы и подключения", fields.slice(5)],
       ];
@@ -1319,7 +1296,7 @@ function mountAdmin() {
         value.append(...cell.childNodes);
         cell.append(value);
       }));
-      if (rows.length > 4 && adminTab !== "schedule") {
+      if (rows.length > 1) {
         const toolbar = document.createElement("div");
         toolbar.className = "admin-list-tools";
         const label = document.createElement("label");
@@ -1366,6 +1343,7 @@ function mountAdmin() {
   $$("[data-admintab]").forEach(
     (b) =>
       (b.onclick = () => {
+        if (!UX.confirmLeave()) return;
         adminTab = b.dataset.admintab;
         document.body.classList.remove("mobile-menu-open");
         $("#mobileMenuToggle").setAttribute("aria-expanded", "false");
@@ -1517,10 +1495,9 @@ function mountAdmin() {
         }
       }),
   );
-  if ($("#manual-booking"))
-    $("#manual-booking").onclick = () =>
+  const openManual = (preset = {}) =>
       dialogForm(
-        "Запись без предоплаты",
+        "Новая запись без предоплаты",
         `${select(
           "userId",
           "Мастер",
@@ -1528,7 +1505,7 @@ function mountAdmin() {
             .filter((u) => u.active && ["resident", "guest"].includes(u.role))
             .map((u) => [u.id, u.name]),
           "",
-        )}${field("date", "Дата", adminDate, "date", "required")}${field("hour", "Начало (час, МСК)", 10, "number", 'required min="0" max="23"')}${select(
+        )}${field("date", "Дата", adminDate, "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), preset.hour ?? 10)}${select(
           "duration",
           "Тариф",
           [
@@ -1541,10 +1518,21 @@ function mountAdmin() {
           "resourceId",
           "Место",
           a.resources.filter((r) => r.active).map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name]),
-          "",
+          preset.resourceId || a.resources.find((r) => r.active && resourceCity(r) === adminCity)?.id || "",
         )}${select("repeat", "Повторять", [[1, "Не повторять"], [4, "Каждую неделю · 4 раза"], [8, "Каждую неделю · 8 раз"], [12, "Каждую неделю · 12 раз"]], 1)}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется. При повторе занятые даты пропускаются.</p>`,
         (d) => AP.manualRepeat(d),
       );
+  if ($("#manual-booking")) $("#manual-booking").onclick = () => openManual();
+  $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); openManual({ resourceId, hour: Number(hour) }); }));
+  $$("[data-day-shift]").forEach((b) => (b.onclick = () => { adminDate = b.dataset.dayShift === "0" ? today() : addDate(adminDate, Number(b.dataset.dayShift)); render(); }));
+  $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));
+  const statusFilter = $('.admin-content [name="listStatus"]');
+  if (statusFilter) statusFilter.onchange = () => { listStatus = statusFilter.value; render(); };
+  if ($("#tl-night")) $("#tl-night").onclick = () => { UX.toggleNight(); render(); };
+  if ($("#admin-search")) $("#admin-search").onclick = UX.openSearch;
+  UX.mountPricing(adminCity);
+  UX.guardForms();
+  UX.bindKeys();
   $$("[data-cash-payment]").forEach(button => button.onclick = () => dialogForm("Подтвердить наличный расчёт", '<p>Отметьте оплату только после получения наличных. Запись будет закрыта как оплаченная.</p>', () => api("/admin/payments/" + button.dataset.cashPayment + "/cash", "POST", {})));
   $$("[data-invoice]").forEach(
     (btn) =>
@@ -1668,21 +1656,14 @@ function mountAdmin() {
     opening.addEventListener("change", syncHours); closing.addEventListener("change", syncHours); syncHours();
   }
   onForm("#settings-form", async (d) => {
-    const rates = { resident: {}, guest: {} };
-    for (const r of ["resident", "guest"])
-      for (const h of [3, 6, 12])
-        rates[r][h] = Math.round(Number(d[r + "_" + h]) * 100);
     const automation = AP.settingsPayload(d);
     const { cityAddress, cityOpen, ...rest } = d,
       city = { open: cityOpen === "on", address: cityAddress || "" };
-    if (adminCity !== "spb") city.rates = rates;
     await api("/admin/settings", "PATCH", {
       ...rest,
-      ...(adminCity === "spb" ? { rates } : {}),
       cities: { [adminCity]: city },
       openHour: Number(d.openHour),
       closeHour: Number(d.closeHour),
-      deposit: Math.round(Number(d.deposit) * 100),
       cancelHours: Number(d.cancelHours),
       reminderHours: Number(d.reminderHours),
       rankingRules:Object.fromEntries(["bookingPoints","bookingRubles","servicePoints","productPointsPer1000","profilePoints","workPoints","draftPoints","workLimit","draftLimit"].map(k=>[k,Number(d["points_"+k])])),
@@ -1728,6 +1709,7 @@ function legalPage(key) {
     : documentSections(s[key === "data" ? "consent" : key],headings[key]);
   return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`, legalReturnRoute.slice(2));
 }
+let lastRenderKey = "";
 async function render() {
   if (!$("#office-view")) return;
   residentInfoCleanup();
@@ -1898,8 +1880,12 @@ async function render() {
         );
     }
     if (version !== routeVersion || !$("#office-view")) return;
+    // Обновление того же экрана (после сохранения, фильтра и т. п.) не сбрасывает прокрутку.
+    const scroller = $("#view"), key = location.hash + "|" + adminTab + "|" + scheduleView, top = scroller?.scrollTop || 0, same = key === lastRenderKey;
     $("#office-view").innerHTML = html;
     await mount();
+    lastRenderKey = key;
+    if (same && scroller) scroller.scrollTop = top;
     document.title =
       (path[0] === "masters"
         ? "Tattoo Office — наши люди"
@@ -1913,10 +1899,17 @@ async function render() {
     $("#retry").onclick = render;
   }
 }
-AP.init({
+const adminContext = {
   api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
-});
+  cityRatesOf, roleName, cityTabs, cityInfo,
+  promosHTML: (a) => AP.promosHTML(a),
+  openUserCard: (id) => AP.userCard(id).catch((e) => notify(e.message)),
+  openBooking: (id) => UX.bookingPanel(id),
+  goTab: (tab) => { adminTab = tab; render(); },
+};
+AP.init(adminContext);
+UX.init(adminContext);
 // Тестовый режим (превью Vercel): своя база, вход в тестовые аккаунты одной кнопкой.
 function demoBar() {
   const bar = document.createElement("aside");

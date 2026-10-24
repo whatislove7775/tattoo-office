@@ -34,8 +34,8 @@ export function overviewHTML(ov) {
   const names = (rows, key = "name") => `<small class="muted">${rows.slice(0, 4).map((r) => esc(r[key])).join(", ")}${rows.length > 4 ? ` и ещё ${rows.length - 4}` : ""}</small>`;
   const go = (tab, label = "Открыть") => `<button type="button" class="small" data-admintab="${tab}"><u>${label}</u></button>`;
   const attention = [
-    item(a.invoices.length, "Неоплаченные итоговые счета", go("schedule"), `<small class="muted">на ${money(a.invoices.reduce((s, x) => s + Number(x.amount || 0), 0))}</small>`),
-    item(a.cancelRequests.length, "Запросы на отмену ждут решения", go("schedule", "Решить")),
+    item(a.invoices.length, "Неоплаченные итоговые счета", a.invoices.slice(0, 4).map((b) => `<button type="button" class="small" data-booking-open="${b.id}"><u>${esc(b.user_name)}</u></button>`).join(" "), `<small class="muted">на ${money(a.invoices.reduce((s, x) => s + Number(x.amount || 0), 0))}</small>`),
+    item(a.cancelRequests.length, "Запросы на отмену ждут решения", a.cancelRequests.slice(0, 4).map((b) => `<button type="button" class="small" data-booking-open="${b.id}"><u>${esc(b.user_name)}: решить</u></button>`).join(" ")),
     item(a.newFeedback, "Новые обращения", go("feedback", "Прочитать")),
     item(a.lowStock.length, "Расходники заканчиваются", go("catalog", "Склад"), names(a.lowStock)),
     item(a.residentCandidates.length, `Кандидаты в резиденты (${ov.residentRule.sessions}+ сеансов за ${ov.residentRule.days} дн.)`, a.residentCandidates.slice(0, 3).map((u) => `<button type="button" class="small" data-make-resident="${u.id}"><u>${esc(u.name)}: сделать резидентом</u></button>`).join(" "), names(a.residentCandidates)),
@@ -47,10 +47,10 @@ export function overviewHTML(ov) {
   ].join("");
   return `<section class="pro-overview">
     <div class="pro-tiles">${tile("Записей сегодня", ov.today.bookings.length)}${tile("Свободно сейчас", `${ov.today.freeNow.length} / ${places}`, "мест без сеанса")}${ov.today.expected !== null ? tile("Ожидается сегодня", money(ov.today.expected)) + tile("Получено сегодня", money(ov.today.received)) : ""}</div>
-    <h3>Сегодня</h3>${ov.today.bookings.length ? `<ul class="pro-today">${ov.today.bookings.map((b) => `<li><b>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</b><span><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><small class="muted">${esc(CITY_LABELS[b.city] || b.city)} · ${esc(b.resource_name)}</small></span><span class="badge">${statusName[b.status] || esc(b.status)}</span></li>`).join("")}</ul>` : '<p class="small muted">Сегодня записей нет.</p>'}
+    <h3>Сегодня</h3>${ov.today.bookings.length ? `<ul class="pro-today">${ov.today.bookings.map((b) => `<li><button type="button" class="pro-link pro-today__time" data-booking-open="${b.id}">${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</button><span><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><small class="muted">${esc(CITY_LABELS[b.city] || b.city)} · ${esc(b.resource_name)}</small></span><span class="badge">${statusName[b.status] || esc(b.status)}</span></li>`).join("")}</ul>` : '<p class="small muted">Сегодня записей нет.</p>'}
     <h3>Требует внимания</h3>${attention ? `<ul class="pro-attention">${attention}</ul>` : '<p class="small muted">Всё в порядке — срочных дел нет.</p>'}
-    ${ov.stats ? `<h3>Динамика</h3><div class="pro-stats-grid">${statsTable(ov.stats.week, ov.stats.prevWeek, "7 дней · к прошлой неделе")}${statsTable(ov.stats.month, ov.stats.prevMonth, "30 дней · к прошлому месяцу")}</div>` : ""}
-    <h3>Загрузка мест за 30 дней</h3><div class="pro-bars">${ov.places.map((p) => `<div class="pro-bar"><span>${esc(CITY_LABELS[p.city] || p.city)} · ${esc(p.name)}</span><i style="--value:${Math.min(100, p.utilization)}%"></i><b>${p.utilization}%</b></div>`).join("")}</div>
+    ${ov.stats ? `<details class="pro-more"><summary>Динамика и загрузка мест</summary><div class="pro-stats-grid">${statsTable(ov.stats.week, ov.stats.prevWeek, "7 дней · к прошлой неделе")}${statsTable(ov.stats.month, ov.stats.prevMonth, "30 дней · к прошлому месяцу")}</div>` : ""}
+    <h4 class="pro-sub">Загрузка мест за 30 дней</h4><div class="pro-bars">${ov.places.map((p) => `<div class="pro-bar"><span>${esc(CITY_LABELS[p.city] || p.city)} · ${esc(p.name)}</span><i style="--value:${Math.min(100, p.utilization)}%"></i><b>${p.utilization}%</b></div>`).join("")}</div>${ov.stats ? "</details>" : ""}
   </section>`;
 }
 
@@ -110,28 +110,28 @@ export function catalogExtrasHTML(a) {
   const { esc, money, dateLabel } = c;
   const low = a.catalog.filter((x) => x.kind === "product" && x.active && x.stock <= (x.min_stock ?? 5));
   const purchase = low.map((x) => `${x.name} — ${Math.max(1, (x.min_stock ?? 5) * 2 - x.stock)} шт.`).join("\n");
-  const promoRows = (a.promos || []).map((p) => `<tr><td><b>${esc(p.code)}</b>${p.note ? `<br><small class="muted">${esc(p.note)}</small>` : ""}</td><td>${p.kind === "percent" ? `−${p.value}%` : `−${money(p.value)}`}</td><td>${p.used}${p.max_uses ? ` из ${p.max_uses}` : ""}</td><td>${p.expires_at ? "до " + dateLabel(p.expires_at + "T12:00:00+03:00") : "без срока"}</td><td>${p.active ? "Активен" : "Выключен"}</td><td><button type="button" data-edit-promo="${esc(p.code)}">Изменить</button> <button type="button" data-delete-promo="${esc(p.code)}">Удалить</button></td></tr>`);
   return `<h3 class="pro-section-title">Список закупки</h3>${low.length ? `<div class="pro-purchase"><pre>${esc(purchase)}</pre><button type="button" class="chrome" id="copy-purchase" data-text="${esc(purchase)}">Скопировать список</button></div>` : '<p class="small muted">Все расходники выше минимального остатка.</p>'}
-  <h3 class="pro-section-title">Движение склада</h3>${(a.stockMoves || []).length ? c.table(["Дата", "Позиция", "Количество", "Причина"], a.stockMoves.map((m) => `<tr><td>${dateLabel(m.created_at)}</td><td>${esc(m.item_name)}</td><td>${m.delta > 0 ? "+" : ""}${m.delta}</td><td>${esc(m.reason)}</td></tr>`)) : '<p class="small muted">Приходов и списаний пока не было.</p>'}
-  ${isShift() ? "" : `<h3 class="pro-section-title">Промокоды и подарочные сертификаты</h3><p data-help class="small muted">Скидка применяется к аренде места (без расходников). Сертификат — это промокод на сумму с лимитом 1 использование.</p><div class="admin-tools"><button type="button" class="chrome" id="add-promo">+ Промокод</button><button type="button" class="chrome" id="add-gift">+ Подарочный сертификат</button></div>${promoRows.length ? c.table(["Код", "Скидка", "Использован", "Срок", "Статус", ""], promoRows) : '<p class="small muted">Промокодов пока нет.</p>'}`}`;
+  <h3 class="pro-section-title">Движение склада</h3>${(a.stockMoves || []).length ? c.table(["Дата", "Позиция", "Количество", "Причина"], a.stockMoves.map((m) => `<tr><td>${dateLabel(m.created_at)}</td><td>${esc(m.item_name)}</td><td>${m.delta > 0 ? "+" : ""}${m.delta}</td><td>${esc(m.reason)}</td></tr>`)) : '<p class="small muted">Приходов и списаний пока не было.</p>'}`;
+}
+export function promosHTML(a) {
+  const { esc, money, dateLabel } = c;
+  const promoRows = (a.promos || []).map((p) => `<tr><td><b>${esc(p.code)}</b>${p.note ? `<br><small class="muted">${esc(p.note)}</small>` : ""}</td><td>${p.kind === "percent" ? `−${p.value}%` : `−${money(p.value)}`}</td><td>${p.used}${p.max_uses ? ` из ${p.max_uses}` : ""}</td><td>${p.expires_at ? "до " + dateLabel(p.expires_at + "T12:00:00+03:00") : "без срока"}</td><td>${p.active ? "Активен" : "Выключен"}</td><td><button type="button" data-edit-promo="${esc(p.code)}">Изменить</button> <button type="button" data-delete-promo="${esc(p.code)}">Удалить</button></td></tr>`);
+  return `<h3 class="pro-section-title">Промокоды и подарочные сертификаты</h3><p data-help class="small muted">Скидка применяется к аренде места (без расходников). Сертификат — это промокод на сумму с лимитом 1 использование.</p><div class="admin-tools"><button type="button" class="chrome" id="add-promo">+ Промокод</button><button type="button" class="chrome" id="add-gift">+ Подарочный сертификат</button></div>${promoRows.length ? c.table(["Код", "Скидка", "Использован", "Срок", "Статус", ""], promoRows) : '<p class="small muted">Промокодов пока нет.</p>'}`;
 }
 
 // ---------- Настройки: автоматизация и цены ----------
 export function settingsFieldset(s) {
-  const { field, textarea } = c, pr = s.priceRules || {}, rr = s.residentRule || {};
+  const { field, textarea } = c, rr = s.residentRule || {};
   const hours = (name, label, value) => c.select(name, label, Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), value);
-  return `<fieldset class="admin-group"><legend>Автоматизация и цены</legend>
+  return `<fieldset class="admin-group"><legend>Автоматизация</legend>
   <label class="check"><input name="pro_autoInvoice" type="checkbox" ${s.autoInvoice === true ? "checked" : ""}><span>Выставлять итоговый счёт автоматически через 15 минут после окончания сеанса (по забронированному тарифу)</span></label>
   <p data-help class="small muted">Напоминания уходят сами: за ${s.reminderHours || 24} ч и за 2 ч до сеанса, а также через сутки после сеанса, если счёт не оплачен. Мастер из листа ожидания получает сообщение, когда место освобождается.</p>
-  <div class="form-grid">${field("pro_nightPercent", "Ночная наценка, %", pr.nightPercent ?? 0, "number", 'min="-50" max="200" step="1" data-plain-number="true"')}${hours("pro_nightFrom", "Ночь с", pr.nightFrom ?? 22)}${hours("pro_nightTo", "Ночь до", pr.nightTo ?? 8)}${field("pro_weekendPercent", "Наценка в выходные, %", pr.weekendPercent ?? 0, "number", 'min="-50" max="200" step="1" data-plain-number="true"')}</div>
-  <p data-help class="small muted">Отрицательное значение — скидка (например, −10% на будни можно сделать через наценку выходных). Применяется к новым броням.</p>
   <div class="form-grid">${field("pro_resSessions", "Кандидат в резиденты: сеансов", rr.sessions ?? 8, "number", 'min="1" max="100" step="1" data-plain-number="true"')}${field("pro_resDays", "…за дней", rr.days ?? 60, "number", 'min="7" max="365" step="1" data-plain-number="true"')}${field("pro_resInactive", "Резидент неактивен после, дней", rr.inactiveDays ?? 90, "number", 'min="14" max="365" step="1" data-plain-number="true"')}</div>
   <div class="wide">${textarea("pro_replyTemplates", "Шаблоны ответов на обращения (каждый с новой строки)", (s.replyTemplates || DEFAULT_TEMPLATES).join("\n"))}</div></fieldset>`;
 }
 export function settingsPayload(d) {
   const out = {
     autoInvoice: d.pro_autoInvoice === "on",
-    priceRules: { nightPercent: Number(d.pro_nightPercent) || 0, nightFrom: Number(d.pro_nightFrom), nightTo: Number(d.pro_nightTo), weekendPercent: Number(d.pro_weekendPercent) || 0 },
     residentRule: { sessions: Number(d.pro_resSessions), days: Number(d.pro_resDays), inactiveDays: Number(d.pro_resInactive) },
     replyTemplates: String(d.pro_replyTemplates || "").split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 20),
   };
@@ -163,7 +163,7 @@ export function placeInfo(r, a) {
 }
 
 // ---------- Карточка пользователя ----------
-async function userCard(id) {
+export async function userCard(id) {
   const { api, esc, money, dateLabel, timeLabel, statusName, field, select, modal, notify, CITY_LABELS } = c;
   const owner = !isShift(), data = await api("/admin/users/" + encodeURIComponent(id)), u = data.user;
   const row = c.state().adminData.users.find((x) => x.id === id) || {};
@@ -208,6 +208,10 @@ export function mount(tab) {
   if (!a) return;
   const reload = async (text) => { await refresh(); await render(); if (text) notify(text); };
   $$("[data-user-card]").forEach((b) => (b.onclick = () => userCard(b.dataset.userCard).catch((e) => notify(e.message))));
+  $$("[data-booking-open]").forEach((b) => {
+    b.onclick = () => c.openBooking(b.dataset.bookingOpen);
+    b.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.openBooking(b.dataset.bookingOpen); } };
+  });
   $$("[data-make-resident]").forEach((b) => (b.onclick = () => {
     const u = a.users.find((x) => x.id === b.dataset.makeResident);
     if (!u) return;

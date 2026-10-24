@@ -79,11 +79,11 @@ try{
   for(const [name,email,role,active] of [['Екатерина','ekaterina@test.invalid','guest',true],['Александра Никитична','resident-booking@long-example.test.invalid','resident',true],['Мастер без доступа','inactive@test.invalid','guest',false]])await db.query("INSERT INTO users(id,email,password,name,role,account_type,active) VALUES($1,$2,'test-only',$3,$4,'master',$5)",[crypto.randomUUID(),email,name,role,active]);
 
   await page.goto(base+'/#/admin');await page.reload();await page.locator('[data-admintab=workspaces]').first().click();await page.locator('[data-admintab=settings]').first().click();await page.locator('#settings-form').waitFor();
-  assert.equal(await page.locator('[name=points_bookingPoints]').inputValue(),'70');assert.equal(await page.locator('[name=resident_3]').evaluate(el=>!!el.closest('.quantity-control')),false);await page.locator('[name=resident_3]').fill('1800');
+  assert.equal(await page.locator('[name=points_bookingPoints]').inputValue(),'70');
   assert.equal(await page.locator('[name=openHour]').getAttribute('type'),null);await page.locator('[name=openHour]').selectOption('23',{force:true});assert.equal(await page.locator('[name=closeHour]').inputValue(),'24');assert.match(await page.locator('#studio-hours-summary').innerText(),/1 ч/);
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
-  assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
-  assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Обзор','Брони и оплаты','Пользователи','Студия']);
+  assert.equal(await page.locator('#menuList [data-admintab]').count(),5);
+  assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Сегодня','Расписание','Пользователи','Деньги','Студия']);
   assert.equal(await page.locator('.admin-settings-section').count(),4);
   assert.equal(await page.locator('.admin-settings-section:not([open])').count(),3);
   await page.locator('.admin-settings-section').nth(2).locator('summary').click();
@@ -92,15 +92,20 @@ try{
   await page.waitForFunction(()=>document.querySelector('#notice').textContent==='Настройки студии сохранены');
   assert.equal((await (await context.request.get(base+'/api/public')).json()).settings.rankingRules.bookingPoints,71);
   await page.screenshot({path:`${output}/admin-settings.png`});
+  await page.locator('#menuList [data-admintab=finance]').click();await page.locator('[data-admintab=pricing]').first().click();await page.locator('#pricing-form').waitFor();
+  assert.equal(await page.locator('[name=resident_3]').evaluate(el=>!!el.closest('.quantity-control')),false);await page.locator('[name=resident_3]').fill('1800');
+  await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/admin/settings')&&r.request().method()==='PATCH'),page.locator('#pricing-form button[type=submit]').click()]);
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent==='Цены сохранены');
+  assert.equal((await (await context.request.get(base+'/api/public')).json()).settings.rates.resident[3],180000);
   for(const width of [390,1440]) {
     await page.setViewportSize({width,height:1000});
-    for(const tab of ['home','schedule','finance','users','workspaces','catalog','settings']) {
+    for(const tab of ['home','schedule','finance','pricing','users','workspaces','catalog','settings']) {
       // Mobile primary navigation lives in the menu; reveal it when necessary.
       let target=page.locator(`[data-admintab=${tab}]`).first();
-      if(!await target.count()) {await page.locator(`[data-admintab=${tab==='finance'?'schedule':'workspaces'}]`).first().evaluate(b=>b.click());target=page.locator(`[data-admintab=${tab}]`).first();}
+      if(!await target.count()) {await page.locator(`[data-admintab=${tab==='pricing'?'finance':'workspaces'}]`).first().evaluate(b=>b.click());target=page.locator(`[data-admintab=${tab}]`).first();}
       await target.evaluate(b=>b.click());
       await page.locator(`[data-admin-section=${tab}]`).waitFor();
-      assert.equal(await page.locator('#menuList [data-admintab]').count(),4);
+      assert.equal(await page.locator('#menuList [data-admintab]').count(),5);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,`Admin overflow: ${tab} at ${width}`);
       if(tab==='users') {
         assert.deepEqual((await page.locator('.admin-users-list th').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Пользователь','Роль и доступ','Баллы','Баланс','Действия']);
