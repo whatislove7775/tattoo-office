@@ -3,14 +3,15 @@ import { hashPassword, hashToken } from "./domain.js";
 
 // Тестовый режим на превью Vercel: своя база в памяти с примерами данных,
 // чтобы все функции админки и кабинета можно было проверить без боевого сервера.
+// Пароли — только для тестовой базы превью, к боевому сайту отношения не имеют.
 export const DEMO_ACCOUNTS = {
-  owner: { name: "Владелец (тест)", email: "owner@demo.tattoo-office", role: "admin", account_type: "admin", profile: {} },
-  shift: { name: "Админ смены (тест)", email: "shift@demo.tattoo-office", role: "admin", account_type: "admin", profile: { staffLevel: "shift" } },
-  master: { name: "Катя Иванова", email: "katya@demo.tattoo-office", role: "guest", account_type: "master", profile: { city: "СПБ", bio: "Тонкие линии, графика и ботаника. Работаю в студии с весны.", experience: "4 года" } },
-  resident: { name: "Артур Резидент", email: "artur@demo.tattoo-office", role: "resident", account_type: "master", profile: { city: "СПБ", bio: "Резидент Private Club. Крупные проекты, чёрно-серый реализм.", experience: "9 лет" } },
-  risky: { name: "Миша Пропускайкин", email: "misha@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
-  newbie: { name: "Новый Мастер", email: "new@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
-  customer: { name: "Клиент Анна", email: "anna@demo.tattoo-office", role: "guest", account_type: "customer", profile: {} },
+  owner: { password: "Test-owner-2026", name: "Владелец (тест)", email: "owner@demo.tattoo-office", role: "admin", account_type: "admin", profile: {} },
+  shift: { password: "Test-shift-2026", name: "Админ смены (тест)", email: "shift@demo.tattoo-office", role: "admin", account_type: "admin", profile: { staffLevel: "shift" } },
+  master: { password: "Test-master-2026", name: "Катя Иванова", email: "katya@demo.tattoo-office", role: "guest", account_type: "master", profile: { city: "СПБ", bio: "Тонкие линии, графика и ботаника. Работаю в студии с весны.", experience: "4 года" } },
+  resident: { password: "Test-resident-2026", name: "Артур Резидент", email: "artur@demo.tattoo-office", role: "resident", account_type: "master", profile: { city: "СПБ", bio: "Резидент Private Club. Крупные проекты, чёрно-серый реализм.", experience: "9 лет" } },
+  risky: { password: "Test-misha-2026", name: "Миша Пропускайкин", email: "misha@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
+  newbie: { password: "Test-new-2026", name: "Новый Мастер", email: "new@demo.tattoo-office", role: "guest", account_type: "master", profile: {} },
+  customer: { password: "Test-client-2026", name: "Клиент Анна", email: "anna@demo.tattoo-office", role: "guest", account_type: "customer", profile: {} },
 };
 
 const MSK = (days, hour) => {
@@ -25,7 +26,7 @@ export async function seedDemo(db) {
   for (const [key, u] of Object.entries(DEMO_ACCOUNTS)) {
     ids[key] = uuid();
     const created = key === "newbie" ? "now()-interval '3 days'" : "now()-interval '200 days'";
-    await db.query(`INSERT INTO users(id,email,password,name,role,account_type,profile,balance,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,${created})`, [ids[key], u.email, hashPassword(randomBytes(24).toString("hex")), u.name, u.role, u.account_type, JSON.stringify(u.profile), key === "master" ? 50000 : 0]);
+    await db.query(`INSERT INTO users(id,email,password,name,role,account_type,profile,balance,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,${created})`, [ids[key], u.email, hashPassword(u.password), u.name, u.role, u.account_type, JSON.stringify(u.profile), key === "master" ? 50000 : 0]);
   }
   await db.query("UPDATE settings SET data=data||$1::jsonb WHERE id=1", [JSON.stringify({ mode: "test", priceRules: { nightPercent: 20, nightFrom: 22, nightTo: 8, weekendPercent: 10 }, autoInvoice: false })]);
   const places = (await db.query("SELECT id FROM resources WHERE NOT deleted ORDER BY name")).rows.map((r) => r.id);

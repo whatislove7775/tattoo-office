@@ -21,6 +21,12 @@ test("preview test mode: seeded database, one-click login, admin overview throug
     assert.ok(ov.attention.risky.length >= 1);
     assert.ok(ov.attention.invoices.length >= 1);
     assert.ok(ov.stats.month.revenue > 0);
+    const byPassword = await fetch(base + "/api/demo/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "owner@demo.tattoo-office", password: "Test-owner-2026", accountType: "admin" }) });
+    assert.equal(byPassword.status, 200);
+    assert.equal((await byPassword.json()).user.role, "admin");
+    const masterLogin = await fetch(base + "/api/demo/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "katya@demo.tattoo-office", password: "Test-master-2026", accountType: "master" }) });
+    assert.equal(masterLogin.status, 200);
+    assert.equal((await fetch(base + "/api/demo/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "katya@demo.tattoo-office", password: "wrong-password-123", accountType: "master" }) })).status, 401);
     assert.equal((await fetch(base + "/api/demo/__demo/login?as=nobody", { method: "POST" })).status, 404);
     const master = (await fetch(base + "/api/demo/__demo/login?as=master", { method: "POST" })).headers.get("set-cookie").split(";")[0];
     const bookings = await (await fetch(base + "/api/demo/bookings", { headers: { Cookie: master } })).json();
