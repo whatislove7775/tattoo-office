@@ -17,7 +17,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npm test
+      - name: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test.log || { grep -E "not ok|Error|expected|actual|AssertionError|at file" /tmp/test.log | head -25 | sed 's/^/::error::/'; exit 1; }
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: node tests/ui-foundation.mjs
