@@ -107,13 +107,15 @@ function notify(s) {
   noticeTimer = setTimeout(() => ($("#notice").hidden = true), 6000);
 }
 const API_BASE = window.OFFICE_API_BASE || "/api", DEMO = API_BASE !== "/api";
-async function api(path, method = "GET", body) {
+async function api(path, method = "GET", body, retried) {
   const r = await fetch(API_BASE + path, {
     method,
     credentials: "same-origin",
     headers: body ? { "Content-Type": "application/json" } : {},
     body: body ? JSON.stringify(body) : undefined,
   });
+  // Тестовый режим: если запрос попал в только что запущенную копию сервера, повторяем его один раз.
+  if (DEMO && !retried && method === "GET" && [401, 403].includes(r.status)) { await new Promise((ok) => setTimeout(ok, 300)); return api(path, method, body, true); }
   const data = await r.json();
   if (!r.ok) throw Error(data.error || "Ошибка сервера");
   return data;
@@ -1065,7 +1067,13 @@ async function adminPage() {
   if (!me) return adminAuthPage();
   if (me.role !== "admin")
     return win("Служебный вход", "У вас нет доступа к этому разделу.");
-  adminData = await api("/admin");
+  try { adminData = await api("/admin"); }
+  catch (error) {
+    // Сессия закончилась (или тестовый сервер перезапустился) — показываем вход, а не ошибку.
+    await refresh();
+    if (me?.role !== "admin") return adminAuthPage();
+    adminData = await api("/admin");
+  }
   syncMasters(adminData.content);
   const a = adminData,
     copyButton = (value,label) => `<button type="button" class="admin-copy" data-copy-value="${esc(value)}" data-copy-label="${label}" aria-label="Скопировать ${label}" title="Скопировать ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button>`,

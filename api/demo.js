@@ -23,9 +23,15 @@ const SECRET = process.env.DEMO_SECRET || process.env.VERCEL_GIT_COMMIT_SHA || "
 const sign = (uid, token) => createHmac("sha256", SECRET).update(uid + "." + token).digest("hex").slice(0, 32);
 const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").split(";").map((x) => x.trim().split("=")).filter(([k, v]) => k && v).map(([k, v]) => [k, decodeURIComponent(v)]));
 const whoCookie = (uid, token) => `demo_who=${uid}.${sign(uid, token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`;
-async function restoreSession(db, hashToken, req) {
+async function restoreSession(db, hashToken, req, res) {
   const c = cookies(req), token = c.office_session, who = c.demo_who;
-  if (!token || !who) return;
+  if (!token) return;
+  if (!who) {
+    // Старый вход без метки: выдаём метку, если эта копия знает сессию.
+    const known = (await db.query("SELECT user_id FROM sessions WHERE token=$1 AND expires_at>now()", [hashToken(token)])).rows[0];
+    if (known) res.setHeader("Set-Cookie", whoCookie(known.user_id, token));
+    return;
+  }
   const [uid, sig] = who.split(".");
   if (!uid || !sig || sig.length !== 32 || !timingSafeEqual(Buffer.from(sig), Buffer.from(sign(uid, token)))) return;
   if ((await db.query("SELECT 1 FROM sessions WHERE token=$1", [hashToken(token)])).rows.length) return;
@@ -58,7 +64,7 @@ export default async function handler(req, res) {
     res.setHeader("Set-Cookie", [`office_session=${session.token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`, whoCookie(session.userId, session.token)]);
     return res.end('{"ok":true}');
   }
-  await restoreSession(db, hashToken, req);
+  await restoreSession(db, hashToken, req, res);
   tagLogin(res);
   // Фоновые задачи (напоминания, лист ожидания, автосчёт) — не чаще раза в минуту.
   if (Date.now() - lastTick > 60000) { lastTick = Date.now(); workerTick(db).catch(() => {}); }
