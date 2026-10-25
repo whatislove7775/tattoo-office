@@ -2298,3 +2298,19 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
   /* Внутри прокручиваемого окна блоки не сжимаются — список целиком, прокрутка общая. */
   body.admin-session .office-feature .window > .admin-content > * {flex-shrink:0;}
 }
+/* Размеры плашек по макету: почти во всю колонку, сразу под бегущей строкой, низ — на уровне подвала */
+@media (min-width:701px) {
+  body.admin-session #view {padding:0 2px 38px 9px!important;}
+  body.admin-session .office-feature .admin-strip {min-height:90px;padding:0 30px;margin:0 0 24px;font-size:clamp(22px,1.95vw,33px);gap:22px;}
+  body.admin-session .office-feature .window {padding:36px 40px 0 33px!important;}
+  body.admin-session .office-feature .admin-main-title {font-size:clamp(22px,1.95vw,33px);}
+  body.admin-session .office-feature .admin-home .admin-shortcuts {gap:clamp(30px,3vw,50px) clamp(22px,2.1vw,34px);margin-top:clamp(30px,3vw,46px);padding:0 12px 0 7px;}
+  body.admin-session .office-feature .admin-home .admin-shortcut {min-height:clamp(70px,5.6vw,94px);font-size:clamp(18px,1.95vw,32px);border-radius:clamp(13px,1.1vw,18px);}
+  /* без серой полосы прокрутки */
+  body.admin-session .office-feature .window > .admin-content {scrollbar-width:none;-ms-overflow-style:none;}
+  body.admin-session .office-feature .window > .admin-content::-webkit-scrollbar {width:0;height:0;display:none;}
+  body.admin-session .deco-scroll,body.admin-session #decoThumb {display:none!important;}
+}
+@media (min-width:701px) {
+  body.admin-session .office-feature .admin-home .admin-shortcut {font-size:clamp(17px,1.85vw,31px);white-space:nowrap;padding:12px 10px;}
+}
