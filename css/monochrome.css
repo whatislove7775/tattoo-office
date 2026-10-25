@@ -2202,3 +2202,44 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
   .admin-head-actions .admin-search span {display:none;}
   .admin-head-actions .admin-search {display:inline-flex;padding:8px 10px;}
 }
+
+/* ---------- Админка: плашка «Admin panel» над разделами и главный экран Main ---------- */
+.office-feature .admin-strip {display:flex;align-items:center;gap:20px;margin:0 0 22px;padding:20px 26px;border-radius:22px;background:var(--panel);box-shadow:0 6px 18px #0000001a;color:var(--ink);text-decoration:none;font-size:clamp(20px,1.9vw,27px);line-height:1.2;}
+.office-feature .admin-strip u {text-underline-offset:.16em;text-decoration-thickness:1.5px;}
+.admin-strip__icon {width:1.45em;height:1.45em;flex:none;}
+.office-feature .admin-strip:hover u {text-decoration-thickness:2px;}
+.office-feature .admin-main-title {margin:0;font-size:clamp(22px,1.9vw,27px);font-weight:400;}
+.office-feature .admin-main-title u {text-underline-offset:.16em;text-decoration-thickness:1.5px;}
+.office-feature .admin-window--main {padding:28px 32px 36px;}
+.office-feature .admin-home .admin-shortcuts {grid-template-columns:repeat(3,minmax(0,1fr));gap:40px 28px;margin-top:34px;}
+.office-feature .admin-home .admin-shortcut {justify-content:center;gap:10px;min-height:74px;padding:12px 18px;border:1px solid #d9d9d9;border-radius:14px;background:linear-gradient(#fbfbfb,#f3f3f3);box-shadow:inset 0 1px #fff,0 2px 0 #d6d6d6,0 3px 6px #0000000d;color:#111;font-size:clamp(18px,1.75vw,26px);font-weight:400;text-shadow:none;}
+.office-feature .admin-home .admin-shortcut:hover {background:linear-gradient(#fff,#f5f5f5);box-shadow:inset 0 1px #fff,0 2px 0 #d0d0d0,0 4px 10px #00000014;}
+.office-feature .admin-home .admin-shortcut:active {transform:translateY(1px);box-shadow:inset 0 2px 4px #0000001a;}
+.office-feature .admin-home .admin-shortcut u {text-underline-offset:.14em;text-decoration-thickness:1.5px;}
+.office-feature .admin-home .admin-shortcut__plus {font-size:1em;line-height:1;}
+.admin-shortcut__pencil {width:.95em;height:.95em;fill:#111;flex:none;}
+.admin-shortcut__calendar {width:1.25em;height:1.25em;flex:none;}
+.office-feature .admin-home .admin-shortcut .ui-icon {width:1em;height:1em;opacity:.6;}
+:root[data-theme="dark"] .office-feature .admin-home .admin-shortcut {border-color:var(--panel-edge);background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);}
+:root[data-theme="dark"] .admin-shortcut__pencil {fill:var(--ink);}
+/* На компьютере плашки лежат прямо на фоне: «Admin panel» и окно раздела — отдельные карточки. */
+@media (min-width:701px) {
+  body.admin-session .stage {background:none;border-color:transparent;box-shadow:none;}
+  body.admin-session .stage::before,body.admin-session .stage::after {display:none;}
+  body.admin-session .office-feature .window {background:var(--panel);border-radius:22px;box-shadow:0 6px 18px #0000001a;padding:26px 32px 32px;}
+}
+@media (max-width:700px) {
+  .office-feature .admin-home .admin-shortcuts {grid-template-columns:1fr;gap:14px;margin-top:22px;}
+  .office-feature .admin-home .admin-shortcut {justify-content:flex-start;min-height:60px;font-size:19px;}
+  .office-feature .admin-strip {padding:14px 18px;margin-bottom:14px;font-size:20px;}
+}
+@media (min-width:701px) {
+  body.admin-session .office-feature .admin-window--main {min-height:calc(100dvh - 300px)!important;padding:28px 32px 40px!important;box-sizing:border-box;}
+}
+@media (max-width:700px) {
+  body.admin-session .office-feature .window-head {flex-wrap:wrap;row-gap:10px;}
+  body.admin-session .office-feature .window-head h1 {flex:1 1 auto;min-width:0;}
+  .admin-head-actions .admin-search {display:none!important;}
+  .pro-dayline {flex-wrap:wrap;}
+  .pro-dayline #tl-night {white-space:nowrap;font-size:12px;}
+}

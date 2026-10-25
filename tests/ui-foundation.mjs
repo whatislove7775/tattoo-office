@@ -83,7 +83,7 @@ try{
   assert.equal(await page.locator('[name=openHour]').getAttribute('type'),null);await page.locator('[name=openHour]').selectOption('23',{force:true});assert.equal(await page.locator('[name=closeHour]').inputValue(),'24');assert.match(await page.locator('#studio-hours-summary').innerText(),/1 ч/);
   await page.locator('[name=openHour]').selectOption('10',{force:true});await page.locator('[name=closeHour]').selectOption('22',{force:true});
   assert.equal(await page.locator('#menuList [data-admintab]').count(),5);
-  assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Сегодня','Расписание','Пользователи','Деньги','Студия']);
+  assert.deepEqual((await page.locator('#menuList .menu__link').allTextContents()).map(s=>s.replace(/\s/g,' ')),['Main','Расписание','Пользователи','Деньги','Студия']);
   assert.equal(await page.locator('.admin-settings-section').count(),4);
   assert.equal(await page.locator('.admin-settings-section:not([open])').count(),3);
   await page.locator('.admin-settings-section').nth(2).locator('summary').click();
