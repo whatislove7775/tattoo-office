@@ -2277,3 +2277,6 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
 .tl-cell.is-bad {background:#e5393514!important;box-shadow:inset 0 0 0 2px #e53935;}
 .pro-dragging, .pro-dragging * {user-select:none!important;}
 .pro-dragging .tl-free {background:transparent;}
+.office-feature .pro-dayarrow {width:26px;height:26px;min-height:0!important;border-radius:7px;}
+.office-feature .pro-dayarrow .ui-icon {width:11px;height:11px;}
+.pro-dayswitch {gap:8px;}
