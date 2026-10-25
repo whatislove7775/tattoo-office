@@ -1198,8 +1198,9 @@ async function adminPage() {
       ),
     )}<div class="note-paper">Режим: тестовый. Боевые платежи заблокированы до проверки кассы, документов и инфраструктуры в РФ. Секретные ключи задаются на сервере, в браузере не хранятся.</div>${AP.settingsLogHTML(a)}`;
   const strip = `<a class="admin-strip" href="#/admin" data-admintab="home"><svg class="admin-strip__icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="adminPerson" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="1" stop-color="#8e8e8e"/></linearGradient></defs><circle cx="16" cy="10" r="6.5" fill="url(#adminPerson)"/><path d="M3.5 29c0-6.6 5.6-11 12.5-11s12.5 4.4 12.5 11z" fill="url(#adminPerson)"/></svg><u>Admin panel</u></a>`;
-  if (adminTab === "home") return `${strip}<section class="window admin-window--main"><div class="admin-content" data-admin-section="home">${body}</div></section>`;
-  return strip + win(
+  void strip;
+  if (adminTab === "home") return `<section class="window admin-window--main"><div class="admin-content" data-admin-section="home">${body}</div></section>`;
+  return win(
     group?.label || tabs.find(([value]) => value === adminTab)?.[1] || "Управление студией",
     `${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
   );
@@ -1973,6 +1974,13 @@ function demoBar() {
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
 }
 if (DEMO) demoBar();
+// В админке вместо бегущей строки — «Admin panel»: ведёт на главный экран админки.
+document.getElementById("fringeAdmin")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (!UX.confirmLeave()) return;
+  adminTab = "home";
+  go("admin");
+});
 window.Office = { render, paintAccount: paintShell, current: () => me };
 window.Store = {
   current: () => me,

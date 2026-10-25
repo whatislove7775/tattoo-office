@@ -2319,3 +2319,14 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
   body.admin-session .office-feature .admin-strip {min-height:45px;padding:0 15px;gap:11px;font-size:clamp(11px,.98vw,16.5px);border-radius:14px;}
   body.admin-session .office-feature .admin-strip u {text-decoration-thickness:1px;}
 }
+/* Админка: в шапке вместо бегущей строки — аватар и «Admin panel»; отдельной плашки больше нет */
+.fringe-admin {display:none;}
+body.admin-session .fringe .marquee {display:none!important;}
+body.admin-session .fringe-admin {display:flex;align-items:center;gap:12px;height:100%;padding:0 28px;color:var(--ink);text-decoration:none;font-size:18px;line-height:1;position:relative;z-index:2;}
+body.admin-session .fringe-admin u {text-underline-offset:.18em;text-decoration-thickness:1px;}
+.fringe-admin__icon {width:26px;height:26px;flex:none;}
+body.admin-session .fringe {display:flex;align-items:center;}
+@media (min-width:701px) {
+  body.admin-session #view {padding-top:0!important;}
+}
+@media (max-width:700px) { body.admin-session .fringe-admin {display:none;} }
