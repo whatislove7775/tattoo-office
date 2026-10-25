@@ -2180,3 +2180,25 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .office-feature .admin-content td button.pro-link,.office-feature .admin-content .pro-link {min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;font-size:inherit!important;text-decoration:underline;text-underline-offset:3px;}
 .pro-filter .field {max-width:280px;}
 .pro-filter {margin:6px 0 0;}
+/* Шапка раздела: заголовок слева, «Назад» и «Поиск» справа */
+.admin-head-actions {margin-left:auto;display:flex;align-items:center;gap:10px;}
+.admin-head-actions .admin-search {margin-left:0;min-height:40px;padding:8px 18px;border-radius:14px;background:var(--control-fill);box-shadow:var(--control-shadow);font-size:15px;}
+.office-feature .admin-head-actions .admin-back {min-height:40px;padding:8px 16px!important;border-color:#333!important;background:var(--action-fill)!important;color:#fff!important;border-radius:14px!important;}
+/* Строка дня: календарь, все брони, дата, ночь */
+.pro-dayline {position:relative;display:flex;align-items:center;gap:12px;margin:18px 0 16px;}
+.pro-dayline input[type=date] {position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0;}
+.pro-dayline .date-open {flex:none;}
+.pro-dayline .pro-listbtn[aria-pressed="true"] {background:var(--action-fill)!important;color:#fff;border-color:#333;}
+.pro-dayline .pro-listbtn svg {fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+.pro-dayline .pro-daynav__label {margin-left:4px;font-size:18px;font-weight:600;}
+.pro-dayline #tl-night {margin-left:auto;}
+/* Выделение ячеек */
+.tl-free {cursor:cell;user-select:none;-webkit-user-select:none;touch-action:pan-x pan-y;}
+.tl-free.is-selected {background:#e4e4e4!important;}
+:root[data-theme="dark"] .tl-free.is-selected {background:#3a3a3a!important;}
+.tl-select {z-index:6;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:8px;padding:8px;pointer-events:none;}
+.tl-select .chrome {pointer-events:auto;min-height:38px!important;padding:6px 16px!important;font-size:13px!important;box-shadow:0 4px 12px #0003!important;}
+@media (max-width:720px) {
+  .admin-head-actions .admin-search span {display:none;}
+  .admin-head-actions .admin-search {display:inline-flex;padding:8px 10px;}
+}

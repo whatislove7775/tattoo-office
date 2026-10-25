@@ -1128,9 +1128,8 @@ async function adminPage() {
       inactive = cityResources.filter((r) => !r.active),
       dayCount = a.bookings.filter((b) => cityIds.has(b.resource_id) && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(b.starts_at)) === adminDate && !["cancelled", "expired"].includes(b.status)).length,
       listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested"].includes(b.status) : b.status === listStatus)));
-    const viewSwitch = `<div class="pro-segment" role="group" aria-label="Вид расписания"><button type="button" data-schedule-view="day" aria-pressed="${scheduleView === "day"}">День</button><button type="button" data-schedule-view="list" aria-pressed="${scheduleView === "list"}">Все брони</button></div>`;
-    const dayNav = `<div class="pro-daynav"><button type="button" class="chrome" data-day-shift="-1" aria-label="Предыдущий день">‹</button><button type="button" class="chrome" data-day-shift="0">Сегодня</button><button type="button" class="chrome" data-day-shift="1" aria-label="Следующий день">›</button><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong></div>`;
-    body = `<div class="pro-toolbar">${viewSwitch}<div class="pro-toolbar__actions"><button class="chrome pro-primary" id="manual-booking">+ Запись</button><button class="chrome" id="add-block">Закрыть время</button></div></div>${cityTabs()}${scheduleView === "day" ? `${dayNav}<p class="small muted pro-meta">${CITY_LABELS[adminCity]} · ${cityInfo(adminCity).open ? "запись открыта" : "запись пока закрыта (*soon)"} · ${dayCount} ${dayCount === 1 ? "запись" : dayCount > 1 && dayCount < 5 ? "записи" : "записей"} в этот день${inactive.length ? ` · не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}` : ""}</p>${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-filter">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}</div><h3 id="admin-bookings" class="admin-bookings-title">Брони · ${CITY_LABELS[adminCity]}</h3>${table(
+    const dayLine = `<div class="pro-dayline"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button><strong class="pro-daynav__label">${scheduleView === "list" ? "Все бронирования" : UX.fullDate(adminDate + "T12:00:00+03:00")}</strong>${scheduleView === "day" ? UX.nightToggle(s) : ""}</div>`;
+    body = `${cityTabs()}${dayLine}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-filter">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}</div><h3 id="admin-bookings" class="admin-bookings-title">Брони · ${CITY_LABELS[adminCity]}</h3>${table(
       ["Сеанс", "Мастер / место", "Сумма", "Статус", ""],
       listed.map(
         (b) =>
@@ -1197,8 +1196,8 @@ async function adminPage() {
       ),
     )}<div class="note-paper">Режим: тестовый. Боевые платежи заблокированы до проверки кассы, документов и инфраструктуры в РФ. Секретные ключи задаются на сервере, в браузере не хранятся.</div>${AP.settingsLogHTML(a)}`;
   return win(
-    "Управление студией",
-    `${adminTab !== "home" ? `<div class="admin-section-head"><h2 class="admin-section-title">${group?.label || tabs.find(([value]) => value === adminTab)[1]}</h2><button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div>` : ""}${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
+    adminTab === "home" ? "Управление студией" : group?.label || tabs.find(([value]) => value === adminTab)?.[1] || "Управление студией",
+    `${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
   );
 }
 // Сжимает фото в браузере до JPEG нужного размера перед загрузкой на сервер.
@@ -1244,7 +1243,7 @@ function mountAdmin() {
   if (!adminData) return;
   const a = adminData;
   const head = $(".window-head");
-  if (head && !$("#admin-search")) head.insertAdjacentHTML("beforeend", '<button type="button" class="admin-search" id="admin-search" aria-label="Поиск по админке (Ctrl+K)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Поиск</span><kbd>Ctrl K</kbd></button>');
+  if (head && !$("#admin-search")) head.insertAdjacentHTML("beforeend", `<div class="admin-head-actions">${adminTab !== "home" ? '<button class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button>' : ""}<button type="button" class="admin-search" id="admin-search" aria-label="Поиск по админке (Ctrl+K)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Поиск</span></button></div>`);
   $$("[data-copy-value]").forEach(button => button.onclick = async () => {
     try {
       await navigator.clipboard.writeText(button.dataset.copyValue);
@@ -1480,11 +1479,12 @@ function mountAdmin() {
       (b.onclick = () =>
         resourceForm(a.resources.find((x) => x.id === b.dataset.editResource))),
   );
-  if ($("#add-block"))
-    $("#add-block").onclick = () =>
+  const openBlock = (preset = {}) => {
+    const hh = (h) => String(h % 24).padStart(2, "0") + ":00", from = preset.hour ?? 10, to = preset.hours ? from + preset.hours : 22;
+    const endDate = to >= 24 ? addDate(adminDate, 1) : adminDate;
       dialogForm(
         "Закрыть время",
-        `${select("resourceId", "Рабочее место", [["", "Все места во всех городах"], ...a.resources.map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name])], "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T10:00", "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", adminDate + "T22:00", "datetime-local", "required")}${field("reason", "Причина", "", "text", "required")}`,
+        `${select("resourceId", "Рабочее место", [["", "Все места во всех городах"], ...a.resources.map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name])], preset.resourceId || "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T" + hh(from), "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", endDate + "T" + hh(to), "datetime-local", "required")}${field("reason", "Причина", "", "text", "required")}`,
         (d) =>
           api("/admin/blocks", "POST", {
             ...d,
@@ -1492,6 +1492,8 @@ function mountAdmin() {
             endsAt: d.endsAt + ":00+03:00",
           }),
       );
+  };
+  if ($("#add-block")) $("#add-block").onclick = () => openBlock();
   $$("[data-delete-block]").forEach(
     (b) =>
       (b.onclick = async () => {
@@ -1521,7 +1523,7 @@ function mountAdmin() {
             [6, "До 6 часов"],
             [12, "До 12 часов"],
           ],
-          3,
+          preset.hours > 6 ? 12 : preset.hours > 3 ? 6 : 3,
         )}${select(
           "resourceId",
           "Место",
@@ -1531,6 +1533,9 @@ function mountAdmin() {
         (d) => AP.manualRepeat(d),
       );
   if ($("#manual-booking")) $("#manual-booking").onclick = () => openManual();
+  adminContext.openManual = () => openManual();
+  adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
+  UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
   $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); openManual({ resourceId, hour: Number(hour) }); }));
   $$("[data-day-shift]").forEach((b) => (b.onclick = () => { adminDate = b.dataset.dayShift === "0" ? today() : addDate(adminDate, Number(b.dataset.dayShift)); render(); }));
   $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));

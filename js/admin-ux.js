@@ -20,7 +20,8 @@ export const toggleNight = () => { showNight = !showNight; };
 export function scheduleTimeline(a, s, date, city) {
   const { esc, resourceCity } = c;
   const places = a.resources.filter((r) => resourceCity(r) === city && r.active);
-  const day = a.bookings.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && mskDay(b.starts_at) <= date && mskDay(b.ends_at) >= date);
+  const dayStart = new Date(`${date}T00:00:00+03:00`), dayEnd = new Date(dayStart.getTime() + 86400000);
+  const day = a.bookings.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
   // Видимые часы: рабочее время студии; если студия круглосуточная — ночь свёрнута, пока в ней нет записей.
   let from = s.openHour, to = s.closeHour;
   if (!showNight && from === 0 && to === 24) {
@@ -43,7 +44,7 @@ export function scheduleTimeline(a, s, date, city) {
       const isClosed = closed(r.id, h), past = at + 3600000 <= now;
       cells += isClosed ? `<div class="tl-cell is-closed" style="grid-row:${row(h)};grid-column:${i + 2}">закрыто</div>`
         : busy(r.id, h) || past ? `<div class="tl-cell${past ? " is-past" : ""}" style="grid-row:${row(h)};grid-column:${i + 2}"></div>`
-        : `<button type="button" class="tl-cell tl-free" style="grid-row:${row(h)};grid-column:${i + 2}" data-new-slot="${r.id}|${h}" data-drop="${r.id}|${h}" aria-label="Новая запись: ${esc(r.name)}, ${h}:00"><span>+ ${String(h % 24).padStart(2, "0")}:00</span></button>`;
+        : `<div class="tl-cell tl-free" role="button" tabindex="0" style="grid-row:${row(h)};grid-column:${i + 2}" data-slot="${r.id}|${h}" data-col="${i + 2}" data-row="${row(h)}" data-drop="${r.id}|${h}" aria-label="Выбрать: ${esc(r.name)}, ${h}:00"></div>`;
     });
   }
   const blocks = day.map((b) => {
@@ -57,9 +58,65 @@ export function scheduleTimeline(a, s, date, city) {
     const h = mskHour(now);
     if (h >= from && h < to) line = `<div class="tl-now" style="grid-row:${row(h)};--m:${mskMinute(now) / 60}" aria-hidden="true"></div>`;
   }
-  const night = s.openHour === 0 && s.closeHour === 24 ? `<button type="button" class="pro-chip" id="tl-night" aria-pressed="${showNight}">${showNight ? "Скрыть ночь" : "Показать ночь 00–08"}</button>` : "";
-  return `<div class="tl-legend"><span><i class="tl-dot tl-dot--free"></i>свободно — нажмите, чтобы записать</span><span><i class="tl-dot tl-dot--booked"></i>бронь — нажмите, чтобы открыть; будущую можно перетащить</span>${night}</div>
-  <div class="tl-scroll"><div class="tl-grid" style="--cols:${cols};grid-template-rows:auto repeat(${hours},var(--tl-row))"><div class="tl-head tl-corner">МСК</div>${places.map((r, i) => `<div class="tl-head" style="grid-column:${i + 2}"><span>${esc(r.name)}</span><button type="button" class="tl-head__edit" data-edit-resource="${r.id}" aria-label="Изменить место ${esc(r.name)}">⋯</button></div>`).join("")}${cells}${blocks}${line}</div></div>`;
+  return `<div class="tl-scroll"><div class="tl-grid" style="--cols:${cols};grid-template-rows:auto repeat(${hours},var(--tl-row))"><div class="tl-head tl-corner">МСК</div>${places.map((r, i) => `<div class="tl-head" style="grid-column:${i + 2}"><span>${esc(r.name)}</span><button type="button" class="tl-head__edit" data-edit-resource="${r.id}" aria-label="Изменить место ${esc(r.name)}">⋯</button></div>`).join("")}${cells}${blocks}${line}</div></div>`;
+}
+
+export const nightToggle = (s) => s.openHour === 0 && s.closeHour === 24 ? `<button type="button" class="pro-chip" id="tl-night" aria-pressed="${showNight}">${showNight ? "Скрыть ночь" : "Показать ночь 00–08"}</button>` : "";
+
+// Выделение ячеек мышью (или касаниями) в одном месте → кнопки «+ Запись» и «Закрыть время».
+let current = null, globalBound = false;
+export function mountTimeline({ onBook, onClose }) {
+  const grid = $(".tl-grid");
+  if (!grid) return;
+  let sel = null, dragging = false;
+  const cells = (col) => $$(`.tl-free[data-col="${col}"]`, grid);
+  const clear = () => { $$(".tl-free.is-selected", grid).forEach((x) => x.classList.remove("is-selected")); $(".tl-select", grid)?.remove(); sel = null; };
+  const paint = () => {
+    $$(".tl-free.is-selected", grid).forEach((x) => x.classList.remove("is-selected"));
+    $(".tl-select", grid)?.remove();
+    if (!sel) return;
+    const [a, b] = [Math.min(sel.from, sel.to), Math.max(sel.from, sel.to)];
+    const list = cells(sel.col).filter((x) => +x.dataset.row >= a && +x.dataset.row <= b);
+    // Только непрерывный свободный промежуток: занятая ячейка обрывает выделение.
+    const rows = list.map((x) => +x.dataset.row);
+    let end = a; while (rows.includes(end + 1) && end + 1 <= b) end++;
+    const ok = list.filter((x) => +x.dataset.row <= end);
+    ok.forEach((x) => x.classList.add("is-selected"));
+    sel.start = a; sel.end = end;
+    const first = ok[0], last = ok[ok.length - 1];
+    sel.resource = first.dataset.slot.split("|")[0];
+    sel.hour = Number(first.dataset.slot.split("|")[1]);
+    sel.hours = ok.length;
+    const box = document.createElement("div");
+    box.className = "tl-select";
+    box.style.gridColumn = sel.col; box.style.gridRow = `${a} / ${end + 1}`;
+    box.innerHTML = `<button type="button" class="chrome pro-primary" data-sel="book">+ Запись</button><button type="button" class="chrome pro-primary" data-sel="close">Закрыть время</button>`;
+    grid.append(box);
+    box.querySelector('[data-sel="book"]').onclick = () => { const x = { ...sel }; clear(); onBook({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
+    box.querySelector('[data-sel="close"]').onclick = () => { const x = { ...sel }; clear(); onClose({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
+    void last;
+  };
+  grid.addEventListener("pointerdown", (e) => {
+    const cell = e.target.closest(".tl-free");
+    if (!cell || e.button > 0) return;
+    const col = cell.dataset.col, row = +cell.dataset.row;
+    // Касание: второе нажатие в том же месте продлевает выделение.
+    if (e.pointerType !== "mouse" && sel && sel.col === col) { sel.to = row; paint(); return; }
+    e.preventDefault();
+    sel = { col, from: row, to: row }; dragging = e.pointerType === "mouse"; paint();
+  });
+  grid.addEventListener("pointerover", (e) => {
+    if (!dragging || !sel) return;
+    const cell = e.target.closest(".tl-free");
+    if (cell && cell.dataset.col === sel.col) { sel.to = +cell.dataset.row; paint(); }
+  });
+  current = { stop: () => { dragging = false; }, outside: (e) => { if (sel && !e.target.closest(".tl-grid")) clear(); } };
+  grid.addEventListener("keydown", (e) => {
+    const cell = e.target.closest(".tl-free");
+    if (cell && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); sel = { col: cell.dataset.col, from: +cell.dataset.row, to: +cell.dataset.row }; paint(); $(".tl-select button", grid)?.focus(); }
+    if (e.key === "Escape") clear();
+  });
+  if (!globalBound) { globalBound = true; addEventListener("pointerup", () => current?.stop()); document.addEventListener("pointerdown", (e) => current?.outside(e)); }
 }
 
 // ---------- Панель брони ----------
@@ -169,9 +226,8 @@ export function bindKeys() {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openSearch(); return; }
     if ($("#dialog")?.open || e.target.closest("input,textarea,select,[contenteditable]") || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "/") { e.preventDefault(); openSearch(); }
-    else if (e.key.toLowerCase() === "n" || e.key.toLowerCase() === "т") $("#manual-booking")?.click();
-    else if (e.key === "ArrowLeft") $("[data-day-shift='-1']")?.click();
-    else if (e.key === "ArrowRight") $("[data-day-shift='1']")?.click();
+    else if (e.key.toLowerCase() === "n" || e.key.toLowerCase() === "т") ($("#manual-booking") ? $("#manual-booking").click() : c.openManual?.());
+    else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && $(".tl-grid")) c.shiftDay?.(e.key === "ArrowLeft" ? -1 : 1);
   });
 }
 
