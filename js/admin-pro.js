@@ -206,7 +206,7 @@ export async function manualRepeat(d) {
 export function mount(tab) {
   const { api, notify, render, refresh, dialogForm, select, field, textarea } = c, a = c.state().adminData;
   if (!a) return;
-  const reload = async (text) => { await refresh(); await render(); if (text) notify(text); };
+  const reload = async (text) => { await render(); if (text) notify(text); };
   $$("[data-user-card]").forEach((b) => (b.onclick = () => userCard(b.dataset.userCard).catch((e) => notify(e.message))));
   $$("[data-booking-open]").forEach((b) => {
     b.onclick = () => c.openBooking(b.dataset.bookingOpen);

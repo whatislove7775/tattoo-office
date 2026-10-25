@@ -1021,7 +1021,7 @@ function mountCabinet() {
     notify("Пароль изменён. Войдите заново.");
   });
 }
-let adminData,
+let adminCache = false, adminData,
   adminDate = today(),
   usersFilter = "all",
   usersTag = "",
@@ -1067,7 +1067,7 @@ async function adminPage() {
   if (!me) return adminAuthPage();
   if (me.role !== "admin")
     return win("Служебный вход", "У вас нет доступа к этому разделу.");
-  try { adminData = await api("/admin"); }
+  try { if (!(adminCache && adminData)) adminData = await api("/admin"); adminCache = false; }
   catch (error) {
     // Сессия закончилась (или тестовый сервер перезапустился) — показываем вход, а не ошибку.
     await refresh();
@@ -1230,10 +1230,12 @@ function dialogForm(title, html, submit) {
   );
   UX.enhanceSelects($("#dialog-form"));
   onForm("#dialog-form", async (d) => {
-    await submit(d);
+    const result = await submit(d);
     $("#dialog").close();
-    await refresh();
-    await render();
+    // В админке после действия обновляем только данные админки (быстро, без мигания);
+    // если изменение уже применено на месте — перерисовываем без запроса к серверу.
+    if (location.hash.startsWith("#/admin")) { adminCache = !!result?.__cached; await render(); }
+    else { await refresh(); await render(); }
     notify("Сохранено");
   });
 }
@@ -1497,6 +1499,11 @@ function mountAdmin() {
             ...d,
             startsAt: d.startsAt + ":00+03:00",
             endsAt: d.endsAt + ":00+03:00",
+          }).then((r) => {
+            // Сразу показываем закрытое время, не дожидаясь повторной загрузки.
+            if (!r?.id) return r;
+            adminData.blocks.unshift({ id: r.id, resource_id: d.resourceId || null, starts_at: new Date(d.startsAt + ":00+03:00").toISOString(), ends_at: new Date(d.endsAt + ":00+03:00").toISOString(), reason: d.reason || "Закрыто", external: false });
+            return { __cached: true };
           }),
       );
   };
@@ -1543,7 +1550,14 @@ function mountAdmin() {
   adminContext.openManual = () => openManual();
   adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
   UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
-  UX.mountDrag({ onMove: async (id, t) => { await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate }); notify("Запись перенесена"); await render(); } });
+  UX.mountDrag({ onMove: async (id, t) => {
+    await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate });
+    // Перенос уже виден на экране: обновляем данные на месте, без перезагрузки и мигания.
+    const b = adminData.bookings.find((x) => x.id === id);
+    if (b) { const dur = new Date(b.ends_at) - new Date(b.starts_at), start = new Date(`${adminDate}T${String(t.hour).padStart(2, "0")}:00:00+03:00`); b.resource_id = t.rid; b.resource_name = adminData.resources.find((r) => r.id === t.rid)?.name || b.resource_name; b.starts_at = start.toISOString(); b.ends_at = new Date(start.getTime() + dur).toISOString(); }
+    notify("Запись перенесена");
+    adminCache = true; await render();
+  } });
   $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); openManual({ resourceId, hour: Number(hour) }); }));
   $$("[data-day-shift]").forEach((b) => (b.onclick = () => { adminDate = b.dataset.dayShift === "0" ? today() : addDate(adminDate, Number(b.dataset.dayShift)); render(); }));
   $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));
@@ -1946,6 +1960,7 @@ const adminContext = {
   openUserCard: (id) => AP.userCard(id).catch((e) => notify(e.message)),
   openBooking: (id) => UX.bookingPanel(id),
   goTab: (tab) => { adminTab = tab; render(); },
+  renderCached: () => { adminCache = true; return render(); },
 };
 AP.init(adminContext);
 UX.init(adminContext);

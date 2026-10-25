@@ -1213,6 +1213,7 @@ export async function createApp(db) {
       b = new Date(req.body.endsAt);
     if (!Number.isFinite(+a) || !Number.isFinite(+b) || a >= b)
       fail("Проверьте интервал");
+    let id;
     await db.transaction(async (q) => {
       await lock(q);
       if (
@@ -1223,7 +1224,7 @@ export async function createApp(db) {
         )
       )
         fail("Сначала перенесите или отмените пересекающиеся брони", 409);
-      const id = uuid();
+      id = uuid();
       await q.query("INSERT INTO blocks VALUES($1,$2,$3,$4,$5)", [
         id,
         req.body.resourceId || null,
@@ -1234,7 +1235,7 @@ export async function createApp(db) {
       await enqueue(q, "calendar.block", { blockId: id });
       await audit(q, req.user.id, "block.create", { id });
     });
-    res.json({ ok: true });
+    res.json({ ok: true, id });
   });
   app.delete("/api/admin/blocks/:id", staff, async (req, res) => {
     await db.transaction(async (q) => {

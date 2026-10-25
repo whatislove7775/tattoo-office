@@ -2342,3 +2342,8 @@ body.admin-session .office-feature .admin-window--main > .admin-content .admin-h
   body.admin-session .office-feature .admin-home .admin-shortcut {min-height:clamp(50px,3.9vw,68px);padding:8px 6px;gap:.4em;font-size:clamp(12px,1.08vw,19px);border-radius:clamp(10px,.85vw,14px);white-space:nowrap;}
 }
 @media (min-width:701px) { body.admin-session .office-feature .admin-home .admin-shortcut .ui-icon {width:.95em!important;height:.95em!important;font-size:inherit;} }
+/* Панель действий выделения — плавающая, поверх всего */
+.tl-select {position:fixed;z-index:120;display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;padding:6px;border-radius:14px;background:var(--panel);box-shadow:0 10px 26px #0003;pointer-events:auto;width:auto;}
+.tl-select .chrome {min-height:34px!important;padding:6px 14px!important;font-size:13px!important;box-shadow:none!important;white-space:nowrap;}
+.tl-booking.is-saving {opacity:1;}
+.tl-select .chrome.pro-primary {border:1px solid #333!important;background:var(--action-fill)!important;color:#fff!important;text-shadow:0 1px #0005;border-radius:11px!important;cursor:pointer;}

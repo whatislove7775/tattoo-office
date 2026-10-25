@@ -140,7 +140,7 @@ export function mountDrag({ onMove }) {
   $$("[data-unblock]", grid).forEach((b) => (b.onclick = async (e) => {
     e.stopPropagation();
     b.disabled = true;
-    try { await c.api("/admin/blocks/" + b.dataset.unblock, "DELETE"); b.closest(".tl-closed").remove(); c.notify("Время открыто"); await c.render(); }
+    try { await c.api("/admin/blocks/" + b.dataset.unblock, "DELETE"); const a = c.state().adminData; a.blocks = a.blocks.filter((k) => k.id !== b.dataset.unblock); c.notify("Время открыто"); await c.renderCached(); }
     catch (err) { b.disabled = false; c.notify(err.message); }
   }));
 }
@@ -154,10 +154,10 @@ export function mountTimeline({ onBook, onClose }) {
   if (!grid) return;
   let sel = null, dragging = false;
   const cells = (col) => $$(`.tl-free[data-col="${col}"]`, grid);
-  const clear = () => { $$(".tl-free.is-selected", grid).forEach((x) => x.classList.remove("is-selected")); $(".tl-select", grid)?.remove(); sel = null; };
+  const clear = () => { $$(".tl-free.is-selected", grid).forEach((x) => x.classList.remove("is-selected")); $(".tl-select")?.remove(); sel = null; };
   const paint = () => {
     $$(".tl-free.is-selected", grid).forEach((x) => x.classList.remove("is-selected"));
-    $(".tl-select", grid)?.remove();
+    $(".tl-select")?.remove();
     if (!sel) return;
     const [a, b] = [Math.min(sel.from, sel.to), Math.max(sel.from, sel.to)];
     const list = cells(sel.col).filter((x) => +x.dataset.row >= a && +x.dataset.row <= b);
@@ -171,15 +171,19 @@ export function mountTimeline({ onBook, onClose }) {
     sel.resource = first.dataset.slot.split("|")[0];
     sel.hour = Number(first.dataset.slot.split("|")[1]);
     sel.hours = ok.length;
+    // Кнопки — плавающая панель у нижнего края выделения: не обрезается и не прячется под шапкой таблицы.
     const box = document.createElement("div");
-    box.className = "tl-select";
-    box.style.gridColumn = sel.col; box.style.gridRow = `${a} / ${end + 1}`;
+    box.className = "tl-select office-feature";
+    const r1 = first.getBoundingClientRect(), r2 = last.getBoundingClientRect();
+    const below = r2.bottom + 96 < innerHeight;
+    box.style.left = Math.max(8, Math.min(innerWidth - 240, r2.right - 232)) + "px";
+    box.style.top = (below ? r2.bottom + 6 : Math.max(8, r1.top - 96)) + "px";
     box.innerHTML = `<button type="button" class="chrome pro-primary" data-sel="book">+ Запись</button><button type="button" class="chrome pro-primary" data-sel="close">Закрыть время</button>`;
-    grid.append(box);
+    document.body.append(box);
     box.querySelector('[data-sel="book"]').onclick = () => { const x = { ...sel }; clear(); onBook({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
     box.querySelector('[data-sel="close"]').onclick = () => { const x = { ...sel }; clear(); onClose({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
-    void last;
   };
+  $(".admin-content")?.addEventListener("scroll", () => { if (sel && !dragging) clear(); }, { passive: true });
   grid.addEventListener("pointerdown", (e) => {
     const cell = e.target.closest(".tl-free");
     if (!cell || e.button > 0) return;
@@ -194,7 +198,7 @@ export function mountTimeline({ onBook, onClose }) {
     const cell = e.target.closest(".tl-free");
     if (cell && cell.dataset.col === sel.col) { sel.to = +cell.dataset.row; paint(); }
   });
-  current = { stop: () => { dragging = false; }, outside: (e) => { if (sel && !e.target.closest(".tl-grid")) clear(); } };
+  current = { stop: () => { dragging = false; }, outside: (e) => { if (sel && !e.target.closest(".tl-grid,.tl-select")) clear(); } };
   grid.addEventListener("keydown", (e) => {
     const cell = e.target.closest(".tl-free");
     if (cell && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); sel = { col: cell.dataset.col, from: +cell.dataset.row, to: +cell.dataset.row }; paint(); $(".tl-select button", grid)?.focus(); }
