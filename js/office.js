@@ -1121,7 +1121,7 @@ async function adminPage() {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
     const pencil = '<svg class="admin-shortcut__pencil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17.6V20h2.4l9.1-9.1-2.4-2.4L5 17.6zm13.7-8.9a.9.9 0 0 0 0-1.3l-1.1-1.1a.9.9 0 0 0-1.3 0l-1 1 2.4 2.4 1-1z"/><rect x="3" y="21.2" width="18" height="1.6" rx=".8"/></svg>';
     const calendar = '<svg class="admin-shortcut__calendar" viewBox="0 0 28 28" aria-hidden="true"><defs><linearGradient id="calBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdfd"/><stop offset="1" stop-color="#dcdcdc"/></linearGradient><linearGradient id="calTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bdbdbd"/><stop offset="1" stop-color="#8f8f8f"/></linearGradient></defs><rect x="3" y="5" width="22" height="21" rx="3" fill="url(#calBody)" stroke="#9a9a9a"/><path d="M3 8a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v2H3z" fill="url(#calTop)"/><g fill="#6f6f6f">' + [7, 11, 15, 19].map((x) => `<rect x="${x}" y="2" width="1.6" height="6" rx=".8"/>`).join("") + '</g><g stroke="#d0d0d0" stroke-width=".7">' + [15, 19, 23].map((y) => `<path d="M4 ${y}h20"/>`).join("") + '</g></svg>';
-    body = `<div class="admin-home"><h2 class="admin-main-title"><u>Main</u></h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
+    body = `<div class="admin-home"><h2 class="admin-main-title"><u>Main</u></h2><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div>${await api("/admin/overview").then(AP.overviewHTML, () => "")}</div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><p class="small muted">Администратор · ${esc(me.email)}</p><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
   if (adminTab === "schedule") {
@@ -1909,16 +1909,18 @@ async function render() {
     }
     if (version !== routeVersion || !$("#office-view")) return;
     // Обновление того же экрана (после сохранения, фильтра и т. п.) не сбрасывает прокрутку.
-    const scroller = $("#view"), key = location.hash + "|" + adminTab + "|" + scheduleView, top = scroller?.scrollTop || 0, same = key === lastRenderKey;
+    // В админке на компьютере прокручивается только содержимое окна раздела, на телефоне — страница.
+    const pickScroller = () => (location.hash.startsWith("#/admin") && matchMedia("(min-width:701px)").matches && $("#office-view .admin-content")) || $("#view");
+    const key = location.hash + "|" + adminTab + "|" + scheduleView, top = pickScroller()?.scrollTop || 0, same = key === lastRenderKey;
     $("#office-view").innerHTML = html;
     await mount();
-    const first = !lastRenderKey;
+    const first = !lastRenderKey, scroller = pickScroller();
     lastRenderKey = key;
     if (same && scroller) scroller.scrollTop = top;
     if (location.hash.startsWith("#/admin")) {
       if (first && scroller && savedAdmin.key === key) scroller.scrollTop = savedAdmin.scroll || 0;
       saveAdmin({ key });
-      if (!scrollSaveBound && scroller) { scrollSaveBound = true; let t; scroller.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(() => location.hash.startsWith("#/admin") && saveAdmin({ scroll: scroller.scrollTop, key: lastRenderKey }), 150); }, { passive: true }); }
+      if (scroller && (scroller.id !== "view" || !scrollSaveBound)) { if (scroller.id === "view") scrollSaveBound = true; let t; scroller.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(() => location.hash.startsWith("#/admin") && saveAdmin({ scroll: scroller.scrollTop, key: lastRenderKey }), 150); }, { passive: true }); }
     }
     document.title =
       (path[0] === "masters"
