@@ -2387,3 +2387,6 @@ body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {positio
 .office-feature .admin-head-actions .admin-back,.office-feature .admin-head-actions .admin-search {min-height:32px!important;height:32px;padding:4px 12px!important;border-radius:11px!important;font-size:13px!important;gap:6px;box-shadow:none!important;}
 .office-feature .admin-head-actions .admin-back .ui-icon,.office-feature .admin-head-actions .admin-search svg {width:12px;height:12px;}
 .office-feature .admin-head-actions .admin-search {background:transparent!important;border:1px solid var(--panel-edge)!important;color:var(--ink-2);}
+/* Плашки цифр на главном: всегда по четверти ширины, даже если их две (админ смены) */
+.pro-overview .pro-tiles {grid-template-columns:repeat(4,minmax(0,1fr));}
+@media (max-width:700px) { .pro-overview .pro-tiles {grid-template-columns:repeat(2,minmax(0,1fr));} }
