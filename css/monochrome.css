@@ -2314,3 +2314,8 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
 @media (min-width:701px) {
   body.admin-session .office-feature .admin-home .admin-shortcut {font-size:clamp(17px,1.85vw,31px);white-space:nowrap;padding:12px 10px;}
 }
+@media (min-width:701px) {
+  /* Плашка «Admin panel» вдвое ниже, текст и значок — вдвое меньше; ширина прежняя. */
+  body.admin-session .office-feature .admin-strip {min-height:45px;padding:0 15px;gap:11px;font-size:clamp(11px,.98vw,16.5px);border-radius:14px;}
+  body.admin-session .office-feature .admin-strip u {text-decoration-thickness:1px;}
+}
