@@ -2330,3 +2330,9 @@ body.admin-session .fringe {display:flex;align-items:center;}
   body.admin-session #view {padding-top:0!important;}
 }
 @media (max-width:700px) { body.admin-session .fringe-admin {display:none;} }
+/* «Admin panel» — заголовок главного экрана; в шапке его больше нет */
+body.admin-session .fringe-admin {display:none!important;}
+.office-feature .admin-main-title {display:flex;align-items:center;gap:.45em;}
+.admin-main-title__icon {width:1.15em;height:1.15em;flex:none;}
+body.admin-session .office-feature .admin-window--main > .admin-home--head {flex:none;padding-bottom:22px;}
+body.admin-session .office-feature .admin-window--main > .admin-content .admin-home > .pro-overview {margin-top:4px;}
