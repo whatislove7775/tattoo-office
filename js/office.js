@@ -1234,7 +1234,7 @@ function dialogForm(title, html, submit) {
     $("#dialog").close();
     // В админке после действия обновляем только данные админки (быстро, без мигания);
     // если изменение уже применено на месте — перерисовываем без запроса к серверу.
-    if (location.hash.startsWith("#/admin")) { adminCache = !!result?.__cached; await render(); }
+    if (location.hash.startsWith("#/admin")) { adminCache = !!result?.__cached; await render(); refresh().catch(() => {}); }
     else { await refresh(); await render(); }
     notify("Сохранено");
   });
@@ -1785,6 +1785,8 @@ async function render() {
         mount = mountMasters;
         break;
       case "master":
+        // Мастер, добавленный только что в админке, может ещё не быть в загруженном каталоге.
+        if (!window.DATA.masters.some((m) => String(m.id) === path[1]) && !window.OFFICE_PUBLIC_ONLY) await refresh();
         html = masterPage(path[1]);
         mount = () => mountMaster(path[1]);
         break;
