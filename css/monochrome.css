@@ -2360,3 +2360,25 @@ body.admin-session .office-feature .admin-window--main > .admin-content .admin-h
 .pro-dayline__filters {gap:16px;}
 .pro-dayline__filters select,.pro-dayline__filters .office-select {min-width:clamp(150px,15vw,300px)!important;}
 .pro-list-search input {width:clamp(180px,17vw,340px);}
+/* Фильтры списка — того же размера, что «Показать ночь» */
+.pro-dayline__filters {align-items:center;gap:10px;}
+.pro-dayline__filters .field > span {position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+.pro-dayline__filters .field {position:relative;}
+.office-feature .pro-dayline__filters select,.office-feature .pro-dayline__filters .office-select,.office-feature .pro-dayline__filters .pro-list-search {height:32px!important;min-height:32px!important;min-width:0!important;width:auto;padding:4px 30px 4px 12px!important;border:1px solid var(--panel-edge)!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;color:var(--ink-2);font:inherit;font-size:13px!important;line-height:1.2;}
+.office-feature .pro-dayline__filters .pro-list-search {padding:4px 12px!important;width:clamp(160px,14vw,240px)!important;}
+.office-feature .pro-dayline__filters .office-select svg,.office-feature .pro-dayline__filters .office-select .ui-icon {width:12px;height:12px;}
+/* Расписание: шапка раздела стоит, прокручиваются только таблица часов и списки */
+@media (min-width:701px) {
+  body.admin-session .office-feature .window > .admin-content[data-admin-section="schedule"] {overflow:hidden;display:flex;flex-direction:column;padding-bottom:24px;}
+  body.admin-session [data-admin-section="schedule"] > * {flex:none;}
+  body.admin-session [data-admin-section="schedule"] > .tl-scroll {flex:1 1 auto;min-height:0;overflow:auto;scrollbar-width:none;}
+  body.admin-session [data-admin-section="schedule"] > .pro-scroll {flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+  body.admin-session [data-admin-section="schedule"] > .tl-scroll::-webkit-scrollbar,body.admin-session [data-admin-section="schedule"] > .pro-scroll::-webkit-scrollbar {display:none;}
+  body.admin-session [data-admin-section="schedule"] > .tl-scroll .tl-head {position:sticky;top:0;}
+}
+@media (min-width:701px) {
+  body.admin-session .office-feature .window > .admin-content[data-admin-section="schedule"] > .tl-scroll,
+  body.admin-session .office-feature .window > .admin-content[data-admin-section="schedule"] > .pro-scroll {flex:1 1 auto!important;min-height:0!important;}
+}
+body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {position:sticky;top:0;z-index:2;background:var(--panel-2);}
+.office-feature .pro-dayline__filters select,.office-feature .pro-dayline__filters .office-select {width:clamp(120px,10vw,170px)!important;}

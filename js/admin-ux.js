@@ -183,7 +183,7 @@ export function mountTimeline({ onBook, onClose }) {
     box.querySelector('[data-sel="book"]').onclick = () => { const x = { ...sel }; clear(); onBook({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
     box.querySelector('[data-sel="close"]').onclick = () => { const x = { ...sel }; clear(); onClose({ resourceId: x.resource, hour: x.hour, hours: x.hours }); };
   };
-  $(".admin-content")?.addEventListener("scroll", () => { if (sel && !dragging) clear(); }, { passive: true });
+  for (const el of [$(".admin-content"), $(".tl-scroll")]) el?.addEventListener("scroll", () => { if (sel && !dragging) clear(); }, { passive: true });
   grid.addEventListener("pointerdown", (e) => {
     const cell = e.target.closest(".tl-free");
     if (!cell || e.button > 0) return;
