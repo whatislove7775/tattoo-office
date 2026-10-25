@@ -1130,7 +1130,7 @@ async function adminPage() {
       inactive = cityResources.filter((r) => !r.active),
       dayCount = a.bookings.filter((b) => cityIds.has(b.resource_id) && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(b.starts_at)) === adminDate && !["cancelled", "expired"].includes(b.status)).length,
       listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested"].includes(b.status) : b.status === listStatus)));
-    const dayLine = `<div class="pro-dayline"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button><strong class="pro-daynav__label">${scheduleView === "list" ? "Все бронирования" : UX.fullDate(adminDate + "T12:00:00+03:00")}</strong>${scheduleView === "day" ? UX.nightToggle(s) : ""}</div>`;
+    const dayLine = `<div class="pro-dayline"><input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания"><button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button>${scheduleView === "list" ? '<strong class="pro-daynav__label">Все бронирования</strong>' : `<span class="pro-dayswitch"><button type="button" class="pro-dayarrow" data-day-shift="-1" aria-label="Предыдущий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong><button type="button" class="pro-dayarrow" data-day-shift="1" aria-label="Следующий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></span>`}${scheduleView === "day" ? UX.nightToggle(s) : ""}</div>`;
     body = `${cityTabs()}${dayLine}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-filter">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}</div><h3 id="admin-bookings" class="admin-bookings-title">Брони · ${CITY_LABELS[adminCity]}</h3>${table(
       ["Сеанс", "Мастер / место", "Сумма", "Статус", ""],
       listed.map(
@@ -1488,7 +1488,7 @@ function mountAdmin() {
     const endDate = to >= 24 ? addDate(adminDate, 1) : adminDate;
       dialogForm(
         "Закрыть время",
-        `${select("resourceId", "Рабочее место", [["", "Все места во всех городах"], ...a.resources.map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name])], preset.resourceId || "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T" + hh(from), "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", endDate + "T" + hh(to), "datetime-local", "required")}${field("reason", "Причина", "", "text", "required")}`,
+        `${select("resourceId", "Рабочее место", [["", "Все места во всех городах"], ...a.resources.map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name])], preset.resourceId || "")}${field("startsAt", "Начало (время Москвы)", adminDate + "T" + hh(from), "datetime-local", "required")}${field("endsAt", "Конец (время Москвы)", endDate + "T" + hh(to), "datetime-local", "required")}${field("reason", "Причина (необязательно)", "", "text", 'maxlength="200"')}`,
         (d) =>
           api("/admin/blocks", "POST", {
             ...d,
@@ -1540,6 +1540,7 @@ function mountAdmin() {
   adminContext.openManual = () => openManual();
   adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
   UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
+  UX.mountDrag({ onMove: async (id, t) => { await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate }); notify("Запись перенесена"); await render(); } });
   $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); openManual({ resourceId, hour: Number(hour) }); }));
   $$("[data-day-shift]").forEach((b) => (b.onclick = () => { adminDate = b.dataset.dayShift === "0" ? today() : addDate(adminDate, Number(b.dataset.dayShift)); render(); }));
   $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));
@@ -1727,6 +1728,14 @@ function legalPage(key) {
   return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`, legalReturnRoute.slice(2));
 }
 let lastRenderKey = "";
+// Админка после перезагрузки открывается на том же разделе, дне и месте прокрутки.
+const savedAdmin = (() => { try { return JSON.parse(sessionStorage.getItem("to.admin")) || {}; } catch { return {}; } })();
+if (savedAdmin.tab) adminTab = savedAdmin.tab;
+if (savedAdmin.date) adminDate = savedAdmin.date;
+if (savedAdmin.view) scheduleView = savedAdmin.view;
+if (savedAdmin.city) adminCity = savedAdmin.city;
+const saveAdmin = (extra = {}) => { try { sessionStorage.setItem("to.admin", JSON.stringify({ ...JSON.parse(sessionStorage.getItem("to.admin") || "{}"), tab: adminTab, date: adminDate, view: scheduleView, city: adminCity, ...extra })); } catch {} };
+let scrollSaveBound = false;
 async function render() {
   if (!$("#office-view")) return;
   residentInfoCleanup();
@@ -1903,8 +1912,14 @@ async function render() {
     const scroller = $("#view"), key = location.hash + "|" + adminTab + "|" + scheduleView, top = scroller?.scrollTop || 0, same = key === lastRenderKey;
     $("#office-view").innerHTML = html;
     await mount();
+    const first = !lastRenderKey;
     lastRenderKey = key;
     if (same && scroller) scroller.scrollTop = top;
+    if (location.hash.startsWith("#/admin")) {
+      if (first && scroller && savedAdmin.key === key) scroller.scrollTop = savedAdmin.scroll || 0;
+      saveAdmin({ key });
+      if (!scrollSaveBound && scroller) { scrollSaveBound = true; let t; scroller.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(() => location.hash.startsWith("#/admin") && saveAdmin({ scroll: scroller.scrollTop, key: lastRenderKey }), 150); }, { passive: true }); }
+    }
     document.title =
       (path[0] === "masters"
         ? "Tattoo Office — наши люди"

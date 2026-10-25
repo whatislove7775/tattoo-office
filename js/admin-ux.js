@@ -9,7 +9,7 @@ const mskDay = (d) => new Intl.DateTimeFormat("sv-SE", MSK).format(new Date(d));
 const mskHour = (d) => Number(new Intl.DateTimeFormat("ru-RU", { ...MSK, hour: "2-digit", hourCycle: "h23" }).format(new Date(d)));
 const mskMinute = (d) => Number(new Intl.DateTimeFormat("ru-RU", { ...MSK, minute: "2-digit" }).format(new Date(d)));
 export const weekday = (d) => new Intl.DateTimeFormat("ru-RU", { ...MSK, weekday: "short" }).format(new Date(d));
-export const fullDate = (d) => `${weekday(d)}, ${c.dateLabel(d)}`;
+export const fullDate = (d) => { const w = weekday(d); return `${w.charAt(0).toUpperCase() + w.slice(1)}, ${c.dateLabel(d)}`; };
 const range = (b) => `${c.timeLabel(b.starts_at)}—${c.timeLabel(b.ends_at)}`;
 export const badge = (status) => `<span class="badge badge--${status}">${c.statusName[status] || c.esc(status)}</span>`;
 const ACTIVE = ["pending", "confirmed", "invoiced", "completed", "cancel_requested", "no_show"];
@@ -22,43 +22,127 @@ export function scheduleTimeline(a, s, date, city) {
   const places = a.resources.filter((r) => resourceCity(r) === city && r.active);
   const dayStart = new Date(`${date}T00:00:00+03:00`), dayEnd = new Date(dayStart.getTime() + 86400000);
   const day = a.bookings.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
+  const closedList = a.blocks.filter((k) => new Date(k.starts_at) < dayEnd && new Date(k.ends_at) > dayStart && (!k.resource_id || places.some((r) => r.id === k.resource_id)));
   // Видимые часы: рабочее время студии; если студия круглосуточная — ночь свёрнута, пока в ней нет записей.
   let from = s.openHour, to = s.closeHour;
   if (!showNight && from === 0 && to === 24) {
     from = 8;
-    for (const b of day) if (mskDay(b.starts_at) === date) from = Math.min(from, mskHour(b.starts_at));
+    for (const x of [...day, ...closedList]) if (new Date(x.starts_at) >= dayStart) from = Math.min(from, mskHour(x.starts_at));
   }
   const hours = to - from, cols = places.length;
   if (!cols) return `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в «Студия → Рабочие места».</div>`;
   const row = (h) => h - from + 2;
-  const startOf = (b) => (mskDay(b.starts_at) < date ? from : Math.max(from, mskHour(b.starts_at)));
-  const endOf = (b) => (mskDay(b.ends_at) > date ? to : Math.min(to, mskHour(b.ends_at) + (mskMinute(b.ends_at) ? 1 : 0)));
-  const busy = (rid, h) => day.some((b) => b.resource_id === rid && startOf(b) <= h && endOf(b) > h);
-  const closed = (rid, h) => a.blocks.some((k) => (!k.resource_id || k.resource_id === rid) && new Date(k.starts_at) <= new Date(`${date}T${String(h).padStart(2, "0")}:00:00+03:00`) && new Date(k.ends_at) > new Date(`${date}T${String(h).padStart(2, "0")}:00:00+03:00`));
+  const startOf = (x) => (new Date(x.starts_at) < dayStart ? from : Math.max(from, mskHour(x.starts_at)));
+  const endOf = (x) => (new Date(x.ends_at) > dayEnd ? to : Math.min(to, new Date(x.ends_at).getTime() === dayEnd.getTime() ? 24 : mskHour(x.ends_at) + (mskMinute(x.ends_at) ? 1 : 0)));
+  const owner = (rid, h) => day.find((b) => b.resource_id === rid && startOf(b) <= h && endOf(b) > h);
+  const closed = (rid, h) => closedList.some((k) => (!k.resource_id || k.resource_id === rid) && startOf(k) <= h && endOf(k) > h);
   const now = Date.now();
   let cells = "";
   for (let h = from; h < to; h++) {
     cells += `<div class="tl-hour" style="grid-row:${row(h)}">${String(h % 24).padStart(2, "0")}:00</div>`;
     places.forEach((r, i) => {
-      const at = new Date(`${date}T${String(h).padStart(2, "0")}:00:00+03:00`).getTime();
-      const isClosed = closed(r.id, h), past = at + 3600000 <= now;
-      cells += isClosed ? `<div class="tl-cell is-closed" style="grid-row:${row(h)};grid-column:${i + 2}">закрыто</div>`
-        : busy(r.id, h) || past ? `<div class="tl-cell${past ? " is-past" : ""}" style="grid-row:${row(h)};grid-column:${i + 2}"></div>`
-        : `<div class="tl-cell tl-free" role="button" tabindex="0" style="grid-row:${row(h)};grid-column:${i + 2}" data-slot="${r.id}|${h}" data-col="${i + 2}" data-row="${row(h)}" data-drop="${r.id}|${h}" aria-label="Выбрать: ${esc(r.name)}, ${h}:00"></div>`;
+      const at = dayStart.getTime() + h * 3600000, past = at + 3600000 <= now, b = owner(r.id, h);
+      const attrs = `style="grid-row:${row(h)};grid-column:${i + 2}" data-rid="${r.id}" data-h="${h}" data-col="${i + 2}" data-row="${row(h)}"`;
+      cells += closed(r.id, h) ? `<div class="tl-cell is-closed" ${attrs}></div>`
+        : b ? `<div class="tl-cell" ${attrs} data-owner="${b.id}"${past ? ' data-past="1"' : ""}></div>`
+        : past ? `<div class="tl-cell" ${attrs} data-past="1"></div>`
+        : `<div class="tl-cell tl-free" role="button" tabindex="0" ${attrs} data-slot="${r.id}|${h}" aria-label="Выбрать: ${esc(r.name)}, ${h}:00"></div>`;
     });
   }
-  const blocks = day.map((b) => {
+  const cards = day.map((b) => {
     const i = places.findIndex((r) => r.id === b.resource_id), st = startOf(b), en = Math.max(st + 1, endOf(b));
     if (en <= from || st >= to) return "";
+    const isPast = new Date(b.ends_at) <= now;
     const movable = ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > now;
-    return `<div class="tl-booking tl-booking--${b.status}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}" data-booking-open="${b.id}" ${movable ? `draggable="true" data-move-booking="${b.id}"` : ""} title="${esc(b.user_name)} · ${range(b)}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${badge(b.status)}</div>`;
+    const dur = Math.max(1, Math.round((new Date(b.ends_at) - new Date(b.starts_at)) / 3600000));
+    return `<div class="tl-booking tl-booking--${b.status}${isPast ? " is-past" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${badge(b.status)}</div>`;
   }).join("");
-  let line = "";
+  const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>';
+  const closedCards = closedList.flatMap((k) => places.map((r, i) => {
+    if (k.resource_id && k.resource_id !== r.id) return "";
+    const st = startOf(k), en = Math.max(st + 1, endOf(k));
+    if (en <= from || st >= to) return "";
+    const reason = k.reason && k.reason !== "Закрыто" ? k.reason : "";
+    return `<div class="tl-closed${new Date(k.ends_at) <= now ? " is-past" : ""}" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}">${reason ? `<b>${esc(reason)}</b>` : ""}<small>${c.timeLabel(k.starts_at)}—${c.timeLabel(k.ends_at)} · ${Math.round((new Date(k.ends_at) - new Date(k.starts_at)) / 3600000)} ч</small>${k.external ? '<span class="tl-closed__lock is-static">' + lock + "Google Calendar</span>" : `<button type="button" class="tl-closed__lock" data-unblock="${k.id}" title="Открыть время">${lock}Время закрыто</button>`}</div>`;
+  })).join("");
+  // Прошедшее время бледнеет до красной линии «сейчас».
+  let line = "", pastShade = "";
+  const nowHours = (now - dayStart.getTime()) / 3600000;
+  if (nowHours > from) {
+    const upto = Math.min(to, nowHours);
+    pastShade = `<div class="tl-past" style="grid-row:2 / -1;height:calc(var(--tl-row) * ${upto - from})" aria-hidden="true"></div>`;
+  }
   if (date === mskDay(now)) {
     const h = mskHour(now);
     if (h >= from && h < to) line = `<div class="tl-now" style="grid-row:${row(h)};--m:${mskMinute(now) / 60}" aria-hidden="true"></div>`;
   }
-  return `<div class="tl-scroll"><div class="tl-grid" style="--cols:${cols};grid-template-rows:auto repeat(${hours},var(--tl-row))"><div class="tl-head tl-corner">МСК</div>${places.map((r, i) => `<div class="tl-head" style="grid-column:${i + 2}"><span>${esc(r.name)}</span><button type="button" class="tl-head__edit" data-edit-resource="${r.id}" aria-label="Изменить место ${esc(r.name)}">⋯</button></div>`).join("")}${cells}${blocks}${line}</div></div>`;
+  return `<div class="tl-scroll"><div class="tl-grid" style="--cols:${cols};grid-template-rows:auto repeat(${hours},var(--tl-row))" data-date="${date}"><div class="tl-head tl-corner">МСК</div>${places.map((r, i) => `<div class="tl-head" style="grid-column:${i + 2}"><span>${esc(r.name)}</span><button type="button" class="tl-head__edit" data-edit-resource="${r.id}" aria-label="Изменить место ${esc(r.name)}">⋯</button></div>`).join("")}${cells}${pastShade}${closedCards}${cards}${line}</div></div>`;
+}
+
+// Перетаскивание брони: плавно (transform), только туда, где для неё хватает свободных часов.
+export function mountDrag({ onMove }) {
+  const grid = $(".tl-grid");
+  if (!grid) return;
+  $$("[data-drag-booking]", grid).forEach((card) => {
+    card.addEventListener("pointerdown", (e) => {
+      if (e.button > 0 || e.pointerType === "touch") return;
+      const id = card.dataset.dragBooking, dur = +card.dataset.dur, start = { x: e.clientX, y: e.clientY };
+      let active = false, target = null;
+      const rowH = grid.querySelector(".tl-hour").getBoundingClientRect().height;
+      const cellAt = (x, y) => document.elementsFromPoint(x, y).find((el) => el.classList?.contains("tl-cell") && el.parentElement === grid);
+      // Начало в ячейке с номером строки r: все dur часов в колонке свободны (или заняты этой же бронью) и в будущем.
+      const fits = (col, r) => {
+        for (let k = 0; k < dur; k++) {
+          const cell = grid.querySelector(`.tl-cell[data-col="${col}"][data-row="${r + k}"]`);
+          if (!cell || !(cell.classList.contains("tl-free") || (cell.dataset.owner === id && !cell.dataset.past))) return false;
+        }
+        return true;
+      };
+      const clearMarks = () => $$(".tl-cell.is-target,.tl-cell.is-bad", grid).forEach((x) => x.classList.remove("is-target", "is-bad"));
+      const move = (ev) => {
+        const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+        if (!active) {
+          if (Math.hypot(dx, dy) < 5) return;
+          active = true; card.classList.add("is-dragging"); document.body.classList.add("pro-dragging");
+          card.setPointerCapture?.(e.pointerId);
+        }
+        card.style.transform = `translate(${dx}px, ${dy}px)`;
+        // Ячейка под верхним краем карточки = новое начало.
+        const rect = card.getBoundingClientRect(), cell = cellAt(rect.left + rect.width / 2, rect.top + rowH / 2);
+        clearMarks();
+        target = null;
+        if (!cell) return;
+        const col = cell.dataset.col, r = +cell.dataset.row, ok = fits(col, r);
+        for (let k = 0; k < dur; k++) grid.querySelector(`.tl-cell[data-col="${col}"][data-row="${r + k}"]`)?.classList.add(ok ? "is-target" : "is-bad");
+        if (ok) target = { col, row: r, rid: cell.dataset.rid, hour: +cell.dataset.h };
+      };
+      const up = async () => {
+        removeEventListener("pointermove", move); removeEventListener("pointerup", up);
+        document.body.classList.remove("pro-dragging");
+        if (!active) return;
+        card.addEventListener("click", (ev) => { ev.stopImmediatePropagation(); ev.preventDefault(); }, { capture: true, once: true });
+        clearMarks();
+        card.classList.remove("is-dragging");
+        const prev = { row: card.style.gridRow, col: card.style.gridColumn };
+        card.style.transform = "";
+        if (!target) return;
+        if (target.row === +String(prev.row).split("/")[0] && String(target.col) === String(prev.col)) return;
+        // Сразу ставим карточку на новое место, сервер подтверждает в фоне.
+        card.style.gridRow = `${target.row} / ${target.row + dur}`; card.style.gridColumn = target.col;
+        card.classList.add("is-saving");
+        try { await onMove(id, target); }
+        catch (err) { card.style.gridRow = prev.row; card.style.gridColumn = prev.col; card.classList.remove("is-saving"); c.notify(err.message); }
+      };
+      addEventListener("pointermove", move);
+      addEventListener("pointerup", up);
+    });
+  });
+  $$("[data-unblock]", grid).forEach((b) => (b.onclick = async (e) => {
+    e.stopPropagation();
+    b.disabled = true;
+    try { await c.api("/admin/blocks/" + b.dataset.unblock, "DELETE"); b.closest(".tl-closed").remove(); c.notify("Время открыто"); await c.render(); }
+    catch (err) { b.disabled = false; c.notify(err.message); }
+  }));
 }
 
 export const nightToggle = (s) => s.openHour === 0 && s.closeHour === 24 ? `<button type="button" class="pro-chip" id="tl-night" aria-pressed="${showNight}">${showNight ? "Скрыть ночь" : "Показать ночь 00–08"}</button>` : "";

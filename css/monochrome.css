@@ -2243,3 +2243,37 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
   .pro-dayline {flex-wrap:wrap;}
   .pro-dayline #tl-night {white-space:nowrap;font-size:12px;}
 }
+/* Расписание: равные небольшие отступы между шапкой, городами, датой и таблицей */
+body.admin-session .office-feature .admin-content[data-admin-section="schedule"] {margin-top:0;}
+body.admin-session .office-feature .window:has([data-admin-section="schedule"]) .window-head {margin-bottom:16px;}
+.office-feature [data-admin-section="schedule"] > .tabs,.office-feature [data-admin-section="schedule"] .admin-city-tabs {margin:0 0 16px!important;}
+.office-feature [data-admin-section="schedule"] .pro-dayline {margin:0 0 16px;}
+.office-feature [data-admin-section="schedule"] > :first-child {margin-top:0!important;}
+.pro-dayswitch {display:inline-flex;align-items:center;gap:10px;}
+.pro-dayarrow {display:inline-grid;place-items:center;width:36px;height:36px;border:1px solid var(--panel-edge);border-radius:10px;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);cursor:pointer;padding:0;}
+.pro-dayarrow .ui-icon {width:14px;height:14px;}
+.pro-dayarrow:active {transform:translateY(1px);}
+.pro-dayswitch .pro-daynav__label {margin:0;min-width:11ch;text-align:center;}
+/* Закрытое время — серая карточка с замком */
+.tl-closed {z-index:2;margin:3px 4px;padding:9px 12px;border-radius:14px;background:#a9a9a9;color:#fff;display:flex;flex-direction:column;gap:3px;overflow:hidden;font-size:12px;line-height:1.3;}
+.tl-closed b {font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-closed small {align-self:flex-start;padding:1px 4px;border-radius:4px;background:#ffffff1f;}
+.tl-closed__lock {margin-top:auto;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid #ffffff33;border-radius:20px;background:linear-gradient(#5a5a5a,#2e2e2e);color:#fff;font:inherit;font-size:12px;cursor:pointer;box-shadow:0 2px 5px #0003;}
+.tl-closed__lock svg {width:14px;height:14px;fill:currentColor;}
+.tl-closed__lock:hover {background:linear-gradient(#6a6a6a,#3a3a3a);}
+.tl-closed__lock.is-static {cursor:default;}
+.tl-cell.is-closed {background:transparent;}
+/* Прошедшее время и прошедшие брони бледнеют */
+.tl-past {grid-column:2 / -1;align-self:start;z-index:1;background:#8a8a8a1f;pointer-events:none;}
+.tl-booking.is-past {background:#bdbdbd!important;color:#fff!important;border:0!important;box-shadow:none;opacity:1;}
+.tl-booking.is-past .badge {background:#ffffff26!important;}
+.tl-closed.is-past {background:#c4c4c4;}
+.tl-cell[data-past] {background:transparent;}
+/* Перетаскивание */
+.tl-booking[data-drag-booking] {cursor:grab;touch-action:none;}
+.tl-booking.is-dragging {cursor:grabbing;z-index:20;opacity:.92;box-shadow:0 14px 30px #0004;transition:none;will-change:transform;}
+.tl-booking.is-saving {opacity:.7;}
+.tl-cell.is-target {background:#1d1d1d1a!important;box-shadow:inset 0 0 0 2px var(--ink);}
+.tl-cell.is-bad {background:#e5393514!important;box-shadow:inset 0 0 0 2px #e53935;}
+.pro-dragging, .pro-dragging * {user-select:none!important;}
+.pro-dragging .tl-free {background:transparent;}
