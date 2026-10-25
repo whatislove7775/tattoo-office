@@ -2347,3 +2347,16 @@ body.admin-session .office-feature .admin-window--main > .admin-content .admin-h
 .tl-select .chrome {min-height:34px!important;padding:6px 14px!important;font-size:13px!important;box-shadow:none!important;white-space:nowrap;}
 .tl-booking.is-saving {opacity:1;}
 .tl-select .chrome.pro-primary {border:1px solid #333!important;background:var(--action-fill)!important;color:#fff!important;text-shadow:0 1px #0005;border-radius:11px!important;cursor:pointer;}
+/* Список броней: фильтр статуса и поиск — в одной строке справа от «Все бронирования» */
+.pro-dayline__filters {margin-left:auto;display:flex;align-items:flex-end;gap:28px;}
+.pro-dayline__filters .field {margin:0;min-width:0;}
+.pro-dayline__filters .field > span {font-size:12px;margin-bottom:6px;}
+.pro-dayline__filters select,.pro-dayline__filters .office-select {min-width:300px;}
+.pro-list-search input {width:340px;max-width:100%;height:48px;}
+.office-feature [data-own-search] .table-wrap {margin-top:0;}
+@media (max-width:1200px) { .pro-dayline__filters select,.pro-dayline__filters .office-select {min-width:180px;} .pro-list-search input {width:220px;} }
+@media (max-width:700px) { .pro-dayline__filters {width:100%;margin-left:0;flex-wrap:wrap;gap:10px;} .pro-list-search input {width:100%;} }
+.pro-dayline .pro-daynav__label {white-space:nowrap;}
+.pro-dayline__filters {gap:16px;}
+.pro-dayline__filters select,.pro-dayline__filters .office-select {min-width:clamp(150px,15vw,300px)!important;}
+.pro-list-search input {width:clamp(180px,17vw,340px);}

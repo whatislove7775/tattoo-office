@@ -107,17 +107,33 @@ function notify(s) {
   noticeTimer = setTimeout(() => ($("#notice").hidden = true), 6000);
 }
 const API_BASE = window.OFFICE_API_BASE || "/api", DEMO = API_BASE !== "/api";
+// Тестовый режим: журнал своих изменений хранится в браузере, чтобы любая копия
+// тестового сервера (новая или перезапущенная) повторила их и ничего не потерялось.
+const demoJournal = {
+  read() { try { return JSON.parse(localStorage.getItem("to.demoJournal") || "[]"); } catch { return []; } },
+  write(list) { try { localStorage.setItem("to.demoJournal", JSON.stringify(list.slice(-300))); } catch {} },
+  replaying: null,
+};
+const demoHeaders = () => { const list = demoJournal.read(); return list.length ? { "X-Demo-Count": String(list.length), "X-Demo-Last": list[list.length - 1].id } : {}; };
+async function demoReplay() {
+  demoJournal.replaying ||= fetch(API_BASE + "/__demo/replay", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ journal: demoJournal.read() }) }).finally(() => { demoJournal.replaying = null; });
+  await demoJournal.replaying;
+}
 async function api(path, method = "GET", body, retried) {
+  const journaled = DEMO && method !== "GET" && !/^\/(auth|__demo)\//.test(path) && JSON.stringify(body || {}).length < 200000;
+  const entry = journaled ? (crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2, 10)) : null;
   const r = await fetch(API_BASE + path, {
     method,
     credentials: "same-origin",
-    headers: body ? { "Content-Type": "application/json" } : {},
+    headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...(DEMO ? demoHeaders() : {}), ...(entry ? { "X-Demo-Entry": entry } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (DEMO && r.status === 428 && retried !== "journal") { await demoReplay(); return api(path, method, body, "journal"); }
   // Тестовый режим: если запрос попал в только что запущенную копию сервера, повторяем его один раз.
   if (DEMO && !retried && method === "GET" && [401, 403].includes(r.status)) { await new Promise((ok) => setTimeout(ok, 300)); return api(path, method, body, true); }
   const data = await r.json();
   if (!r.ok) throw Error(data.error || "Ошибка сервера");
+  if (entry && r.headers.get("X-Demo-Actor")) { const list = demoJournal.read(); list.push({ id: entry, m: method, p: path, b: body, a: r.headers.get("X-Demo-Actor") }); demoJournal.write(list); }
   return data;
 }
 function go(path) {
@@ -1131,14 +1147,14 @@ async function adminPage() {
       inactive = cityResources.filter((r) => !r.active),
       dayCount = a.bookings.filter((b) => cityIds.has(b.resource_id) && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(b.starts_at)) === adminDate && !["cancelled", "expired"].includes(b.status)).length,
       listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested"].includes(b.status) : b.status === listStatus)));
-    const dayLine = `<div class="pro-dayline">${scheduleView === "list" ? '<button type="button" class="date-open" data-schedule-view="day" aria-label="Календарь: расписание дня" title="Расписание дня"><svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg></button>' : `<input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания">`}<button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button>${scheduleView === "list" ? '<strong class="pro-daynav__label">Все бронирования</strong>' : `<span class="pro-dayswitch"><button type="button" class="pro-dayarrow" data-day-shift="-1" aria-label="Предыдущий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong><button type="button" class="pro-dayarrow" data-day-shift="1" aria-label="Следующий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></span>`}${scheduleView === "day" ? UX.nightToggle(s) : ""}</div>`;
-    body = `${cityTabs()}${dayLine}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-filter">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}</div><h3 id="admin-bookings" class="admin-bookings-title">Брони · ${CITY_LABELS[adminCity]}</h3>${table(
+    const dayLine = `<div class="pro-dayline">${scheduleView === "list" ? '<button type="button" class="date-open" data-schedule-view="day" aria-label="Календарь: расписание дня" title="Расписание дня"><svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg></button>' : `<input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания">`}<button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button>${scheduleView === "list" ? `<strong class="pro-daynav__label">Все бронирования</strong><div class="pro-dayline__filters">${select("listStatus", "Статус", [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]], listStatus)}<label class="field pro-list-search"><span>Поиск в списке</span><input type="search" id="list-search" placeholder="Имя, дата или название места…" autocomplete="off"></label></div>` : `<span class="pro-dayswitch"><button type="button" class="pro-dayarrow" data-day-shift="-1" aria-label="Предыдущий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong><button type="button" class="pro-dayarrow" data-day-shift="1" aria-label="Следующий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></span>`}${scheduleView === "day" ? UX.nightToggle(s) : ""}</div>`;
+    body = `${cityTabs()}${dayLine}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div data-own-search id="admin-bookings">${table(
       ["Сеанс", "Мастер / место", "Сумма", "Статус", ""],
       listed.map(
         (b) =>
           `<tr><td><button type="button" class="pro-link" data-booking-open="${b.id}">${UX.fullDate(b.starts_at)}</button><br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)} · № ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small class="muted">аванс ${money(b.deposit)}</small></td><td>${UX.badge(b.status)}</td><td><button type="button" data-booking-open="${b.id}">Открыть</button></td></tr>`,
       ),
-    )}<h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
+    )}</div><h3 style="margin-top:30px">Закрытые интервалы</h3>${table(
       ["Период", "Причина", ""],
       a.blocks.filter((b) => !b.resource_id || cityIds.has(b.resource_id)).map(
         (b) =>
@@ -1312,7 +1328,7 @@ function mountAdmin() {
         value.append(...cell.childNodes);
         cell.append(value);
       }));
-      if (rows.length > 1) {
+      if (rows.length > 1 && !wrap.closest("[data-own-search]")) {
         const toolbar = document.createElement("div");
         toolbar.className = "admin-list-tools";
         const label = document.createElement("label");
@@ -1563,6 +1579,8 @@ function mountAdmin() {
   $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));
   const statusFilter = $('.admin-content [name="listStatus"]');
   if (statusFilter) statusFilter.onchange = () => { listStatus = statusFilter.value; render(); };
+  const listSearch = $("#list-search");
+  if (listSearch) listSearch.oninput = () => { const q = listSearch.value.trim().toLocaleLowerCase("ru"); $$("[data-own-search] tbody tr").forEach((row) => { row.hidden = !!q && !row.textContent.toLocaleLowerCase("ru").includes(q); }); };
   if ($("#tl-night")) $("#tl-night").onclick = () => { UX.toggleNight(); render(); };
   if ($("#admin-search")) $("#admin-search").onclick = UX.openSearch;
   UX.mountPricing(adminCity);
