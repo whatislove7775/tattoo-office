@@ -2390,3 +2390,11 @@ body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {positio
 /* Плашки цифр на главном: всегда по четверти ширины, даже если их две (админ смены) */
 .pro-overview .pro-tiles {grid-template-columns:repeat(4,minmax(0,1fr));}
 @media (max-width:700px) { .pro-overview .pro-tiles {grid-template-columns:repeat(2,minmax(0,1fr));} }
+/* Строка дня в три зоны: слева иконки, по центру дата / заголовок, справа ночь / статус */
+.pro-dayline {display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;}
+.pro-dayline__left {position:relative;display:flex;align-items:center;gap:12px;justify-self:start;}
+.pro-dayline__center {justify-self:center;display:flex;align-items:center;}
+.pro-dayline__right {justify-self:end;display:flex;align-items:center;}
+.pro-dayline__right .pro-dayline__filters,.pro-dayline__right #tl-night {margin-left:0;}
+.pro-dayline .pro-daynav__label {margin:0;}
+@media (max-width:700px) { .pro-dayline {grid-template-columns:auto 1fr;} .pro-dayline__center {justify-self:end;} .pro-dayline__right {grid-column:1 / -1;justify-self:end;} }
