@@ -1993,6 +1993,13 @@ function demoBar() {
     .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
 }
 if (DEMO) demoBar();
+// Профиль мастера, которого только что добавили в админке: подгружаем свежий каталог и открываем страницу.
+window.addEventListener("hashchange", async () => {
+  const m = location.hash.match(/^#\/master\/([^/?#]+)/);
+  if (!m || window.OFFICE_PUBLIC_ONLY || window.DATA.masters.some((x) => String(x.id) === m[1])) return;
+  await refresh();
+  if (location.hash.startsWith("#/master/" + m[1])) window.TO?.go(location.hash);
+});
 // В админке вместо бегущей строки — «Admin panel»: ведёт на главный экран админки.
 document.getElementById("fringeAdmin")?.addEventListener("click", (e) => {
   e.preventDefault();
