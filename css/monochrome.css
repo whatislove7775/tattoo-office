@@ -2294,3 +2294,7 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
   body.admin-session .office-feature .window > .admin-content {flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:32px;scrollbar-width:thin;}
   body.admin-session .office-feature .admin-window--main {min-height:0!important;padding-bottom:0!important;}
 }
+@media (min-width:701px) {
+  /* Внутри прокручиваемого окна блоки не сжимаются — список целиком, прокрутка общая. */
+  body.admin-session .office-feature .window > .admin-content > * {flex-shrink:0;}
+}
