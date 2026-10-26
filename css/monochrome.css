@@ -2418,3 +2418,14 @@ body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {positio
   body.admin-session .office-feature .window-head {position:relative;}
   .office-feature .window-head .admin-city-tabs.is-in-head {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0!important;}
 }
+/* Названия разделов — как «Admin panel»: тот же размер, с подчёркиванием */
+body.admin-session .office-feature .window-head {align-items:center;}
+body.admin-session .office-feature .window-head h1,body.admin-session .office-feature .window:has([data-admin-section="schedule"]) .window-head h1 {font-size:clamp(22px,1.95vw,33px)!important;font-weight:400;line-height:1.15;text-decoration:underline;text-underline-offset:.16em;text-decoration-thickness:1.5px;}
+body.admin-session .office-feature .window-head > img {width:22px;height:22px;}
+body.admin-session .office-feature .admin-main-title {font-size:clamp(22px,1.95vw,33px)!important;line-height:1.15;}
+/* Главный экран: «Admin panel» слева, переключатель города справа */
+.office-feature .admin-home__titlebar {display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.office-feature .admin-home__titlebar .admin-city-tabs {margin:0!important;}
+.office-feature .admin-home__titlebar .admin-city-tabs button {min-height:30px;padding:4px 14px;font-size:13px;}
+@media (max-width:700px) { .office-feature .admin-home__titlebar {flex-wrap:wrap;} }
+.pro-city-note {margin:0 0 12px;}
