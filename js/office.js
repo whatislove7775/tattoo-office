@@ -1101,7 +1101,7 @@ async function adminPage() {
     tabs = [
       ["home", "Main"],
       ["users", "Пользователи"],
-      ["schedule", "Расписание"],
+      ["schedule", "Calendar"],
       ["workspaces", "Рабочие места"],
       ["catalog", "Склад и услуги"],
       ["finance", "Платежи"],
@@ -1120,7 +1120,7 @@ async function adminPage() {
   // Профиль администратора открывается через аватар и имя.
   const groups = [
     {label:"Main", target:"home", tabs:["home"], icon:"home"},
-    {label:"Расписание", target:"schedule", tabs:["schedule"], icon:"schedule"},
+    {label:"Calendar", target:"schedule", tabs:["schedule"], icon:"schedule"},
     {label:"Пользователи", target:"users", tabs:["users"], icon:"users"},
     {label:"Деньги", target:"finance", tabs:["finance","pricing"], icon:"finance"},
     {label:"Студия", target:"workspaces", tabs:["workspaces","catalog","settings"], icon:"workspaces"},

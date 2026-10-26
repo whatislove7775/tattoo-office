@@ -2413,3 +2413,8 @@ body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {positio
 .office-feature .window-head .admin-city-tabs.is-in-head {margin:0 0 0 24px!important;}
 .office-feature .window-head .admin-city-tabs.is-in-head button {min-height:28px;padding:4px 12px;font-size:13px;}
 @media (min-width:701px) { .office-feature [data-admin-section="schedule"] > .tl-scroll,.office-feature [data-admin-section="schedule"] > .pro-scroll {margin-top:0!important;} }
+/* Переключатель города — по центру строки заголовка */
+@media (min-width:701px) {
+  body.admin-session .office-feature .window-head {position:relative;}
+  .office-feature .window-head .admin-city-tabs.is-in-head {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0!important;}
+}
