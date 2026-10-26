@@ -1567,6 +1567,9 @@ function mountAdmin() {
   if ($("#manual-booking")) $("#manual-booking").onclick = () => openManual();
   adminContext.openManual = () => openManual();
   adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
+  // Расписание: вкладки городов — в строке заголовка, чтобы таблице досталось больше высоты.
+  const scheduleTabs = $('[data-admin-section="schedule"] > .admin-city-tabs');
+  if (scheduleTabs && matchMedia("(min-width:701px)").matches) { scheduleTabs.classList.add("is-in-head"); $(".window-head .admin-head-actions")?.before(scheduleTabs); }
   UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
   UX.mountDrag({ onMove: async (id, t) => {
     await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate });

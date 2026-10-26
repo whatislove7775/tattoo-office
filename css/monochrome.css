@@ -2398,3 +2398,18 @@ body.admin-session [data-admin-section="schedule"] .pro-scroll thead th {positio
 .pro-dayline__right .pro-dayline__filters,.pro-dayline__right #tl-night {margin-left:0;}
 .pro-dayline .pro-daynav__label {margin:0;}
 @media (max-width:700px) { .pro-dayline {grid-template-columns:auto 1fr;} .pro-dayline__center {justify-self:end;} .pro-dayline__right {grid-column:1 / -1;justify-self:end;} }
+/* Расписание: компактная верхняя часть — таблица занимает не меньше 3/4 высоты окна */
+@media (min-width:701px) {
+  body.admin-session .office-feature .window:has([data-admin-section="schedule"]) {padding-top:18px!important;}
+  body.admin-session .office-feature .window:has([data-admin-section="schedule"]) .window-head {margin-bottom:10px!important;min-height:0;}
+  body.admin-session .office-feature .window:has([data-admin-section="schedule"]) .window-head h1 {font-size:20px;}
+  .office-feature [data-admin-section="schedule"] > .tabs,.office-feature [data-admin-section="schedule"] .admin-city-tabs {margin:0 0 10px!important;}
+  .office-feature [data-admin-section="schedule"] .admin-city-tabs button,.office-feature [data-admin-section="schedule"] > .tabs button {min-height:28px;padding:4px 12px;font-size:13px;}
+  .office-feature [data-admin-section="schedule"] .pro-dayline {margin:0 0 10px!important;}
+  .office-feature [data-admin-section="schedule"] .pro-dayline .date-open {width:34px;height:34px;min-height:0;}
+  .office-feature [data-admin-section="schedule"] .pro-dayline .pro-daynav__label {font-size:16px;}
+  body.admin-session .office-feature .window > .admin-content[data-admin-section="schedule"] {padding-bottom:16px;}
+}
+.office-feature .window-head .admin-city-tabs.is-in-head {margin:0 0 0 24px!important;}
+.office-feature .window-head .admin-city-tabs.is-in-head button {min-height:28px;padding:4px 12px;font-size:13px;}
+@media (min-width:701px) { .office-feature [data-admin-section="schedule"] > .tl-scroll,.office-feature [data-admin-section="schedule"] > .pro-scroll {margin-top:0!important;} }
