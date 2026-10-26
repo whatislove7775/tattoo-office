@@ -1037,7 +1037,7 @@ function mountCabinet() {
     notify("Пароль изменён. Войдите заново.");
   });
 }
-let adminCache = false, adminData,
+let adminCache = false, openManualAfterRender = false, adminData,
   adminDate = today(),
   usersFilter = "all",
   usersTag = "",
@@ -1564,7 +1564,12 @@ function mountAdmin() {
         )}${select("repeat", "Повторять", [[1, "Не повторять"], [4, "Каждую неделю · 4 раза"], [8, "Каждую неделю · 8 раз"], [12, "Каждую неделю · 12 раз"]], 1)}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется. При повторе занятые даты пропускаются.</p>`,
         (d) => AP.manualRepeat(d),
       );
-  if ($("#manual-booking")) $("#manual-booking").onclick = () => openManual();
+  // «new booking» на главном: окно новой записи открывается поверх календаря.
+  if ($("#manual-booking")) $("#manual-booking").onclick = () => {
+    if (adminTab !== "home") return openManual();
+    adminTab = "schedule"; scheduleView = "day"; openManualAfterRender = true; render();
+  };
+  if (openManualAfterRender && adminTab === "schedule") { openManualAfterRender = false; openManual(); }
   adminContext.openManual = () => openManual();
   adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
   UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
