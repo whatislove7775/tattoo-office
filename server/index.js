@@ -131,6 +131,9 @@ export async function createApp(db) {
       );
   }
   const app = express();
+  // Сервер стоит за nginx (и прокси Vercel): берём адрес клиента из X-Forwarded-For одного доверенного прокси,
+  // иначе ограничение частоты запросов считает всех посетителей одним адресом и пишет ошибки в журнал.
+  app.set("trust proxy", Number(process.env.TRUST_PROXY ?? 1));
   app.disable("x-powered-by");
   app.use((req,res,next)=>{
     req.requestId=uuid();res.set('X-Request-ID',req.requestId);
