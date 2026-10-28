@@ -28,6 +28,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
     const master={...base,id:base.id||u.id,name:u.name,resident,active:u.active,registered:true,
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
+      status:text(p.status,160),
       age:p.birthDate?ageFromBirthDate(p.birthDate):(Number.isInteger(p.age)?p.age:base.age||null),exp:text(p.experience,80)||base.exp||'',
       bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
       completed:u.completed,bookings:u.bookings,score:0,
