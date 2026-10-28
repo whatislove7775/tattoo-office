@@ -2292,7 +2292,7 @@ body.admin-session .office-feature .window:has([data-admin-section="schedule"]) 
   body.admin-session #office-view {flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
   body.admin-session .office-feature .window {flex:1 1 auto;min-height:0!important;display:flex;flex-direction:column;overflow:hidden;margin:0;}
   body.admin-session .office-feature .window > .window-head,body.admin-session .office-feature .window > .admin-subnav {flex:none;}
-  body.admin-session .office-feature .window > .admin-content {flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:32px;scrollbar-width:thin;}
+  body.admin-session .office-feature .window > .admin-content {flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 6px 32px;scrollbar-width:thin;}
   body.admin-session .office-feature .admin-window--main {min-height:0!important;padding-bottom:0!important;}
 }
 @media (min-width:701px) {
