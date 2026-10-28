@@ -356,7 +356,13 @@ export async function createApp(db) {
     if(!master)fail("Мастер не найден",404);
     res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress:master.profileProgress,rules:pointRules(await settings())});
   });
-  app.get("/api/me", async (req, res) => res.json({ user: safe(req.user) }));
+  app.get("/api/me", async (req, res) => {
+    const user = safe(req.user);
+    if (user?.accountType === "master") {
+      user.publicProfileId = (await one(db, "SELECT master_id FROM master_links WHERE user_id=$1", [user.id]))?.master_id || user.id;
+    }
+    res.json({ user });
+  });
   const loginLimit = rateLimit({ windowMs: 900000, limit: 25 });
   app.post("/api/auth/register", loginLimit, async (req, res) => {
     const { name, password, rules, consent } = req.body,
