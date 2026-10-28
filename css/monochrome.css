@@ -968,7 +968,7 @@ a>.ui-icon {flex:none;}
 .admin-content tbody tr[hidden] {display:none!important;}
 .admin-content td button {display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 12px;border:1px solid var(--panel-edge);border-radius:9px;background:var(--control-fill);font-size:12px;line-height:1.3;white-space:normal;}
 .admin-content td .help-trigger {min-height:0;padding:0;border:0;background:transparent;}
-.admin-list-tools {display:flex;align-items:flex-end;justify-content:space-between;gap:16px;}
+.admin-list-tools {display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;}
 .admin-list-tools .field {width:min(100%,340px);margin:0;}
 .admin-list-tools .field>span {font-size:12px;}
 .admin-list-tools input {min-height:40px;}
@@ -2082,7 +2082,8 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .pro-segment button,.pro-tag-filter button,.pro-chip {min-height:32px;padding:5px 12px;border:0!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;}
 .pro-segment button[aria-pressed="true"],.pro-tag-filter button[aria-pressed="true"],.pro-chip[aria-pressed="true"] {background:var(--control-fill)!important;color:var(--ink);box-shadow:var(--control-shadow)!important;}
 .pro-tag-filter {display:flex;margin:12px 0;}
-.pro-tag-filter .pro-tag-filter__action {margin-left:auto;background:var(--action-fill)!important;color:#fff!important;}
+.pro-tag-filter .pro-tag-filter__action {display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:7px 14px;margin-left:auto;background:var(--action-fill)!important;color:#fff!important;white-space:nowrap;}
+.pro-tag-filter__action svg {display:block;width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .pro-chip {border:1px solid var(--panel-edge)!important;}
 .pro-toolbar {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
 .pro-toolbar__actions {display:flex;flex-wrap:wrap;gap:8px;}
