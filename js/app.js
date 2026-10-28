@@ -182,17 +182,26 @@
     var last = performance.now();
     var SPEED = 42; /* px в секунду */
 
+    function measure() {
+      var width = track.firstElementChild && track.firstElementChild.offsetWidth;
+      if (!width) return;
+      half = width;
+      if (offset <= -half) offset %= half;
+    }
+
     function fill() {
       var text = t("marquee");
       track.innerHTML =
         "<span>" + esc(text) + "</span><span>" + esc(text) + "</span>";
-      half = track.firstElementChild.offsetWidth;
       offset = 0;
+      half = 0;
+      measure();
     }
 
     function tick(now) {
       var dt = (now - last) / 1000;
       last = now;
+      if (!document.hidden && !half) measure();
       if (!document.hidden && half > 0) {
         offset -= SPEED * Math.min(dt, 0.1);
         if (offset <= -half) offset += half;
@@ -203,7 +212,7 @@
 
     fill();
     requestAnimationFrame(tick);
-    global.addEventListener("resize", fill);
+    global.addEventListener("resize", measure);
     return fill;
   }
 
