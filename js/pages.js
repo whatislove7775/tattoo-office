@@ -107,6 +107,9 @@
           '<button class="tab" data-tab="drafts" aria-selected="false" data-sfx="click">' +
             '<span class="pin"></span><span class="tab__label">' + esc(t('master.drafts')) + '</span>' +
           '</button>' +
+          '<button class="tab" data-tab="about" aria-selected="false" data-sfx="click">' +
+            '<span class="pin"></span><span class="tab__label">' + esc(t('master.about')) + '</span>' +
+          '</button>' +
         '</div>';
 
       return '<div class="section-head">' +
@@ -149,6 +152,14 @@
       var pane = root.querySelector('#worksPane');
 
       function render(tab) {
+        if (tab === 'about') {
+          pane.innerHTML = '<section class="master-about"><h3>' + esc(t('master.about')) + '</h3>' +
+            (pick(m.status) ? '<p class="master-about__status">' + esc(pick(m.status)) + '</p>' : '') +
+            '<p class="master-about__bio">' + esc(pick(m.bio) || t('master.aboutEmpty')) + '</p>' +
+            (pick(m.specialty) ? '<dl><div><dt>' + esc(t('master.style')) + '</dt><dd>' + esc(pick(m.specialty)) + '</dd></div></dl>' : '') +
+          '</section>';
+          return;
+        }
         var list = tab === 'drafts' ? m.drafts : m.portfolio;
         if (!list.length) {
           pane.innerHTML = '<p class="hint">' + esc(t('master.empty')) + '</p>';

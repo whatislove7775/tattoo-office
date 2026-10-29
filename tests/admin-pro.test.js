@@ -151,6 +151,11 @@ test("admin automation: overview, move, no-show, waitlist, promo, balance, roles
     assert.equal((await shift.call("/admin/users/" + master.id + "/impersonate", "POST", {})).status, 403);
     // The last owner cannot be demoted.
     assert.equal((await owner.call("/admin/users/" + owner.id + "/extra", "PATCH", { staffLevel: "shift" })).status, 400);
+    // A master shares the public catalog URL when the account is linked to a legacy card.
+    const publicMaster = await login("PublicMaster", "guest");
+    assert.equal((await publicMaster.call("/me")).data.user.publicProfileId, publicMaster.id);
+    await db.query("INSERT INTO master_links(master_id,user_id) VALUES('zinaida',$1)", [publicMaster.id]);
+    assert.equal((await publicMaster.call("/me")).data.user.publicProfileId, "zinaida");
   } finally {
     await new Promise((r) => server.close(r));
     await db.close();
