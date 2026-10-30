@@ -2465,6 +2465,28 @@ body.admin-session .office-feature .admin-main-title {font-size:clamp(22px,1.95v
 @media (max-width:700px) { .office-feature .admin-home__titlebar {flex-wrap:wrap;} }
 .pro-city-note {margin:0 0 12px;}
 
+/* Safari's link flash is separate from text selection. */
+.brand__logo {-webkit-tap-highlight-color:transparent;}
+.brand__logo:focus:not(:focus-visible) {outline:none!important;filter:none!important;}
+
+/* The route diagram stays vector at every zoom level. */
+dialog.location-map-dialog {box-sizing:border-box;width:min(940px,96vw);height:min(780px,92dvh);max-width:none;max-height:none;margin:auto;padding:0;overflow:hidden;border:1px solid var(--panel-edge);border-radius:22px;background:var(--panel);color:var(--ink);box-shadow:0 25px 70px #0006;}
+.location-map-dialog::backdrop {background:#000b;}
+.location-map-dialog__bar,.location-map-dialog__foot {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:var(--panel);}
+.location-map-dialog__bar strong {font-size:16px;font-weight:500;}
+.location-map-dialog button {display:grid;place-items:center;min-width:38px;min-height:38px;padding:4px 10px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--control-fill);color:var(--ink);font:inherit;cursor:pointer;}
+.location-map-dialog [data-map-close] {font-size:26px;line-height:1;}
+.location-map-dialog__stage {height:calc(100% - 124px);overflow:hidden;background:#f5f3ec;cursor:grab;touch-action:none;}
+.location-map-dialog__stage.is-dragging {cursor:grabbing;}
+.location-map-dialog__stage img {display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+.location-map-dialog__zoom {display:flex;gap:6px;}
+.location-map-dialog__foot a {color:var(--ink);font-size:13px;white-space:nowrap;}
+@media (max-width:700px) {
+  dialog.location-map-dialog {width:min(96vw,500px);height:min(510px,88dvh);border-radius:18px;}
+  .location-map-dialog__bar,.location-map-dialog__foot {padding:10px 14px;}
+  .location-map-dialog__bar strong {font-size:14px;}
+}
+
 /* The administrator identity and return action form one mobile row. */
 .admin-profile__top {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;}
 .admin-profile__top p {display:flex;align-items:baseline;gap:5px;min-width:0;margin:0;}
