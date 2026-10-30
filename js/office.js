@@ -1,5 +1,6 @@
 import {bindFileUpload} from "./file-upload.js";
 import {mountGallery} from "./profile-media.js";
+import {openLocationMap} from "./location-map.js";
 import * as AP from "./admin-pro.js";
 import * as UX from "./admin-ux.js";
 const $ = (s, r = document) => r.querySelector(s),
@@ -487,15 +488,15 @@ const demoArchive = [
 ];
 function findPage() {
   const s=pub.settings, hasAddress=true, address=s.address||"Санкт-Петербург, ул. Кирочная, 24";
-  const hours=s.openHour===0&&s.closeHour===24?"круглосуточно":`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
+  const hours=s.openHour===0&&s.closeHour===24?"24/7 — Круглосуточно":`${String(s.openHour).padStart(2,"0")}:00—${String(s.closeHour).padStart(2,"0")}:00`;
   const intro=pub.content.find(c=>c.id==="find")?.data?.body||"Маршрут, часы и связь — всё в одной папке. Перед визитом договоритесь о встрече с мастером.";
-  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div>${officePicker()}</div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Увеличить карту маршрута"><img src="assets/location-map-v6.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
+  return win("How to find",`<div class="find-lead"><div><h2>Увидимся в офисе.</h2><p>${esc(intro)}</p></div>${officePicker()}</div><div class="find-grid"><figure class="location-map"><button class="location-map__open" type="button" id="location-map-open" aria-label="Открыть интерактивную карту маршрута"><img src="assets/location-map-v6.svg" alt="Tattoo Office на Кирочной, 24. Пеший маршрут от метро Чернышевская через переход на проспекте Чернышевского. Ориентиры: ВкусВилл, Хлебник и Пятёрочка."></button><figcaption><span class="location-map__legend"><i></i> 1–2 минуты пешком от метро<span data-help data-help-inline data-help-trigger="click" data-help-label="Маршрут от метро">1. Из метро «Чернышевская» выйдите на проспект Чернышевского и идите в сторону Кирочной улицы.
 
 2. У Кирочной перейдите проспект по пешеходному переходу к стороне с «Хлебником».
 
 3. Идите по Кирочной к дому 24. «Пятёрочка» на этой же стороне улицы поможет сориентироваться.
 
-Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Проверьте детали входа перед визитом.":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article><div class="find-bottom"><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div></div></div>`);
+Маршрут показан до дома. Вход и детали встречи уточните у менеджера перед визитом.</span></span><a href="https://yandex.ru/maps/?text=${encodeURIComponent(address)}" target="_blank" rel="noopener noreferrer">Открыть в картах</a></figcaption></figure><div class="find-cards"><article class="find-card"><span class="find-card__number">АДРЕС</span><h3>${esc(address)}</h3><p>${hasAddress?"Рядом с метро «Чернышевская».":"Точный адрес и детали входа скоро появятся здесь."}</p></article><article class="find-card"><span class="find-card__number">ВРЕМЯ</span><h3>${esc(hours)}</h3><p>По предварительной записи. Время московское.</p></article><article class="find-card"><span class="find-card__number">СВЯЗЬ</span><h3>${managerLink()}</h3><p>Вопросы о студии и бронировании.</p></article><div class="find-bottom"><a class="chrome" href="#/interior">Посмотреть пространство ↗</a></div></div></div>`);
 }
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
@@ -1921,7 +1922,7 @@ async function render() {
         break;
       case "find":
         html = findPage();
-        mount = () => { $("#location-map-open").onclick = () => window.PhotoViewer.open([{src:"assets/location-map-v6.svg",caption:"Tattoo Office · Кирочная, 24"}],0); };
+        mount = () => { $("#location-map-open").onclick = () => openLocationMap(pub.settings.address||"Санкт-Петербург, ул. Кирочная, 24"); };
         break;
       case "safety":
         html = safetyPage();
