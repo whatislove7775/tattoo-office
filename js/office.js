@@ -655,7 +655,7 @@ function bookingPage() {
     body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(roleRates()[h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
-    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · время московское</p>${bookingTimePicker()}${me && ["resident", "guest"].includes(me.role) && availability?.slots.some((x) => !x.free.length) ? '<p class="pro-waitlist"><button type="button" class="chrome" id="waitlist-join">Нужное время занято? Встать в лист ожидания</button></p>' : ""}<div class="choices">${pub.resources
+    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · время московское</p>${bookingTimePicker()}${me && ["resident", "guest"].includes(me.role) && availability?.slots.some((x) => !x.free.length) ? '<p class="pro-waitlist"><button type="button" class="chrome" id="waitlist-join">Нужное время занято? Встать в лист ожидания</button></p>' : ""}<div class="booking-resource-intro"><h3>Рабочее место</h3><p>${selected ? "Выберите свободное место на весь сеанс." : "Сначала выберите удобное время."}</p></div><div class="choices">${pub.resources
       .filter((x) => x.active && resourceCity(x) === draft.city)
       .map(
         (r) =>

@@ -2505,10 +2505,16 @@ dialog.location-map-dialog {box-sizing:border-box;width:min(940px,96vw);height:m
 .booking-time-group .time.selected .time__availability {color:#ddd;}
 .booking-time-group .time:disabled {opacity:.42;}
 .booking-time-group .time .pro-surcharge {font-size:10px;}
+.booking-resource-intro {display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:28px 0 12px;}
+.booking-resource-intro h3 {margin:0;font-size:18px;font-weight:500;}
+.booking-resource-intro p {margin:0;color:var(--ink-2);font-size:12px;}
+.booking-resource-intro+.choices {margin-top:0;}
 @media (max-width:700px) {
   .booking-time-group summary {padding:12px;}
   .booking-time-group summary small {display:none;}
   .booking-time-group .times {grid-template-columns:repeat(3,minmax(0,1fr));}
+  .booking-resource-intro {display:block;}
+  .booking-resource-intro p {margin-top:4px;}
 }
 @media (max-width:700px) {
   dialog.location-map-dialog {width:min(96vw,500px);height:min(510px,88dvh);border-radius:18px;}
