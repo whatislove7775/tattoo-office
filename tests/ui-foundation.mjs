@@ -64,7 +64,7 @@ try{
   }
   const me=(await (await context.request.get(base+'/api/me')).json()).user;
   await page.goto(base+'/#/master/'+me.id);await page.locator('.master__name').waitFor();assert.match(await page.locator('.master__name').innerText(),/Тестовый Мастер/);assert.equal(await page.locator('.master-profile__action').count(),0,'Nonresident profile must have no booking action');assert.equal(await page.locator('.work').count(),1);await page.locator('.work').click();await page.locator('.photo-viewer').waitFor({state:'visible'}).catch(()=>{});await page.keyboard.press('Escape');
-  await page.locator('[data-tab=about]').click();assert.match(await page.locator('.master-about').innerText(),/Описание из личного кабинета/);
+  await page.locator('[data-tab=about]').click();assert.match(await page.locator('.master-about').innerText(),/Описание из\s+личного кабинета/);
   await page.goto(base+'/#/ranking');await page.locator('#ranking-search').waitFor();await page.locator('#ranking-search').fill('Тестовый');assert.equal(await page.locator('[data-ranking-name]:visible').count(),1);assert.equal(await page.locator('[data-ranking-name]:visible .ranking-sessions').innerText(),'2\nбалла');assert.equal(await page.locator('.ranking-rules').count(),0);assert.equal(await page.locator('.ranking-crown linearGradient').count(),0);
   for(const [width,height] of [[390,844],[768,1024],[1024,768],[1366,1024],[1440,1000]]){
     await page.setViewportSize({width,height});await page.goto(base+'/#/ranking');await page.locator('#ranking-search').waitFor();await page.locator('#ranking-search').fill('');await page.locator('.ranking-row:visible').first().waitFor();
