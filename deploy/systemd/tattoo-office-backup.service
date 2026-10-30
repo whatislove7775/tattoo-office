@@ -1,0 +1,10 @@
+[Unit]
+Description=Tattoo Office database backup with isolated restore verification
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/tattoo-office
+ExecStart=/bin/bash /opt/tattoo-office/scripts/backup-verify.sh
+TimeoutStartSec=20min
+UMask=0077

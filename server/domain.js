@@ -1,0 +1,189 @@
+import {studioRules,studioRulesVersion} from "./studio-rules.js";
+import {
+  scryptSync,
+  randomBytes,
+  timingSafeEqual,
+  createHash,
+  createHmac,
+} from "node:crypto";
+export const hashPassword = (p) => {
+  const s = randomBytes(16).toString("hex");
+  return s + ":" + scryptSync(p, s, 64).toString("hex");
+};
+export function verifyPassword(p, h) {
+  const [s, v] = h.split(":");
+  if (!s || !v) return false;
+  const b = Buffer.from(v, "hex");
+  return b.length === 64 && timingSafeEqual(scryptSync(p, s, 64), b);
+}
+export const hashToken = (t) => createHash("sha256").update(t).digest("hex");
+export function fail(message, status = 400) {
+  throw Object.assign(Error(message), { status });
+}
+export function integer(x, min, max, label = "Значение") {
+  if (!Number.isInteger(x) || x < min || x > max)
+    fail(`${label}: допустимо от ${min} до ${max}`);
+  return x;
+}
+export function validEmail(s) {
+  s = String(s || "")
+    .trim()
+    .toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) || s.length > 254)
+    fail("Проверьте email");
+  return s;
+}
+export function validPassword(p) {
+  if (typeof p !== "string" || p.length < 12 || p.length > 128)
+    fail("Пароль: от 12 до 128 символов");
+  return p;
+}
+export function slot(date, hour, duration, settings, now = Date.now()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) fail("Проверьте дату");
+  integer(hour, 0, 23);
+  if (![3, 6, 12].includes(duration)) fail("Неизвестный тариф");
+  const [year, month, day] = date.split("-").map(Number);
+  if (new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10) !== date)
+    fail("Проверьте дату");
+  const start = new Date(
+      `${date}T${String(hour).padStart(2, "0")}:00:00+03:00`,
+    ),
+    end = new Date(+start + duration * 3600000);
+  if (+start <= now) fail("Нельзя записаться в прошлое");
+  if (+start > now + 180 * 86400000) fail("Запись открыта на 180 дней");
+  if (!(settings.openHour === 0 && settings.closeHour === 24) &&
+      (hour < settings.openHour || hour + duration > settings.closeHour))
+    fail("Вне рабочего времени студии");
+  return [start.toISOString(), end.toISOString()];
+}
+export function verifyHmac(raw, signature, secret) {
+  if (!secret || !signature) return false;
+  const actual = Buffer.from(signature, "base64"),
+    expected = createHmac("sha256", secret).update(raw).digest();
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+export const legalSamples = {
+  privacy: "Tattoo Office обрабатывает имя, адрес электронной почты, сведения о записи и текст обращения, которые человек сам указывает на сайте. Пароль хранится в виде стойкого хеша.\n\nДанные нужны для создания личного кабинета мастера, организации сеанса и связи по связанным с ним вопросам. Доступ к ним получают уполномоченные сотрудники студии в объёме, необходимом для работы. Данные не продаются.\n\nПользователь может запросить доступ, исправление или удаление данных через контакт студии. Срок хранения зависит от цели обработки и требований законодательства.\n\nПеред открытием регистрации владелец студии дополнит этот текст своими реквизитами, контактами и сведениями о технических подрядчиках.",
+  offer: "Tattoo Office предоставляет мастерам доступ к рабочему месту по предварительной записи. Студия работает круглосуточно. Доступные слоты, длительность сеанса, состав услуг и стоимость показываются до подтверждения брони.\n\nБронирование подтверждается студией после согласования времени и, если это предусмотрено условиями выбранного тарифа, внесения предоплаты. Перенос возможен по договорённости с администратором при наличии свободного места.\n\nМастер соблюдает правила студии, бережно использует оборудование и оставляет рабочее место в порядке. Дополнительные услуги и расходники согласуются отдельно.\n\nПри отмене не менее чем за 48 часов до начала предоплата возвращается на внутренний баланс. При отмене менее чем за 48 часов предоплата на баланс не возвращается. По вопросам возврата денежных средств обратитесь в поддержку.",
+  consent: "Я соглашаюсь на обработку имени, адреса электронной почты и сведений, которые укажу при регистрации или записи, для создания аккаунта мастера, организации сеансов и связи по связанным с ними вопросам.\n\nСогласие относится к сбору, хранению, уточнению, использованию и удалению данных, в том числе с применением средств автоматизации. Я могу отозвать его через контакт студии; отзыв не отменяет обработку, необходимую по другим законным основаниям.\n\nДо открытия регистрации владелец студии укажет полное наименование оператора, адрес, контакт и срок обработки данных.",
+};
+export const defaults = {
+  mode: "test",
+  studioName: "Tattoo Office",
+  address: "Санкт-Петербург, ул. Кирочная, 24",
+  phone: "",
+  email: "",
+  legalName: "",
+  inn: "",
+  legalAddress: "",
+  openHour: 0,
+  closeHour: 24,
+  reminderHours: 24,
+  cancelHours: 48,
+  lateCancellation: "retain",
+  deposit: 50000,
+  rates: {
+    resident: { 3: 160000, 6: 300000, 12: 420000 },
+    guest: { 3: 200000, 6: 350000, 12: 500000 },
+  },
+  // Студии по городам. Тарифы Санкт-Петербурга — в rates (как раньше),
+  // у остальных городов свои rates внутри cities.<id>.
+  cities: {
+    spb: { open: true, address: "Санкт-Петербург, ул. Кирочная, 24" },
+    msk: {
+      open: false,
+      address: "",
+      rates: {
+        resident: { 3: 160000, 6: 300000, 12: 420000 },
+        guest: { 3: 200000, 6: 350000, 12: 500000 },
+      },
+    },
+  },
+  rules: studioRules,
+  rulesVersion: studioRulesVersion,
+  privacy: legalSamples.privacy,
+  offer: legalSamples.offer,
+  consent: legalSamples.consent,
+  taxationSystem: null,
+  vat: null,
+  legalApproved: false,
+};
+
+export const CITY_IDS = ["spb", "msk"];
+export const CITY_NAMES = { spb: "Санкт-Петербург", msk: "Москва" };
+export function validCity(id) {
+  if (!CITY_IDS.includes(id)) fail("Неизвестный город");
+  return id;
+}
+// Настройки, сохранённые до появления городов, дополняются значениями по умолчанию.
+export function withCities(s) {
+  const cities = {};
+  for (const id of CITY_IDS)
+    cities[id] = { ...defaults.cities[id], ...(s.cities?.[id] || {}) };
+  if (!s.cities?.spb?.address && s.address) cities.spb.address = s.address;
+  return { ...s, cities };
+}
+export function cityRates(s, city) {
+  return city === "spb" ? s.rates : s.cities?.[city]?.rates || s.rates;
+}
+export function cityOpen(s, city) {
+  return !!withCities(s).cities[city]?.open;
+}
+
+// Сайт и превью Vercel обращаются к одному API. Изменяющие запросы принимаются
+// только с основного адреса (APP_ORIGIN) и с превью-адресов этого проекта Vercel.
+// Шаблон превью можно переопределить в PREVIEW_ORIGIN_PATTERN (пустая строка — выключить).
+export const DEFAULT_PREVIEW_ORIGIN_PATTERN = "^https://tattoo-office-[a-z0-9-]+-whatislove7775s-projects\\.vercel\\.app$";
+export function allowedOrigin(origin, { appOrigin, host, previewPattern = DEFAULT_PREVIEW_ORIGIN_PATTERN } = {}) {
+  if (!origin) return true;
+  const main = appOrigin ? appOrigin.split(",").map((x) => x.trim()).filter(Boolean) : [`http://${host}`];
+  if (main.includes(origin)) return true;
+  if (!previewPattern) return false;
+  try { return new RegExp(previewPattern).test(origin); } catch { return false; }
+}
+
+// --- Цены по времени, расписание мест, промокоды (общие для сервера и тестов) ---
+// День недели даты в календаре Москвы: 1 — понедельник … 7 — воскресенье.
+export function weekday(date) {
+  const day = new Date(`${date}T12:00:00+03:00`).getUTCDay();
+  return day === 0 ? 7 : day;
+}
+export const defaultPriceRules = { nightPercent: 0, nightFrom: 22, nightTo: 8, weekendPercent: 0 };
+// Надбавка (или скидка) к аренде: ночные часы и выходные. Округление до рубля.
+export function priceAdjust(base, date, hour, rules = {}) {
+  const r = { ...defaultPriceRules, ...(rules || {}) };
+  const night = r.nightPercent && (r.nightFrom > r.nightTo ? hour >= r.nightFrom || hour < r.nightTo : hour >= r.nightFrom && hour < r.nightTo);
+  const weekend = r.weekendPercent && weekday(date) >= 6;
+  const percent = (night ? r.nightPercent : 0) + (weekend ? r.weekendPercent : 0);
+  const rate = Math.max(0, Math.round((base * (100 + percent)) / 100 / 100) * 100);
+  return { rate, percent, night: !!night, weekend: !!weekend };
+}
+// Работает ли конкретное место в выбранные день и часы (своё расписание места).
+export function resourceOpen(resource, date, hour, duration) {
+  const s = resource?.schedule || {};
+  if (Array.isArray(s.days) && s.days.length && !s.days.includes(weekday(date))) return false;
+  if (Number.isInteger(s.openHour) && Number.isInteger(s.closeHour) && !(s.openHour === 0 && s.closeHour === 24))
+    if (hour < s.openHour || hour + duration > s.closeHour) return false;
+  return true;
+}
+export function validSchedule(value) {
+  if (!value || typeof value !== "object") return {};
+  const days = Array.isArray(value.days) ? [...new Set(value.days.map(Number))].filter((d) => Number.isInteger(d) && d >= 1 && d <= 7).sort() : [];
+  const out = {};
+  if (days.length && days.length < 7) out.days = days;
+  if (value.openHour !== undefined && value.closeHour !== undefined && !(Number(value.openHour) === 0 && Number(value.closeHour) === 24)) {
+    out.openHour = integer(Number(value.openHour), 0, 23, "Открытие места");
+    out.closeHour = integer(Number(value.closeHour), 1, 24, "Закрытие места");
+    if (out.closeHour <= out.openHour) fail("Закрытие места должно быть позже открытия");
+  }
+  return out;
+}
+export function promoDiscount(promo, rate) {
+  if (!promo) return 0;
+  return promo.kind === "percent" ? Math.round((rate * Math.min(100, promo.value)) / 100) : Math.min(rate, promo.value);
+}
+export function normalizePromoCode(code) {
+  const value = String(code || "").trim().toUpperCase();
+  if (!/^[A-Z0-9А-ЯЁ_-]{3,32}$/u.test(value)) fail("Промокод: от 3 до 32 букв, цифр, дефисов");
+  return value;
+}
