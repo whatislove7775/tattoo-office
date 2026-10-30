@@ -629,6 +629,23 @@ function cityChoicePage() {
     }).join("")}</div></div>`,
   );
 }
+function bookingTimePicker() {
+  const slots = availability?.slots || [];
+  if (!slots.length) return '<p class="small muted">На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>';
+  const groups = [
+    { name: "Ночь", from: 0, to: 6 },
+    { name: "Утро", from: 6, to: 12 },
+    { name: "День", from: 12, to: 18 },
+    { name: "Вечер", from: 18, to: 24 },
+  ];
+  const openHour = draft.hour ?? slots.find(slot => slot.free.length && slot.hour >= 9)?.hour ?? slots.find(slot => slot.free.length)?.hour ?? slots[0].hour;
+  return `<div class="booking-time-picker" aria-label="Выберите время начала сеанса">${groups.map(group => {
+    const hours = slots.filter(slot => slot.hour >= group.from && slot.hour < group.to);
+    if (!hours.length) return "";
+    const availableCount = hours.filter(slot => slot.free.length).length;
+    return `<details class="booking-time-group" ${openHour >= group.from && openHour < group.to ? "open" : ""}><summary><span>${group.name} <small>${String(group.from).padStart(2, "0")}:00–${String(group.to).padStart(2, "0")}:00</small></span><span class="booking-time-group__count">${availableCount} из ${hours.length} часов свободны</span></summary><div class="times">${hours.map(slot => `<button type="button" class="time ${draft.hour === slot.hour ? "selected" : ""}" data-hour="${slot.hour}" aria-pressed="${draft.hour === slot.hour}" ${slot.free.length ? "" : "disabled"}><strong>${String(slot.hour).padStart(2, "0")}:00</strong><span class="time__availability">${slot.free.length ? `${slot.free.length} ${slot.free.length === 1 ? "место" : slot.free.length < 5 ? "места" : "мест"}` : "Нет мест"}</span>${slot.pricePercent ? `<em class="pro-surcharge">${slot.pricePercent > 0 ? "+" : "−"}${Math.abs(slot.pricePercent)}%</em>` : ""}</button>`).join("")}</div></details>`;
+  }).join("")}</div>`;
+}
 function bookingPage() {
   if (!draft.city) return cityChoicePage();
   const s = pub.settings,
@@ -638,7 +655,7 @@ function bookingPage() {
     body = `<h2>Когда встретимся?</h2><p data-help class="small muted">Выберите день и продолжительность. Время — московское.</p>${calendarHTML()}<div class="choices">${[3, 6, 12].map((h, i) => `<button data-duration="${h}" class="choice ${draft.duration === h ? "selected" : ""}"><span><b>${["Короткий", "Средний", "Большой"][i]}</b><small>до ${h} часов</small></span><em>${money(roleRates()[h])}</em></button>`).join("")}</div>`;
   if (draft.step === 1) {
     const selected = availability?.slots.find((x) => x.hour === draft.hour);
-    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · работают ${availability?.workingMasters ?? 0} мастеров</p><div class="times">${availability?.slots.length ? availability.slots.map((x) => `<button class="time ${draft.hour === x.hour ? "selected" : ""}" data-hour="${x.hour}" ${x.free.length ? "" : "disabled"}>${x.hour}:00 <span class="muted">· ${x.free.length}</span>${x.pricePercent ? ` <em class="pro-surcharge">${x.pricePercent > 0 ? "+" : "−"}${Math.abs(x.pricePercent)}%</em>` : ""}</button>`).join("") : "<p>На этот день нет доступного времени. Выберите другую дату или более короткий тариф.</p>"}</div>${me && ["resident", "guest"].includes(me.role) && availability?.slots.some((x) => !x.free.length) ? '<p class="pro-waitlist"><button type="button" class="chrome" id="waitlist-join">Нужное время занято? Встать в лист ожидания</button></p>' : ""}<div class="choices">${pub.resources
+    body = `<h2>У окна или в тишине?</h2><p class="small muted">${dateLabel(draft.date + "T12:00:00+03:00")} · ${draft.duration} ч · время московское</p>${bookingTimePicker()}${me && ["resident", "guest"].includes(me.role) && availability?.slots.some((x) => !x.free.length) ? '<p class="pro-waitlist"><button type="button" class="chrome" id="waitlist-join">Нужное время занято? Встать в лист ожидания</button></p>' : ""}<div class="booking-resource-intro"><h3>Рабочее место</h3><p>${selected ? "Выберите свободное место на весь сеанс." : "Сначала выберите удобное время."}</p></div><div class="choices">${pub.resources
       .filter((x) => x.active && resourceCity(x) === draft.city)
       .map(
         (r) =>

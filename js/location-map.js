@@ -6,7 +6,7 @@ export function openLocationMap(address) {
     dialog = document.createElement("dialog");
     dialog.className = "location-map-dialog";
     dialog.setAttribute("aria-label", "Интерактивная карта маршрута до Tattoo Office");
-    dialog.innerHTML = `<div class="location-map-dialog__bar"><strong>Как дойти до Tattoo Office</strong><button type="button" data-map-close aria-label="Закрыть карту">×</button></div>
+    dialog.innerHTML = `<div class="location-map-dialog__bar"><strong>Как дойти до Tattoo Office</strong><button type="button" data-map-close aria-label="Закрыть карту"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg></button></div>
       <div class="location-map-dialog__stage" aria-label="Карта. Масштабируйте кнопками или жестом, перемещайте пальцем или мышью."><img src="${MAP_SRC}" alt="Маршрут от метро Чернышевская до Tattoo Office на Кирочной, 24" draggable="false"></div>
       <div class="location-map-dialog__foot"><div class="location-map-dialog__zoom"><button type="button" data-map-zoom="out" aria-label="Уменьшить карту">−</button><button type="button" data-map-zoom="reset" aria-label="Сбросить масштаб">1:1</button><button type="button" data-map-zoom="in" aria-label="Увеличить карту">+</button></div><a target="_blank" rel="noopener noreferrer">Открыть в картах ↗</a></div>`;
     document.body.append(dialog);
