@@ -553,23 +553,18 @@ function mountRecovery(reset) {
 }
 function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + (DEMO ? field('email','Почта (тестовый режим)','owner@demo.tattoo-office','email','required autocomplete="username"') : '') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
+  return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + (DEMO ? field('email','Почта (тестовый режим)','owner@demo.tattoo-office','email','required autocomplete="username"') : '') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div><div class="auth-switch"><a href="#/admin/shift">Вход для админа смены</a></div></form>');
 }
-// Отдельный простой вход для админа смены: своя почта и пароль.
+// Отдельный простой вход админа смены: только пароль, который ему задал владелец.
 function shiftAuthPage() {
   if (me?.role === 'admin') return win('Вход админа смены','<div class="auth-form"><h2>Админ смены.</h2><p class="small muted">Вы уже вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
-  return win('Вход админа смены', '<form id="shift-auth-form" class="auth-form"><h2>Админ смены.</h2><p data-help class="small muted">Вход для администратора смены: расписание, записи и тату-мастера.</p>' + field('email','Почта', DEMO ? 'shift@demo.tattoo-office' : '','email','required autocomplete="username"') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
+  return win('Вход админа смены', '<form id="shift-auth-form" class="auth-form"><h2>Админ смены.</h2><p data-help class="small muted">Введите пароль, который вам выдал владелец студии.</p>' + field('password','Пароль','','password','required minlength="12" maxlength="128" autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/admin/login">Вход владельца</a></div></form>');
 }
 function mountShiftAuth() {
-  onForm('#shift-auth-form', async d=>{
-    try { await api('/auth/login','POST',{...d,accountType:'admin'}); }
-    catch(error) { if(error.message === 'Email или пароль не совпадают') throw new Error('Почта или пароль не совпадают. Проверьте раскладку и регистр.'); throw error; }
+  onForm('#shift-auth-form', async d => {
+    await api('/auth/shift-login', 'POST', { password: d.password });
     await refresh();
-    if (me?.role !== 'admin') {
-      await api('/auth/logout','POST');
-      await refresh();
-      throw new Error('У этого аккаунта нет доступа администратора.');
-    }
+    if (me?.role !== 'admin') throw new Error('Пароль не подходит');
     go('admin');
   });
 }
@@ -1198,7 +1193,7 @@ async function adminPage() {
     homeHead = `<div class="admin-home admin-home--head"><div class="admin-home__titlebar"><h2 class="admin-main-title"><svg class="admin-main-title__icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mainPerson" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="1" stop-color="#8e8e8e"/></linearGradient></defs><circle cx="16" cy="10" r="6.5" fill="url(#mainPerson)"/><path d="M3.5 29c0-6.6 5.6-11 12.5-11s12.5 4.4 12.5 11z" fill="url(#mainPerson)"/></svg><u>Admin panel</u></h2>${cityTabs()}</div><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
     body = `<div class="admin-home">${await api("/admin/overview").then(AP.overviewHTML, () => "")}</div>`;
   }
-  if (adminTab === "profile") body = `<div class="admin-profile"><div class="admin-profile__top"><p class="small muted"><span>Администратор</span><span class="admin-profile__email">${esc(me.email)}</span></p><button type="button" class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form><form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form></div>`;
+  if (adminTab === "profile") body = `<div class="admin-profile"><div class="admin-profile__top"><p class="small muted"><span>Администратор</span><span class="admin-profile__email">${esc(me.email)}</span></p><button type="button" class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form>${AP.isShift() ? '<div class="admin-shift-note"><h3>Безопасность</h3><p class="small muted">Пароль для входа админа смены задаёт владелец студии. Чтобы сменить пароль, обратитесь к нему.</p></div>' : `<form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form>`}</div>`;
   if (adminTab === "schedule") {
     const cityResources = a.resources.filter((r) => resourceCity(r) === adminCity),
       cityIds = new Set(cityResources.map((r) => r.id)),

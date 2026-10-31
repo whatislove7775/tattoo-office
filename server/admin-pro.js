@@ -1,9 +1,18 @@
 import { randomUUID as uuid } from "node:crypto";
-import { fail, integer, slot, validEmail, validPassword, hashPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
+import { fail, integer, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
 
 // Владелец студии видит всё. Администратор смены (profile.staffLevel = "shift")
 // работает с расписанием и бронями, но не с деньгами, настройками и правами.
 export const isOwner = (user) => user?.role === "admin" && user.profile?.staffLevel !== "shift";
+// Админ смены входит только по паролю, поэтому у каждого админа смены пароль свой.
+const SHIFT_ADMINS = "SELECT id,password FROM users WHERE role='admin' AND active AND deleted_at IS NULL AND profile->>'staffLevel'='shift'";
+export async function shiftAdminsByPassword(q, password) {
+  const rows = (await q.query(SHIFT_ADMINS)).rows;
+  return rows.filter((u) => verifyPassword(password, u.password)).map((u) => u.id);
+}
+export async function assertShiftPasswordFree(q, password, userId) {
+  if ((await shiftAdminsByPassword(q, password)).some((id) => id !== userId)) fail("Такой пароль уже у другого админа смены. Придумайте другой — по нему админ смены входит без почты", 409);
+}
 export const ownerOnly = (req, res, next) =>
   isOwner(req.user) ? next() : res.status(403).json({ error: "Доступно только владельцу студии" });
 
@@ -155,6 +164,8 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       }
       if (Object.keys(changes).length) await q.query("UPDATE users SET profile=profile||$1::jsonb WHERE id=$2", [JSON.stringify(changes), u.id]);
       if (req.body.password !== undefined) {
+        const shift = u.role === "admin" && (req.body.staffLevel ?? u.profile?.staffLevel) === "shift";
+        if (shift) await assertShiftPasswordFree(q, validPassword(req.body.password), u.id);
         await q.query("UPDATE users SET password=$1 WHERE id=$2", [hashPassword(validPassword(req.body.password)), u.id]);
         await q.query("DELETE FROM sessions WHERE user_id=$1", [u.id]);
         changes.password = "changed";

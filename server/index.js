@@ -6,7 +6,7 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
-import {adminProRoutes,ownerOnly,isOwner} from "./admin-pro.js";
+import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -426,12 +426,24 @@ export async function createApp(db) {
     await session(res, u);
     res.json({ user: safe(u) });
   });
+  // Отдельный вход админа смены: только пароль, который ему задал владелец.
+  app.post("/api/auth/shift-login", loginLimit, async (req, res) => {
+    const password = req.body.password;
+    if (typeof password !== "string" || password.length < 12 || password.length > 128) fail("Пароль не подходит", 401);
+    const ids = await shiftAdminsByPassword(db, password);
+    if (ids.length > 1) fail("Этот пароль совпадает у нескольких админов смены. Попросите владельца задать вам новый пароль", 409);
+    if (!ids.length) fail("Пароль не подходит", 401);
+    const u = await one(db, "SELECT * FROM users WHERE id=$1", [ids[0]]);
+    await session(res, u);
+    res.json({ user: safe(u) });
+  });
   app.post("/api/auth/forgot-password", loginLimit, async (req,res) => {
     const email=validEmail(req.body.email), type=req.body.accountType || "master";
     if (!["customer","master","admin"].includes(type)) fail("Проверьте тип профиля");
     if (!emailConfigured()) fail("Отправка писем ещё не подключена. Обратитесь к администратору",503);
     const user=await one(db,"SELECT * FROM users WHERE email=$1 AND account_type=$2 AND active=true",[email,type]);
-    if (user) {
+    // Админу смены пароль задаёт владелец — письмо для сброса не отправляем.
+    if (user && !(user.role === "admin" && user.profile?.staffLevel === "shift")) {
       const token=randomBytes(32).toString("hex"), digest=hashToken(token);
       await db.transaction(async q=>{
         await q.query("DELETE FROM password_resets WHERE user_id=$1 OR expires_at<now()",[user.id]);
@@ -548,6 +560,7 @@ export async function createApp(db) {
     });res.json({ok:true});
   });
   app.post("/api/me/password", auth, async (req, res) => {
+    if (req.user.role === "admin" && req.user.profile?.staffLevel === "shift") fail("Пароль админу смены задаёт владелец", 403);
     if (!verifyPassword(String(req.body.current || ""), req.user.password))
       fail("Текущий пароль не совпадает");
     await db.transaction(async (q) => {
