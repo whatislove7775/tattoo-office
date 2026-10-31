@@ -881,7 +881,7 @@ export async function createApp(db) {
         stockMoves: (await db.query("SELECT m.*,c.name AS item_name FROM stock_moves m JOIN catalog c ON c.id=m.catalog_id ORDER BY m.created_at DESC LIMIT 100")).rows,
         settingsLog: (await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='settings.update' ORDER BY a.created_at DESC LIMIT 30")).rows,
       });
-      if (!isOwner(req.user)) { result.payments = []; result.promos = []; result.users = result.users.map((u) => ({ ...u, balance: null })); }
+      if (!isOwner(req.user)) { result.payments = []; result.promos = []; result.users = result.users.filter((u) => u.role !== "admin" && u.account_type === "master").map((u) => ({ ...u, balance: null })); }
     }
     if (role === "admin") {
       const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;

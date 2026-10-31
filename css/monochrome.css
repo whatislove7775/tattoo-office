@@ -2605,3 +2605,10 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
   .users-line .pro-dayline__right {width:100%;}
   .office-feature .users-line .users-tabs button {padding:4px 11px;}
 }
+.users-line .pro-dayline__center {overflow:hidden;}
+.users-line .pro-daynav__label {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media (max-width:700px) {
+  .office-feature .users-line .users-tabs {max-width:100%;overflow-x:auto;scrollbar-width:none;}
+  .office-feature .users-line .users-tabs::-webkit-scrollbar {display:none;}
+  .office-feature .users-line .users-tabs button {flex:none;padding:4px 7px;font-size:12px;}
+}
