@@ -2588,3 +2588,20 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .admin-subnav button[data-label],.office-feature .cabinet .tabs button[data-label] {display:inline-grid;justify-items:center;}
 .office-feature .admin-subnav button[data-label]::after {content:attr(data-label);height:0;overflow:hidden;visibility:hidden;font-weight:600;pointer-events:none;user-select:none;}
 .office-feature .cabinet .tabs button[data-label]::after {content:attr(data-label);height:0;overflow:hidden;visibility:hidden;font-weight:500;pointer-events:none;user-select:none;}
+/* Users: переключатель «все / тату-мастера / админы» — как переключатель городов на главной */
+.office-feature .users-line .users-tabs {margin:0!important;flex:none;}
+.office-feature .users-line .users-tabs button {min-height:30px;padding:4px 14px;font-size:13px;white-space:nowrap;}
+.office-feature .users-line .users-tabs button .ui-icon {display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.office-feature .pro-dayline.users-line {display:flex!important;align-items:center;gap:12px;}
+.users-line .pro-dayline__left {flex:none;gap:10px;}
+.users-line .pro-dayline__center {flex:1 1 auto;justify-content:center;min-width:0;}
+.users-line .pro-dayline__right {flex:none;}
+.office-feature .users-line .pro-dayline__filters .pro-list-search {width:clamp(120px,11vw,200px)!important;}
+@media (max-width:700px) {
+  .office-feature .pro-dayline.users-line {flex-wrap:wrap;}
+  .users-line .pro-dayline__left {width:100%;flex-wrap:wrap;}
+  .users-line .users-line__gap {display:none;}
+  .users-line .pro-dayline__center {justify-content:flex-start;}
+  .users-line .pro-dayline__right {width:100%;}
+  .office-feature .users-line .users-tabs button {padding:4px 11px;}
+}
