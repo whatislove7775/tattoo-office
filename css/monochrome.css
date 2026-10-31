@@ -2581,3 +2581,10 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
   .office-feature [data-admin-section="users"] .pro-dayline__filters {width:100%;}
   .office-feature [data-admin-section="users"] .pro-dayline__filters .pro-list-search {flex:1;width:auto!important;}
 }
+
+/* Без мигания и дрожания: окно не проявляется заново при обновлении той же страницы,
+   а выбранная вкладка не меняет ширину (место под жирное начертание зарезервировано). */
+.office-feature>.window.is-steady {animation:none;}
+.office-feature .admin-subnav button[data-label],.office-feature .cabinet .tabs button[data-label] {display:inline-grid;justify-items:center;}
+.office-feature .admin-subnav button[data-label]::after {content:attr(data-label);height:0;overflow:hidden;visibility:hidden;font-weight:600;pointer-events:none;user-select:none;}
+.office-feature .cabinet .tabs button[data-label]::after {content:attr(data-label);height:0;overflow:hidden;visibility:hidden;font-weight:500;pointer-events:none;user-select:none;}

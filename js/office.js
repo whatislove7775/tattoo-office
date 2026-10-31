@@ -948,7 +948,7 @@ async function cabinetPage() {
     ]
       .map(
         ([v, l]) =>
-          `<button data-cabtab="${v}" aria-selected="${v === cabTab}">${l}</button>`,
+          `<button data-cabtab="${v}" data-label="${l}" aria-selected="${v === cabTab}">${l}</button>`,
       )
       .join("")}</div><div class="cabinet-content">${body}</div></div>`,
   );
@@ -1267,7 +1267,7 @@ async function adminPage() {
   if (adminTab === "home") return `<section class="window admin-window--main">${homeHead}<div class="admin-content" data-admin-section="home">${body}</div></section>`;
   return win(
     group?.label || tabs.find(([value]) => value === adminTab)?.[1] || "Управление студией",
-    `${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
+    `${group?.tabs.length > 1 ? `<nav class="admin-subnav" aria-label="${group.label}">${group.tabs.map(value=>`<button type="button" data-admintab="${value}" data-label="${tabs.find(t=>t[0]===value)[1]}" ${value === adminTab ? 'aria-current="page"' : ""}>${tabs.find(t=>t[0]===value)[1]}</button>`).join("")}</nav>` : ""}<div class="admin-content" data-admin-section="${adminTab}">${body}</div>`,
   );
 }
 // Сжимает фото в браузере до JPEG нужного размера перед загрузкой на сервер.
@@ -1824,7 +1824,7 @@ if (savedAdmin.date) adminDate = savedAdmin.date;
 if (savedAdmin.view) scheduleView = savedAdmin.view;
 if (savedAdmin.city) adminCity = savedAdmin.city;
 const saveAdmin = (extra = {}) => { try { sessionStorage.setItem("to.admin", JSON.stringify({ ...JSON.parse(sessionStorage.getItem("to.admin") || "{}"), tab: adminTab, date: adminDate, view: scheduleView, city: adminCity, ...extra })); } catch {} };
-let scrollSaveBound = false;
+let scrollSaveBound = false, lastRenderHash = null;
 async function render() {
   if (!$("#office-view")) return;
   residentInfoCleanup();
@@ -2004,6 +2004,10 @@ async function render() {
     const pickScroller = () => (location.hash.startsWith("#/admin") && matchMedia("(min-width:701px)").matches && ($("#office-view .tl-scroll") || $("#office-view .pro-scroll") || $("#office-view .admin-content"))) || $("#view");
     const key = location.hash + "|" + adminTab + "|" + scheduleView, top = pickScroller()?.scrollTop || 0, same = key === lastRenderKey;
     $("#office-view").innerHTML = html;
+    // Окно «проявляется» только при переходе на другую страницу. Переключение вкладок, фильтров
+    // и обновление после сохранения на той же странице не мигает.
+    if (location.hash === lastRenderHash) $$("#office-view .window").forEach((w) => w.classList.add("is-steady"));
+    lastRenderHash = location.hash;
     await mount();
     const first = !lastRenderKey, scroller = pickScroller();
     lastRenderKey = key;
