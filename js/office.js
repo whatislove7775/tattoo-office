@@ -42,6 +42,8 @@ const addDate = (d, n) =>
   new Date(new Date(d + "T12:00:00Z").getTime() + n * 86400000)
     .toISOString()
     .slice(0, 10);
+// Ссылка, по которой админ смены входит только по паролю.
+const shiftLoginLink = () => location.origin + location.pathname + "#/admin/shift";
 const roleName = {
   resident: "Резидент Private Club",
   guest: "Мастер",
@@ -258,7 +260,7 @@ function paintShell() {
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email)}">${esc(me.email)}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email || "Админ смены")}">${esc(me.email || "Админ смены")}</small></span></div>`
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
   if (me?.role === "admin") {
@@ -1193,7 +1195,7 @@ async function adminPage() {
     homeHead = `<div class="admin-home admin-home--head"><div class="admin-home__titlebar"><h2 class="admin-main-title"><svg class="admin-main-title__icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mainPerson" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="1" stop-color="#8e8e8e"/></linearGradient></defs><circle cx="16" cy="10" r="6.5" fill="url(#mainPerson)"/><path d="M3.5 29c0-6.6 5.6-11 12.5-11s12.5 4.4 12.5 11z" fill="url(#mainPerson)"/></svg><u>Admin panel</u></h2>${cityTabs()}</div><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
     body = `<div class="admin-home">${await api("/admin/overview").then(AP.overviewHTML, () => "")}</div>`;
   }
-  if (adminTab === "profile") body = `<div class="admin-profile"><div class="admin-profile__top"><p class="small muted"><span>Администратор</span><span class="admin-profile__email">${esc(me.email)}</span></p><button type="button" class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form>${AP.isShift() ? '<div class="admin-shift-note"><h3>Безопасность</h3><p class="small muted">Пароль для входа админа смены задаёт владелец студии. Чтобы сменить пароль, обратитесь к нему.</p></div>' : `<form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form>`}</div>`;
+  if (adminTab === "profile") body = `<div class="admin-profile"><div class="admin-profile__top"><p class="small muted"><span>${AP.isShift() ? "Админ смены" : "Администратор"}</span><span class="admin-profile__email">${esc(me.email || "вход по паролю")}</span></p><button type="button" class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form>${AP.isShift() ? '<div class="admin-shift-note"><h3>Безопасность</h3><p class="small muted">Пароль для входа админа смены задаёт владелец студии. Чтобы сменить пароль, обратитесь к нему.</p></div>' : `<form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form>`}</div>`;
   if (adminTab === "schedule") {
     const cityResources = a.resources.filter((r) => resourceCity(r) === adminCity),
       cityIds = new Set(cityResources.map((r) => r.id)),
@@ -1232,7 +1234,7 @@ async function adminPage() {
     if (shift && !["all", "resident", "guest"].includes(usersFilter)) usersFilter = "all";
     if (!shift && ["resident", "guest"].includes(usersFilter)) usersFilter = "all";
     const shown = a.users.filter((u) => (shift && !isMaster(u) ? false : usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : usersFilter === "resident" ? isMaster(u) && u.role === "resident" : usersFilter === "guest" ? isMaster(u) && u.role !== "resident" : true) && (!usersTag || AP.userTags(u).some(([k]) => k === usersTag))),
-      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : ({resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
+      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : (u.role === "admin" && u.staff_level === "shift" ? "Админ смены" : {resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
     // Строка как в Календаре: слева круглые переключатели и действия, по центру заголовок, справа метка и поиск.
     const ico = (d) => `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`,
       usersIcons = { all: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.4c2.1.7 3.5 2.8 3.5 5.6", master: "M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16zM14 7l3 3", admin: "M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4" },
@@ -1245,7 +1247,7 @@ async function adminPage() {
       ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
         (u) =>
-          `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><button type="button" class="pro-link" data-user-card="${u.id}">${esc(u.name)}</button>${copyButton(u.name,"имя")}</span><span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span><span class="pro-tags">${AP.tagChips(u)}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${u.balance === null ? "—" : money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
+          `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><button type="button" class="pro-link" data-user-card="${u.id}">${esc(u.name)}</button>${copyButton(u.name,"имя")}</span>${u.staff_level === "shift" && !u.email ? `<span class="admin-user-email"><span>Вход по паролю</span>${copyButton(shiftLoginLink(),"ссылку для входа")}</span>` : `<span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span>`}<span class="pro-tags">${AP.tagChips(u)}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${u.balance === null ? "—" : money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
       ),
     )}</div>${usersFilter === "master" || (shift && usersFilter === "all") ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
       ["Фото", "Мастер", "Баллы", "На главной", ""],
@@ -1339,7 +1341,7 @@ function mountAdmin() {
   $$("[data-copy-value]").forEach(button => button.onclick = async () => {
     try {
       await navigator.clipboard.writeText(button.dataset.copyValue);
-      notify(button.dataset.copyLabel === "имя" ? "Имя скопировано" : "Email скопирован");
+      notify(button.dataset.copyLabel === "имя" ? "Имя скопировано" : button.dataset.copyLabel === "ссылку для входа" ? "Ссылка для входа скопирована" : "Email скопирован");
     } catch { notify("Не удалось скопировать. Выделите текст и скопируйте вручную."); }
   });
   $$("[data-delete-user]").forEach(button => button.onclick = () => {
@@ -1454,23 +1456,39 @@ function mountAdmin() {
       adminDate = e.target.value || today();
       render();
     };
-  const userForm = (u, defaultRole = "guest") =>
+  // После создания админа смены — ссылка для входа с кнопкой «Скопировать».
+  const shiftLinkDialog = (name) => {
+    modal(`<h2>Админ смены добавлен</h2><p class="small muted">${esc(name || "Админ смены")} входит по этой ссылке только по паролю, который вы задали. Передайте ссылку и пароль лично.</p><div class="shift-link"><code>${esc(shiftLoginLink())}</code><button type="button" class="chrome" id="shift-link-copy">Скопировать ссылку</button></div>`);
+    $("#shift-link-copy").onclick = async () => { try { await navigator.clipboard.writeText(shiftLoginLink()); notify("Ссылка для входа скопирована"); } catch { notify("Не удалось скопировать. Выделите ссылку и скопируйте вручную."); } };
+  };
+  // Админ смены — только имя и пароль, без почты (внутренний адрес создаёт сервер).
+  const shiftUser = (u) => !!u && (u.role === "admin" || u.account_type === "admin") && u.staff_level === "shift";
+  const userForm = (u, defaultRole = "guest") => {
+    const isShiftUser = shiftUser(u), roles = [...Object.entries(roleName).filter(([r]) => me.role === "admin" || r === "guest")];
+    if (!AP.isShift() && (!u || isShiftUser)) roles.push(["shift", "Админ смены (вход только по паролю)"]);
     dialogForm(
-      u ? "Права и почта" : "Новое личное дело",
-      `${!u ? field("name", "Имя", "", "text", "required") : ""}${field("email", "Email", u?.email || "", "email", "required")}${!u ? field("password", "Временный пароль", "", "password", 'required minlength="12" maxlength="128"') : ""}${select(
-        "role",
-        "Роль",
-        Object.entries(roleName).filter(
-          ([r]) => me.role === "admin" || r === "guest",
-        ),
-        u?.role || defaultRole,
-      )}${(!u || u.account_type === "master") ? field("bookingLink","Ссылка на чат в Telegram",u?.booking_link||"","url",'maxlength="2048" placeholder="https://t.me/имя"') : ""}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
-      (d) =>
-        api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
-          ...d,
+      u ? (isShiftUser ? "Админ смены" : "Права и почта") : "Новое личное дело",
+      `${!u ? field("name", "Имя", "", "text", "required") : ""}${isShiftUser ? '<p class="small muted">Почты нет: админ смены входит только по паролю на странице «Вход для админа смены». Пароль задаётся в карточке.</p>' : `<div class="user-form-email">${field("email", "Email", u?.email || "", "email", "required")}</div>`}${!u ? field("password", "Временный пароль", "", "password", 'required minlength="12" maxlength="128"') : ""}${select("role", "Роль", roles, isShiftUser ? "shift" : u?.role || defaultRole)}${(!u || u.account_type === "master") ? `<div class="user-form-booking">${field("bookingLink","Ссылка на чат в Telegram",u?.booking_link||"","url",'maxlength="2048" placeholder="https://t.me/имя"')}</div>` : ""}${u ? `<label class="check"><input name="depositWaived" type="checkbox" ${u.deposit_waived ? "checked" : ""}> Без предоплаты · расчёт наличными</label><p data-help class="small muted">Только для резидентов. Применяется к новым записям.</p><label class="check"><input name="active" type="checkbox" ${u.active ? "checked" : ""}> Доступ активен</label>` : ""}`,
+      (d) => {
+        const body = { ...d };
+        if (isShiftUser) body.role = "admin";
+        if (!u && body.role === "shift") { delete body.email; delete body.bookingLink; }
+        return api("/admin/users" + (u ? "/" + u.id : ""), u ? "PATCH" : "POST", {
+          ...body,
           ...(u ? { active: d.active === "on", depositWaived: d.role === "resident" && d.depositWaived === "on" } : {}),
-        }),
+        }).then((result) => { if (!u && body.role === "shift") setTimeout(() => shiftLinkDialog(d.name), 350); return result; });
+      },
     );
+    // В новой анкете при выборе «Админ смены» поле почты и ссылка Telegram скрываются.
+    if (!u) {
+      const roleSelect = $('#dialog [name="role"]'), sync = () => {
+        const shift = roleSelect?.value === "shift", passLabel = $('#dialog [name="password"]')?.closest("label")?.querySelector("span");
+        if (passLabel) passLabel.textContent = shift ? "Пароль для входа" : "Временный пароль";
+        $$("#dialog .user-form-email, #dialog .user-form-booking").forEach((el) => { el.hidden = shift; const input = $("input", el); if (input) { input.disabled = shift; if (input.name === "email") input.required = !shift; } });
+      };
+      roleSelect?.addEventListener("change", sync); sync();
+    }
+  };
   if ($("#add-user")) $("#add-user").onclick = () => userForm(null, adminTab === "users" && usersFilter === "admin" ? "admin" : "guest");
   $$("[data-users-filter]").forEach(
     (b) =>

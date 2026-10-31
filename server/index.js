@@ -6,7 +6,7 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
-import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword} from "./admin-pro.js";
+import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswordFree,shiftAdminEmail,hideShiftEmail} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -223,7 +223,7 @@ export async function createApp(db) {
     u
       ? {
           id: u.id,
-          email: u.email,
+          email: hideShiftEmail(u.email),
           name: u.name,
           role: u.role,
           accountType: u.role === "admin" ? "admin" : u.account_type,
@@ -894,6 +894,7 @@ export async function createApp(db) {
         stockMoves: (await db.query("SELECT m.*,c.name AS item_name FROM stock_moves m JOIN catalog c ON c.id=m.catalog_id ORDER BY m.created_at DESC LIMIT 100")).rows,
         settingsLog: (await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='settings.update' ORDER BY a.created_at DESC LIMIT 30")).rows,
       });
+      result.users = result.users.map((u) => ({ ...u, email: hideShiftEmail(u.email) }));
       if (!isOwner(req.user)) { result.payments = []; result.promos = []; result.users = result.users.filter((u) => u.role !== "admin" && u.account_type === "master").map((u) => ({ ...u, balance: null })); }
     }
     if (role === "admin") {
@@ -1053,22 +1054,24 @@ export async function createApp(db) {
     res.json({ ok: true });
   });
   app.post("/api/admin/users", ownerOnly, async (req, res) => {
-    const role = req.body.role || "guest";
+    // «Админ смены» — администратор только с именем и паролем: почты нет, вход по паролю (/api/auth/shift-login).
+    const shiftAdmin = req.body.role === "shift", role = shiftAdmin ? "admin" : req.body.role || "guest";
     if (!["guest", "resident", "admin"].includes(role))
       fail("Недопустимая роль", 403);
     const bookingLink = req.body.bookingLink;
     if (bookingLink !== undefined && (typeof bookingLink !== "string" || bookingLink.length > 2048 || (bookingLink && !bookingContact(bookingLink)))) fail("Укажите ссылку Telegram: https://t.me/имя или https://t.me/m/код");
     if (bookingLink && role === "admin") fail("Ссылка для записи доступна только мастерам");
-    const profile = bookingLink ? {adminBookingLink:bookingContact(bookingLink)} : {};
+    const profile = shiftAdmin ? {staffLevel:"shift"} : bookingLink ? {adminBookingLink:bookingContact(bookingLink)} : {};
     const id = uuid();
     await db.transaction(async (q) => {
+      if (shiftAdmin) await assertShiftPasswordFree(q, validPassword(req.body.password), id);
       await q.query(
         "INSERT INTO users(id,email,password,name,role,account_type,profile) VALUES($1,$2,$3,$4,$5,CASE WHEN $5='admin' THEN 'admin' ELSE 'master' END,$6)",
         [
           id,
-          validEmail(req.body.email),
+          shiftAdmin ? shiftAdminEmail(id) : validEmail(req.body.email),
           hashPassword(validPassword(req.body.password)),
-          String(req.body.name || "Мастер").slice(0, 100),
+          String(req.body.name || (shiftAdmin ? "Админ смены" : "Мастер")).slice(0, 100),
           role,
           JSON.stringify(profile),
         ],

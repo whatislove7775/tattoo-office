@@ -48,6 +48,21 @@ test("shift admin: password-only login, unique passwords set by the owner", asyn
     // Сам админ смены пароль не меняет — его задаёт владелец.
     assert.equal((await post("/me/password", { current: "Boris-shift-pass-2026", password: "Boris-self-pass-2026" }, cookie)).status, 403);
 
+    // Владелец создаёт админа смены только с именем и паролем — без почты.
+    const created = await fetch(origin + "/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json", Cookie: "office_session=" + ownerToken }, body: JSON.stringify({ name: "Вера", role: "shift", password: "Vera-shift-pass-2026" }) });
+    assert.equal(created.status, 201, await created.clone().text());
+    const veraId = (await created.json()).id;
+    const vera = (await db.query("SELECT role,profile FROM users WHERE id=$1", [veraId])).rows[0];
+    assert.equal(vera.role, "admin");
+    assert.equal(vera.profile.staffLevel, "shift");
+    const veraLogin = await post("/auth/shift-login", { password: "Vera-shift-pass-2026" });
+    assert.equal(veraLogin.status, 200);
+    assert.equal((await veraLogin.json()).user.email, "", "служебный адрес не показывается");
+    const list = await (await fetch(origin + "/api/admin", { headers: { Cookie: "office_session=" + ownerToken } })).json();
+    assert.equal(list.users.find((u) => u.id === veraId).email, "");
+    const dup = await fetch(origin + "/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json", Cookie: "office_session=" + ownerToken }, body: JSON.stringify({ name: "Дубль", role: "shift", password: "Vera-shift-pass-2026" }) });
+    assert.equal(dup.status, 409);
+
     // Отключённый админ смены не входит.
     await db.query("UPDATE users SET password=$1 WHERE id=$2", [hashPassword("Anna-new-pass-2026"), annaId]);
     await db.query("UPDATE users SET active=false WHERE id=$1", [annaId]);

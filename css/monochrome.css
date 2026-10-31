@@ -2623,3 +2623,6 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .users-tab--morph[aria-selected="true"] .users-tab__txt {max-width:220px;opacity:1;padding-right:2px;}
 :root[data-theme="dark"] .users-tab--morph .users-tab__ico img {filter:invert(1);}
 @media (prefers-reduced-motion:reduce) { .users-tab--morph .users-tab__ico,.users-tab--morph .users-tab__txt {transition:none;} }
+/* Ссылка для входа админа смены с кнопкой «Скопировать» */
+.shift-link {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 4px;}
+.shift-link code {flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--panel-2);font-size:13px;overflow-wrap:anywhere;}

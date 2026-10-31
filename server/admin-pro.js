@@ -4,6 +4,10 @@ import { fail, integer, slot, validEmail, validPassword, hashPassword, verifyPas
 // Владелец студии видит всё. Администратор смены (profile.staffLevel = "shift")
 // работает с расписанием и бронями, но не с деньгами, настройками и правами.
 export const isOwner = (user) => user?.role === "admin" && user.profile?.staffLevel !== "shift";
+// У админа смены нет почты: в базе хранится служебный адрес, который никогда не показывается и не получает писем.
+export const SHIFT_EMAIL_DOMAIN = "shift-admin.invalid";
+export const shiftAdminEmail = (id) => `${id}@${SHIFT_EMAIL_DOMAIN}`;
+export const hideShiftEmail = (email) => (String(email || "").endsWith("@" + SHIFT_EMAIL_DOMAIN) ? "" : email);
 // Админ смены входит только по паролю, поэтому у каждого админа смены пароль свой.
 const SHIFT_ADMINS = "SELECT id,password FROM users WHERE role='admin' AND active AND deleted_at IS NULL AND profile->>'staffLevel'='shift'";
 export async function shiftAdminsByPassword(q, password) {
@@ -128,6 +132,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
     if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Пользователь не найден", 404);
     const u = await one(db, "SELECT id,email,name,role,account_type,active,balance,deposit_waived,created_at,profile,telegram_id FROM users WHERE id=$1 AND deleted_at IS NULL", [req.params.id]);
     if (!u) fail("Пользователь не найден", 404);
+    u.email = hideShiftEmail(u.email);
     const owner = isOwner(req.user);
     const [bookings, ledgerRows, payments] = await Promise.all([
       db.query("SELECT b.id,b.starts_at,b.ends_at,b.status,b.total,b.deposit,b.tariff,r.name AS resource_name,r.city FROM bookings b JOIN resources r ON r.id=b.resource_id WHERE b.user_id=$1 ORDER BY b.starts_at DESC LIMIT 100", [u.id]),
