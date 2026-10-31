@@ -80,7 +80,7 @@ function scheduleRailLayout(){
     const railTop=document.querySelector(".brand").getBoundingClientRect().bottom+18;
     const menuRoom=top-18-(rentVisible?rentHeight+18:0)-accountHeight-18-dockHeight-Math.max(194,railTop)-31;
     const rows=list?.children.length || 6;
-    document.body.style.setProperty('--desktop-menu-row-height',Math.max(16,Math.min(document.body.classList.contains('admin-session')?36:39,menuRoom/rows))+'px');
+    document.body.style.setProperty('--desktop-menu-row-height',Math.max(16,Math.min(39,menuRoom/rows))+'px');
     document.body.style.setProperty('--desktop-foot-height',footerHeight+'px');
     document.body.style.setProperty('--desktop-rent-height',rentHeight+'px');
     document.body.style.setProperty('--desktop-stage-top',stageTop+'px');
