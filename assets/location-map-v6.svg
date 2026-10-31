@@ -413,7 +413,7 @@
 <path d="M302.2,120.8 L302.1,128.0" fill="none" stroke="#fffefa" stroke-width="5" stroke-linejoin="round"/>
 <path d="M801.4,471.6 L910.0,474.9 L974.3,476.8" fill="none" stroke="#fffefa" stroke-width="19" stroke-linejoin="round"/>
 <path d="M549.1,292.5 L532.0,296.8 L525.9,411.6 L515.2,424.2 L466.2,427.0 L453.6,413.0 L306.6,400.4" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M549.1,292.5 L532.0,296.8 L525.9,411.6 L515.2,424.2 L466.2,427.0 L453.6,413.0 L306.6,400.4" fill="none" stroke="#252622" stroke-width="4" stroke-dasharray="7 7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M549.1,292.5 L532.0,296.8 L525.9,411.6 L515.2,424.2 L466.2,427.0 L453.6,413.0 L306.6,400.4" fill="none" stroke="#252622" stroke-width="4" stroke-dasharray="7 7" stroke-linecap="round" stroke-linejoin="round" class="route-dash"/><style>@keyframes route-dash{to{stroke-dashoffset:0}}.route-dash{stroke-dashoffset:14;animation:route-dash .9s linear infinite}@media (prefers-reduced-motion:reduce){.route-dash{animation:none}}</style>
 <g font-family="Helvetica Neue,Arial,sans-serif" fill="#75766b" font-size="15" text-anchor="middle">
 <text transform="translate(215 104) rotate(1.4)">Фурштатская улица</text>
 <text transform="translate(185 450) rotate(1.6)">Кирочная улица</text>
