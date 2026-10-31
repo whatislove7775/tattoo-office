@@ -1140,7 +1140,7 @@ async function adminPage() {
     s = pub.settings,
     tabs = [
       ["home", "Main"],
-      ["users", "Пользователи"],
+      ["users", "Users"],
       ["schedule", "Calendar"],
       ["workspaces", "Рабочие места"],
       ["catalog", "Склад и услуги"],
@@ -1161,9 +1161,9 @@ async function adminPage() {
   const groups = [
     {label:"Main", target:"home", tabs:["home"], icon:"home"},
     {label:"Calendar", target:"schedule", tabs:["schedule"], icon:"schedule"},
-    {label:"Пользователи", target:"users", tabs:["users"], icon:"users"},
+    {label:"Users", target:"users", tabs:["users"], icon:"users"},
     {label:"Деньги", target:"finance", tabs:["finance","pricing"], icon:"finance"},
-    {label:"Студия", target:"workspaces", tabs:["workspaces","catalog","settings"], icon:"workspaces"},
+    {label:"Studio", target:"workspaces", tabs:["workspaces","catalog","settings"], icon:"workspaces"},
   ];
   for (const g of groups) g.tabs = g.tabs.filter((t) => tabs.some((x) => x[0] === t));
   for (let i = groups.length - 1; i >= 0; i--) if (!groups[i].tabs.length) groups.splice(i, 1); else if (!groups[i].tabs.includes(groups[i].target)) groups[i].target = groups[i].tabs[0];
@@ -1216,7 +1216,12 @@ async function adminPage() {
       isMaster = (u) => !isAdmin(u) && u.account_type === "master",
       shown = a.users.filter((u) => (usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : true) && (!usersTag || AP.userTags(u).some(([k]) => k === usersTag))),
       roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : ({resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
-    body = `<div class="users-toolbar"><button type="button" class="users-count" data-users-filter="all" aria-pressed="${usersFilter === "all"}">Все:<b>${a.users.length}</b></button><div class="users-segment" role="group" aria-label="Фильтр пользователей">${[["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" data-users-filter="${value}" aria-pressed="${usersFilter === value}">${label}</button>`).join("")}</div><button class="chrome" id="add-user">+ Пользователь</button></div><div class="pro-tag-filter" role="group" aria-label="Метки">${AP.TAG_FILTERS.map(([value, label]) => `<button type="button" data-users-tag="${value}" aria-pressed="${usersTag === value}">${label} <b>${a.users.filter((u) => AP.userTags(u).some(([k]) => k === value)).length}</b></button>`).join("")}${AP.isShift() ? "" : '<button type="button" class="pro-tag-filter__action" id="broadcast">Рассылка<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></button>'}</div><p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="admin-users-list">${table(
+    // Строка как в Календаре: слева круглые переключатели и действия, по центру заголовок, справа метка и поиск.
+    const ico = (d) => `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`,
+      usersIcons = { all: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.4c2.1.7 3.5 2.8 3.5 5.6", master: "M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16zM14 7l3 3", admin: "M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4" },
+      usersTitle = { all: "Все пользователи", master: "Мастера", admin: "Админы" }[usersFilter] || "Все пользователи",
+      tagOptions = [["", "Все метки"], ...AP.TAG_FILTERS.map(([value, label]) => [value, `${label} · ${a.users.filter((u) => AP.userTags(u).some(([k]) => k === value)).length}`])];
+    body = `<div class="pro-dayline users-line"><div class="pro-dayline__left">${[["all", "Все пользователи"], ["master", "Мастера"], ["admin", "Админы"]].map(([value, label]) => `<button type="button" class="date-open pro-listbtn" data-users-filter="${value}" aria-pressed="${usersFilter === value}" aria-label="${label}" title="${label}">${ico(usersIcons[value])}</button>`).join("")}<span class="users-line__gap" aria-hidden="true"></span><button type="button" class="date-open pro-listbtn" id="add-user" aria-label="Новый пользователь" title="Новый пользователь">${ico("M12 5v14M5 12h14")}</button>${AP.isShift() ? "" : `<button type="button" class="date-open pro-listbtn" id="broadcast" aria-label="Рассылка" title="Рассылка">${ico("M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM4 7l8 6 8-6")}</button>`}</div><div class="pro-dayline__center"><strong class="pro-daynav__label">${usersTitle} <span class="users-line__count">${shown.length}</span></strong></div><div class="pro-dayline__right"><div class="pro-dayline__filters">${select("usersTag", "Метка", tagOptions, usersTag)}<input id="list-search" class="pro-list-search" type="search" placeholder="Поиск" aria-label="Поиск по пользователям"></div></div></div><p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="pro-scroll" data-own-search><div class="admin-users-list">${table(
       ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
         (u) =>
@@ -1228,7 +1233,7 @@ async function adminPage() {
         (m) =>
           `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td>${pointsButton(legacyMasters[m.id-1].id)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
       ),
-    )}` : ""}`;
+    )}` : ""}</div>`;
   }
   if (adminTab === "catalog")
     body = `<div class="admin-tools">${AP.isShift() ? "" : '<button class="chrome" id="add-catalog">+ Товар или услуга</button>'}</div>${table(
@@ -1454,6 +1459,8 @@ function mountAdmin() {
         render();
       }),
   );
+  const usersTagSelect = $('.admin-content [name="usersTag"]');
+  if (usersTagSelect) usersTagSelect.onchange = () => { usersTag = usersTagSelect.value; render(); };
   $$("[data-users-tag]").forEach((b) => (b.onclick = () => { usersTag = usersTag === b.dataset.usersTag ? "" : b.dataset.usersTag; render(); }));
   AP.mount(adminTab);
   $$("[data-edit-user]").forEach(
