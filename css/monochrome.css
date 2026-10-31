@@ -2612,3 +2612,18 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
   .office-feature .users-line .users-tabs::-webkit-scrollbar {display:none;}
   .office-feature .users-line .users-tabs button {flex:none;padding:4px 7px;font-size:12px;}
 }
+/* Админ смены: значки, которые при наведении и у выбранного пункта плавно сменяются подписью */
+.office-feature .users-tabs .users-tab--morph {display:inline-flex;align-items:center;justify-content:center;min-width:44px;}
+.users-tab--morph .users-tab__ico,.users-tab--morph .users-tab__txt {display:inline-flex;align-items:center;overflow:hidden;white-space:nowrap;transition:max-width .22s ease,opacity .18s ease;}
+.users-tab--morph .users-tab__ico {max-width:24px;opacity:1;}
+.users-tab--morph .users-tab__ico img,.users-tab--morph .users-tab__ico .ui-icon {display:block;width:17px;height:17px;}
+.users-tab--morph .users-tab__ico .ui-icon {fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.users-tab--morph .users-tab__txt {max-width:0;opacity:0;}
+.users-tab--morph[aria-selected="true"] .users-tab__ico {max-width:0;opacity:0;}
+.users-tab--morph[aria-selected="true"] .users-tab__txt {max-width:220px;opacity:1;}
+@media (hover:hover) {
+  .users-tab--morph:hover .users-tab__ico,.users-tab--morph:focus-visible .users-tab__ico {max-width:0;opacity:0;}
+  .users-tab--morph:hover .users-tab__txt,.users-tab--morph:focus-visible .users-tab__txt {max-width:220px;opacity:1;}
+}
+:root[data-theme="dark"] .users-tab--morph .users-tab__ico img {filter:invert(1);}
+@media (prefers-reduced-motion:reduce) { .users-tab--morph .users-tab__ico,.users-tab--morph .users-tab__txt {transition:none;} }
