@@ -555,6 +555,24 @@ function adminAuthPage() {
   if (me?.role === 'admin') return win('Вход администратора','<div class="auth-form"><h2>Управление студией.</h2><p class="small muted">Вы вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
   return win('Вход администратора', '<form id="admin-auth-form" class="auth-form"><h2>Управление студией.</h2><p data-help class="small muted">Служебный вход для команды Tattoo Office.</p>' + (DEMO ? field('email','Почта (тестовый режим)','owner@demo.tattoo-office','email','required autocomplete="username"') : '') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
 }
+// Отдельный простой вход для админа смены: своя почта и пароль.
+function shiftAuthPage() {
+  if (me?.role === 'admin') return win('Вход админа смены','<div class="auth-form"><h2>Админ смены.</h2><p class="small muted">Вы уже вошли как администратор.</p><a class="chrome" href="#/admin">Открыть админ-панель →</a></div>');
+  return win('Вход админа смены', '<form id="shift-auth-form" class="auth-form"><h2>Админ смены.</h2><p data-help class="small muted">Вход для администратора смены: расписание, записи и тату-мастера.</p>' + field('email','Почта', DEMO ? 'shift@demo.tattoo-office' : '','email','required autocomplete="username"') + field('password','Пароль','','password','required autocomplete="current-password"') + '<button type="submit" class="chrome">Войти в админ-панель →</button><div class="auth-switch"><a href="#/forgot/admin">Забыли пароль?</a></div></form>');
+}
+function mountShiftAuth() {
+  onForm('#shift-auth-form', async d=>{
+    try { await api('/auth/login','POST',{...d,accountType:'admin'}); }
+    catch(error) { if(error.message === 'Email или пароль не совпадают') throw new Error('Почта или пароль не совпадают. Проверьте раскладку и регистр.'); throw error; }
+    await refresh();
+    if (me?.role !== 'admin') {
+      await api('/auth/logout','POST');
+      await refresh();
+      throw new Error('У этого аккаунта нет доступа администратора.');
+    }
+    go('admin');
+  });
+}
 function mountAdminAuth() {
   onForm('#admin-auth-form', async d=>{
     try { await api('/auth/login','POST',{...d,email:DEMO ? d.email : '89615020777@mail.ru',accountType:'admin'}); }
@@ -1903,8 +1921,8 @@ async function render() {
         mount = mountCabinet;
         break;
       case "admin":
-        html = path[1] === 'login' ? adminAuthPage() : await adminPage();
-        mount = path[1] === 'login' ? mountAdminAuth : mountAdmin;
+        html = path[1] === 'login' ? adminAuthPage() : path[1] === 'shift' ? shiftAuthPage() : await adminPage();
+        mount = path[1] === 'login' ? mountAdminAuth : path[1] === 'shift' ? mountShiftAuth : mountAdmin;
         break;
       case "payment":
         html = await paymentPage(path[1]);
