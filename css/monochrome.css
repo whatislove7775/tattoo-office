@@ -2620,10 +2620,6 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .users-tab--morph .users-tab__ico .ui-icon {fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .users-tab--morph .users-tab__txt {max-width:0;opacity:0;}
 .users-tab--morph[aria-selected="true"] .users-tab__ico {max-width:0;opacity:0;}
-.users-tab--morph[aria-selected="true"] .users-tab__txt {max-width:220px;opacity:1;}
-@media (hover:hover) {
-  .users-tab--morph:hover .users-tab__ico,.users-tab--morph:focus-visible .users-tab__ico {max-width:0;opacity:0;}
-  .users-tab--morph:hover .users-tab__txt,.users-tab--morph:focus-visible .users-tab__txt {max-width:220px;opacity:1;}
-}
+.users-tab--morph[aria-selected="true"] .users-tab__txt {max-width:220px;opacity:1;padding-right:2px;}
 :root[data-theme="dark"] .users-tab--morph .users-tab__ico img {filter:invert(1);}
 @media (prefers-reduced-motion:reduce) { .users-tab--morph .users-tab__ico,.users-tab--morph .users-tab__txt {transition:none;} }
