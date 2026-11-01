@@ -1136,7 +1136,14 @@ function mountCabinet() {
         };
       }),
   );
-  if($('#profile-gallery'))mountGallery($('#profile-gallery'),api,notify,refresh,profileTab).catch(e=>notify(e.message));
+  if($('#profile-gallery')){
+    const gallery=$('#profile-gallery');
+    // Несохранённые подписи и порядок фото: живое обновление кабинета их не сбросит.
+    const dirty=()=>{gallery.dataset.dirty='1';};
+    gallery.addEventListener('input',dirty);gallery.addEventListener('drop',dirty);
+    gallery.addEventListener('click',e=>{if(e.target.closest('[data-move],[data-up],[data-down]'))dirty();if(e.target.closest('#gallery-save,[data-delete],[data-transfer]'))gallery.dataset.dirty='';});
+    mountGallery(gallery,api,notify,refresh,profileTab).catch(e=>notify(e.message));
+  }
   $$("[data-ptab]").forEach((b) => (b.onclick = () => { profileTab = b.dataset.ptab; render(); }));
   // «Редактировать», клик по фото и пустые поля открывают личное дело в окне поверх профиля.
   $$("[data-own-edit]").forEach((b) => (b.onclick = () => {
@@ -2008,12 +2015,18 @@ setInterval(async () => {
   const live = location.hash.startsWith("#/admin") || location.hash.startsWith("#/cabinet");
   if (!me || !live || pulseBusy || document.visibilityState !== "visible") { if (!live) pulseVersion = null; return; }
   if ($("#dialog")?.open || document.body.classList.contains("pro-dragging") || document.activeElement?.matches?.("input,textarea,select")) return;
+  // Редактор фото что-то сохраняет или в нём есть несохранённые подписи и порядок — не трогаем.
+  if ($("#office-view [aria-busy]") || $("#profile-gallery")?.dataset.dirty === "1") return;
   pulseBusy = true;
   try {
     const { v } = await api("/pulse");
-    const changed = pulseVersion !== null && v !== pulseVersion;
+    const [bookings, unread] = String(v).split(":"), [oldBookings, oldUnread] = String(pulseVersion ?? "").split(":");
+    const first = pulseVersion === null;
     pulseVersion = v;
-    if (changed) { if (location.hash.startsWith("#/admin")) adminCache = false; await render(); }
+    if (first) return;
+    // Перерисовываем только когда изменились записи; новые уведомления — только если открыты «Входящие».
+    const bookingsChanged = bookings !== oldBookings, inboxChanged = unread !== oldUnread && location.hash.startsWith("#/cabinet") && cabTab === "notifications";
+    if (bookingsChanged || inboxChanged) { if (location.hash.startsWith("#/admin")) adminCache = false; await render(); }
   } catch {} finally { pulseBusy = false; }
 }, 15000);
 async function render() {
