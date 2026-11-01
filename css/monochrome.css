@@ -2864,3 +2864,9 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 /* Статус мастера — кастомный выпадающий список, как фильтры над таблицей */
 .mu-status-select {display:flex;justify-content:center;width:100%;}
 .office-feature .admin-users-list--masters .mu-status-select .office-select {width:100%;max-width:190px;height:32px!important;min-height:32px!important;padding:4px 30px 4px 12px!important;border:1px solid var(--panel-edge)!important;border-radius:11px!important;font-size:13px!important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important;}
+
+/* Контент сайта не выделяется мышкой и пальцем; выделять можно только поля ввода. */
+html,body,body * {-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+input,textarea,select,[contenteditable="true"],[contenteditable=""],input *,textarea * {-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default;}
+img {-webkit-user-drag:none;}
+.admin-users-list--masters td:nth-child(6) .small {white-space:nowrap;}
