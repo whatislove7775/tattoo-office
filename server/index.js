@@ -1226,7 +1226,9 @@ export async function createApp(db) {
     if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
     await db.transaction(async q=>{
       await lock(q);
-      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
+      // Мастера можно указать и по карточке, и по аккаунту, привязанному к карточке.
+      const byLink=await one(q,"SELECT master_id FROM master_links WHERE user_id::text=$1",[req.params.id]);
+      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id||m.id===byLink?.master_id);
       if(!master)fail("Мастер не найден",404);
       const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
       const userId=master.registered?(link?.user_id||master.id):null;
