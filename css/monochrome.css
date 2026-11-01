@@ -2872,3 +2872,5 @@ img {-webkit-user-drag:none;}
 .admin-users-list--masters td:nth-child(6) .small {white-space:nowrap;}
 .mu-row--archived td {color:var(--ink-2);}
 .mu-row--archived .mu-photo img:first-child {filter:grayscale(1);opacity:.7;}
+/* Users: таблица начинается на той же высоте, что в Календаре (строка с переключателем на 4px выше круглых кнопок) */
+@media (min-width:701px) { .office-feature [data-admin-section="users"] .pro-dayline.users-line {margin-bottom:6px!important;} }
