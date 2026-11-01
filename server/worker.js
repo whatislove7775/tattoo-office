@@ -10,6 +10,7 @@ import {
   sendReceipt,
 } from "./integrations.js";
 const one = async (db, q, p = []) => (await db.query(q, p)).rows[0];
+const MASTER_ONLY = new Set(["booking.master_confirm", "booking.master_moved"]), ADMIN_ONLY = new Set(["booking.master_confirmed"]);
 const labels = {
   "booking.confirmed": "Бронирование подтверждено",
   "booking.cancelled": "Бронирование отменено",
@@ -20,6 +21,9 @@ const labels = {
   "booking.reminder": "Напоминание о сеансе",
   "booking.reminder_soon": "Сеанс начнётся через 2 часа",
   "booking.moved": "Запись перенесена",
+  "booking.master_confirm": "Администратор создал для вас запись. Подтвердите её или свяжитесь с администратором в личном кабинете",
+  "booking.master_moved": "Администратор перенёс вашу запись. Подтвердите новое время или свяжитесь с администратором в личном кабинете",
+  "booking.master_confirmed": "Мастер подтвердил запись",
   "booking.no_show": "Отмечена неявка на сеанс. Предоплата не возвращается",
   "invoice.reminder": "Напоминание: оплатите итоговый счёт в личном кабинете",
 };
@@ -228,7 +232,10 @@ export async function workerTick(db) {
       } else if (labels[job.kind] && b) {
         const recipients = (
           await db.query(
-            "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND (id=$1 OR role='admin')",
+            // Просьба подтвердить — только мастеру; ответ мастера — только администраторам.
+            MASTER_ONLY.has(job.kind) ? "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND id=$1"
+              : ADMIN_ONLY.has(job.kind) ? "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND role='admin' AND deleted_at IS NULL AND $1::uuid IS NOT NULL"
+              : "SELECT id,email,telegram_chat_id FROM users WHERE active=true AND (id=$1 OR role='admin')",
             [b.user_id],
           )
         ).rows;
@@ -245,7 +252,7 @@ export async function workerTick(db) {
               [uuid(), u.id, text],
             );
             for (const [kind, payload] of [
-              ["email.send", { to: u.email, text }],
+              ...(String(u.email || "").endsWith("@shift-admin.invalid") ? [] : [["email.send", { to: u.email, text }]]),
               ...(u.telegram_chat_id
                 ? [["telegram.send", { chatId: u.telegram_chat_id, text }]]
                 : []),

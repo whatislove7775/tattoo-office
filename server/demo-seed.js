@@ -68,6 +68,8 @@ export async function seedDemo(db) {
   await db.query("UPDATE catalog SET stock=2 WHERE id=(SELECT id FROM catalog WHERE kind='product' ORDER BY name LIMIT 1)");
   await db.query("INSERT INTO feedback(id,message,status,contact,created_at) VALUES($1,'Было бы здорово поставить ещё одну лампу у второго места.','new','guest@example.com',now()-interval '1 day'),($2,'Спасибо за кофе и музыку!','done','',now()-interval '8 days')", [did("8006"), did("8006")]);
   await db.query("INSERT INTO promo_codes(code,kind,value,max_uses,note) VALUES('OFFICE10','percent',10,100,'Пример промокода')");
+  // Запись от администратора, которую Катя ещё не подтвердила (штриховка в календаре, блок в кабинете).
+  await booking("master", 2, MSK(1, 16), 3, "confirmed", { deposit: 0, policy: { masterConfirm: "awaiting", adminCreated: true } });
   const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(Date.now() + 2 * 86400000));
   await db.query("INSERT INTO waitlist(id,user_id,city,date,hour,duration) VALUES($1,$2,'spb',$3,12,3)", [did("8007"), ids.master, day]);
 }

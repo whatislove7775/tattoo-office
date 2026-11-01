@@ -11,6 +11,9 @@ const mskMinute = (d) => Number(new Intl.DateTimeFormat("ru-RU", { ...MSK, minut
 export const weekday = (d) => new Intl.DateTimeFormat("ru-RU", { ...MSK, weekday: "short" }).format(new Date(d));
 export const fullDate = (d) => { const w = weekday(d); return `${w.charAt(0).toUpperCase() + w.slice(1)}, ${c.dateLabel(d)}`; };
 const range = (b) => `${c.timeLabel(b.starts_at)}—${c.timeLabel(b.ends_at)}`;
+// Запись от администратора, которую мастер ещё не подтвердил.
+export const awaitBadge = () => '<span class="badge badge--awaiting">Ждёт подтверждения мастера</span>';
+export const bookingBadge = (b) => (b.policy?.masterConfirm === "awaiting" ? awaitBadge() : badge(b.status));
 export const badge = (status) => `<span class="badge badge--${status}">${c.statusName[status] || c.esc(status)}</span>`;
 const ACTIVE = ["pending", "confirmed", "invoiced", "completed", "cancel_requested", "no_show"];
 
@@ -55,7 +58,8 @@ export function scheduleTimeline(a, s, date, city) {
     const isPast = new Date(b.ends_at) <= now;
     const movable = ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > now;
     const dur = Math.max(1, Math.round((new Date(b.ends_at) - new Date(b.starts_at)) / 3600000));
-    return `<div class="tl-booking tl-booking--${b.status}${isPast ? " is-past" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${badge(b.status)}</div>`;
+    const awaiting = b.policy?.masterConfirm === "awaiting";
+    return `<div class="tl-booking tl-booking--${b.status}${awaiting ? " tl-booking--awaiting" : ""}${isPast ? " is-past" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${awaiting ? awaitBadge() : badge(b.status)}</div>`;
   }).join("");
   const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>';
   const closedCards = closedList.flatMap((k) => places.map((r, i) => {
@@ -220,11 +224,12 @@ export function bookingPanel(id) {
     b.status === "confirmed" && started && act("invoice", "Выставить итоговый счёт", true),
     b.status === "invoiced" && finalPay && b.policy?.paymentMethod === "cash" && act("cash", "Наличные получены", true),
     b.status === "cancel_requested" && act("resolve", "Решить отмену", true),
+    b.policy?.masterConfirm === "awaiting" && act("skipconfirm", "Подтвердить без мастера", true),
     ["pending", "confirmed"].includes(b.status) && future && act("move", "Перенести"),
     b.status === "confirmed" && started && act("noshow", "Неявка"),
     ["pending", "confirmed"].includes(b.status) && future && act("cancel", "Отменить бронь"),
   ].filter(Boolean).join("");
-  modal(`<div class="pro-panel"><p class="pro-panel__eyebrow">Бронь № ${b.session_no || b.id.slice(0, 6)} · ${badge(b.status)}</p><h2>${fullDate(b.starts_at)}<br><span>${range(b)} · до ${b.tariff} ч</span></h2>
+  modal(`<div class="pro-panel"><p class="pro-panel__eyebrow">Бронь № ${b.session_no || b.id.slice(0, 6)} · ${bookingBadge(b)}</p><h2>${fullDate(b.starts_at)}<br><span>${range(b)} · до ${b.tariff} ч</span></h2>
   <dl class="pro-panel__facts"><div><dt>Мастер</dt><dd><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button></dd></div><div><dt>Место</dt><dd>${esc(CITY_LABELS[resourceCity(r)] || "")} · ${esc(b.resource_name)}</dd></div><div><dt>Стоимость</dt><dd>${money(b.total)}${b.policy?.pricePercent ? ` <small class="muted">(${b.policy.pricePercent > 0 ? "+" : ""}${b.policy.pricePercent}% за время)</small>` : ""}${b.policy?.promo ? ` <small class="muted">промокод ${esc(b.policy.promo.code)} −${money(b.policy.promo.discount)}</small>` : ""}</dd></div><div><dt>Предоплата</dt><dd>${b.deposit ? money(b.deposit) : "без предоплаты"}${b.policy?.paymentMethod === "cash" ? " · расчёт наличными" : ""}</dd></div>${b.extras?.length ? `<div><dt>Дополнительно</dt><dd>${b.extras.map((x) => `${esc(x.name || "")} × ${x.qty}`).join(", ")}</dd></div>` : ""}${pays.length ? `<div><dt>Платежи</dt><dd>${pays.map((p) => `${p.kind === "deposit" ? "предоплата" : "итоговый счёт"} ${money(p.amount)} — ${(c.statusName[p.status] || p.status).toLowerCase()}`).join("<br>")}</dd></div>` : ""}</dl>
   ${actions ? `<div class="pro-panel__actions">${actions}</div>` : '<p class="small muted">Действий с этой бронью нет.</p>'}</div>`);
   $("#dialog").classList.add("is-panel");
@@ -234,7 +239,8 @@ export function bookingPanel(id) {
     invoice: () => dialogForm("Итоговый счёт", `${select("duration", "Тариф после сеанса", [3, 6, 12].filter((h) => h >= b.tariff).map((h) => [h, `До ${h} часов`]), b.tariff)}<p class="small muted">Предоплата ${money(b.deposit)} будет вычтена. Счёт появится в кабинете мастера.</p>`, (d) => api(`/admin/bookings/${b.id}/invoice`, "POST", { duration: Number(d.duration) })),
     cash: () => dialogForm("Наличные получены", "<p>Отметьте оплату только после получения наличных. Запись закроется как оплаченная.</p>", () => api(`/admin/payments/${finalPay.id}/cash`, "POST", {})),
     resolve: () => dialogForm("Решение по отмене", select("credit", "Предоплата", [["yes", "Вернуть на внутренний баланс"], ["no", "Удержать по регламенту"]], "yes"), (d) => api(`/admin/bookings/${b.id}/resolve-cancel`, "POST", { credit: d.credit === "yes" })),
-    move: () => dialogForm("Перенести запись", `${field("date", "Новая дата", mskDay(b.starts_at), "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), mskHour(b.starts_at))}${select("resourceId", "Место", a.resources.filter((x) => x.active).map((x) => [x.id, CITY_LABELS[resourceCity(x)] + " · " + x.name]), b.resource_id)}<p class="small muted">Мастер получит уведомление. Тариф и оплата сохраняются.</p>`, (d) => api(`/admin/bookings/${b.id}/move`, "POST", { ...d, hour: Number(d.hour) })),
+    move: () => dialogForm("Перенести запись", `${field("date", "Новая дата", mskDay(b.starts_at), "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), mskHour(b.starts_at))}${select("resourceId", "Место", a.resources.filter((x) => x.active).map((x) => [x.id, CITY_LABELS[resourceCity(x)] + " · " + x.name]), b.resource_id)}${b.policy?.adminCreated ? '<label class="check"><input type="checkbox" name="skipConfirm"><span>Перенести без подтверждения мастера</span></label>' : ""}<p class="small muted">${b.policy?.adminCreated ? "Мастер получит уведомление и подтвердит новое время в кабинете." : "Мастер получит уведомление."} Тариф и оплата сохраняются.</p>`, (d) => api(`/admin/bookings/${b.id}/move`, "POST", { date: d.date, resourceId: d.resourceId, hour: Number(d.hour), skipConfirm: d.skipConfirm === "on" })),
+    skipconfirm: () => dialogForm("Подтвердить без мастера", "<p>Запись станет подтверждённой, не дожидаясь ответа мастера. Мастер увидит её в кабинете как обычную запись.</p>", () => api(`/admin/bookings/${b.id}/master-confirm`, "POST", {})),
     noshow: () => dialogForm("Отметить неявку", "<p>Мастер не пришёл. Предоплата остаётся у студии, запись закроется.</p>", () => api(`/admin/bookings/${b.id}/no-show`, "POST", {})),
     cancel: () => dialogForm("Отменить бронь", "<p>Бронь будет отменена по правилам студии: при ранней отмене предоплата вернётся мастеру на баланс, при поздней — по регламенту.</p>", () => api(`/bookings/${b.id}/cancel`, "POST", {})),
   };

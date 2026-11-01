@@ -13,7 +13,8 @@ const esc = (s) =>
         c
       ],
   );
-const managerLink = (label = "Написать в поддержку") => `<a href="https://t.me/artasimnsupport" target="_blank" rel="noopener noreferrer">${label}</a>`;
+const ADMIN_TELEGRAM = "https://t.me/artasimnsupport";
+const managerLink = (label = "Написать в поддержку") => `<a href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer">${label}</a>`;
 const money = (n) =>
   new Intl.NumberFormat("ru-RU", {
     style: "currency",
@@ -924,6 +925,9 @@ async function cabinetPage() {
   const publicProfileUrl = new URL(publicProfilePath, location.href).href;
   const publicProfileCard = me.accountType === "master" ? `<section class="cabinet-public-profile" aria-labelledby="cabinet-public-profile-title"><div class="cabinet-public-profile__head"><div><span class="eyebrow">ПУБЛИЧНЫЙ ПРОФИЛЬ</span><h3 id="cabinet-public-profile-title">Так вас видят клиенты</h3></div><div class="cabinet-public-profile__actions"><a class="chrome" href="${esc(publicProfilePath)}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button class="cabinet-action" type="button" id="share-public-profile">Поделиться</button></div></div><label class="cabinet-public-profile__link" for="public-profile-link"><span>Ссылка на ваш профиль</span><span class="cabinet-public-profile__link-row"><input id="public-profile-link" type="text" value="${esc(publicProfileUrl)}" readonly spellcheck="false" aria-label="Ссылка на ваш публичный профиль"><button class="cabinet-action" type="button" id="copy-public-profile">Скопировать</button></span></label></section>` : "";
   const next=active.filter(b=>new Date(b.ends_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
+  // Записи от администратора, которые ждут ответа мастера: «Подтвердить» или «Связаться с админом».
+  const awaiting = active.filter((b) => b.policy?.masterConfirm === "awaiting");
+  const awaitingBlock = awaiting.length ? `<section class="cabinet-confirm" aria-label="Записи ждут вашего подтверждения"><span class="eyebrow">НУЖНО ВАШЕ ПОДТВЕРЖДЕНИЕ</span>${awaiting.map((b) => `<article class="cabinet-confirm__item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p class="small muted">${esc(b.resource_name)} · до ${b.tariff} ч · без предоплаты. Администратор ${b.policy?.adminCreated && b.policy?.moved ? "перенёс" : "создал"} для вас эту запись.</p></div><div class="row"><button type="button" class="chrome pro-primary" data-master-confirm="${b.id}">Подтвердить</button><a class="chrome" href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer">Связаться с админом</a></div></article>`).join("")}</section>` : "";
   let body = "";
   if (cabTab === "bookings")
     body = active.length
@@ -953,7 +957,7 @@ async function cabinetPage() {
   const accent = '';
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${publicProfileCard}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}${publicProfileCard}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -995,13 +999,18 @@ function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p><span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span></div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p>${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 function mountCabinet() {
   if (!me) {
     mountAuth(false);
     return;
   }
+  $$("[data-master-confirm]").forEach((b) => (b.onclick = async () => {
+    b.disabled = true;
+    try { await api(`/bookings/${b.dataset.masterConfirm}/master-confirm`, "POST", {}); notify("Запись подтверждена"); await render(); }
+    catch (error) { b.disabled = false; notify(error.message); }
+  }));
   const profileLink = $("#public-profile-link");
   if (profileLink) {
     profileLink.addEventListener("focus", () => profileLink.select());
@@ -1096,6 +1105,7 @@ let adminCache = false, openManualAfterRender = false, adminData,
   adminDate = today(),
   usersFilter = "all",
   masterKind = "all",
+  manualPick = null,
   usersTag = "",
   scheduleView = "day",
   listStatus = "all",
@@ -1206,11 +1216,11 @@ async function adminPage() {
     const statusOptions = [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]];
     // Строка дня: слева календарь и список, по центру дата (или «Все бронирования»), справа ночь (или статус).
     const dayLine = `<div class="pro-dayline"><div class="pro-dayline__left">${scheduleView === "list" ? '<button type="button" class="date-open" data-schedule-view="day" aria-label="Календарь: расписание дня" title="Расписание дня"><svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg></button>' : `<input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания">`}<button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button></div><div class="pro-dayline__center">${scheduleView === "list" ? '<strong class="pro-daynav__label">Все бронирования</strong>' : `<span class="pro-dayswitch"><button type="button" class="pro-dayarrow" data-day-shift="-1" aria-label="Предыдущий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong><button type="button" class="pro-dayarrow" data-day-shift="1" aria-label="Следующий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></span>`}</div><div class="pro-dayline__right">${scheduleView === "list" ? `<div class="pro-dayline__filters">${select("listStatus", "Статус", statusOptions, listStatus)}</div>` : UX.nightToggle(s)}</div></div>`;
-    body = `${dayLine}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-scroll"><div data-own-search id="admin-bookings">${table(
+    body = `${dayLine}${manualPick && scheduleView === "day" ? `<div class="pro-pick-hint" role="status"><span><b>Выделите ячейки</b> нужного места и времени и нажмите «+ Запись» — форма откроется с этим местом, датой и временем.</span><button type="button" class="chrome" id="manual-pick-cancel">Отмена</button></div>` : ""}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-scroll"><div data-own-search id="admin-bookings">${table(
       ["Сеанс", "Мастер / место", "Сумма", "Статус", ""],
       listed.map(
         (b) =>
-          `<tr><td><button type="button" class="pro-link" data-booking-open="${b.id}">${UX.fullDate(b.starts_at)}</button><br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)} · № ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small class="muted">аванс ${money(b.deposit)}</small></td><td>${UX.badge(b.status)}</td><td><button type="button" data-booking-open="${b.id}">Открыть</button></td></tr>`,
+          `<tr><td><button type="button" class="pro-link" data-booking-open="${b.id}">${UX.fullDate(b.starts_at)}</button><br>${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)} · № ${b.session_no || "—"}</td><td><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button><br><span class="muted">${esc(CITY_LABELS[resourceCity(a.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)}</span></td><td>${money(b.total)}<br><small class="muted">аванс ${money(b.deposit)}</small></td><td>${UX.bookingBadge(b)}</td><td><button type="button" data-booking-open="${b.id}">Открыть</button></td></tr>`,
       ),
     )}</div><h3 style="margin-top:30px">Закрытые интервалы</h3><div data-own-search>${table(
       ["Период", "Причина", ""],
@@ -1663,7 +1673,7 @@ function mountAdmin() {
         }
       }),
   );
-  const openManual = (preset = {}) =>
+  const openManual = (preset = {}) => {
       dialogForm(
         "Новая запись без предоплаты",
         `${select(
@@ -1672,8 +1682,8 @@ function mountAdmin() {
           a.users
             .filter((u) => u.active && ["resident", "guest"].includes(u.role))
             .map((u) => [u.id, u.name]),
-          "",
-        )}${field("date", "Дата", adminDate, "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), preset.hour ?? 10)}${select(
+          preset.userId || "",
+        )}<div class="manual-pick"><button type="button" class="chrome" id="manual-pick"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>Выделить в календаре</button><span class="small muted">Выберите место и время, выделив ячейки в расписании дня</span></div>${field("date", "Дата", preset.date || adminDate, "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), preset.hour ?? 10)}${select(
           "duration",
           "Тариф",
           [
@@ -1687,9 +1697,23 @@ function mountAdmin() {
           "Место",
           a.resources.filter((r) => r.active).map((r) => [r.id, CITY_LABELS[resourceCity(r)] + " · " + r.name]),
           preset.resourceId || a.resources.find((r) => r.active && resourceCity(r) === adminCity)?.id || "",
-        )}${select("repeat", "Повторять", [[1, "Не повторять"], [4, "Каждую неделю · 4 раза"], [8, "Каждую неделю · 8 раз"], [12, "Каждую неделю · 12 раз"]], 1)}<p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется. При повторе занятые даты пропускаются.</p>`,
+        )}${select("repeat", "Повторять", [[1, "Не повторять"], [4, "Каждую неделю · 4 раза"], [8, "Каждую неделю · 8 раз"], [12, "Каждую неделю · 12 раз"]], 1)}<label class="check"><input type="checkbox" name="skipConfirm"><span>Без подтверждения мастера</span></label><p data-help class="small muted">Сервер проверит доступность. Предоплата не требуется. При повторе занятые даты пропускаются. Мастер получит уведомление в Telegram, на почту и в кабинет и подтвердит запись; пока он не ответит, запись в календаре отмечена как «Ждёт подтверждения мастера». Отметьте «Без подтверждения мастера», чтобы запись сразу стала подтверждённой.</p>`,
         (d) => AP.manualRepeat(d),
       );
+      mountManualPick();
+  };
+  // «Выделить в календаре»: закрываем окно, открываем расписание выбранного дня и ждём выделения ячеек.
+  const mountManualPick = () => {
+    const pick = $("#manual-pick");
+    if (!pick) return;
+    pick.onclick = () => {
+      const form = $("#dialog-form");
+      manualPick = { userId: form?.elements.userId?.value || "", date: form?.elements.date?.value || adminDate };
+      $("#dialog").close();
+      adminDate = manualPick.date; adminTab = "schedule"; scheduleView = "day";
+      render();
+    };
+  };
   // «new booking» на главном: окно новой записи открывается поверх календаря.
   if ($("#manual-booking")) $("#manual-booking").onclick = () => {
     if (adminTab !== "home") return openManual();
@@ -1698,16 +1722,33 @@ function mountAdmin() {
   if (openManualAfterRender && adminTab === "schedule") { openManualAfterRender = false; openManual(); }
   adminContext.openManual = () => openManual();
   adminContext.shiftDay = (n) => { adminDate = addDate(adminDate, n); render(); };
-  UX.mountTimeline({ onBook: (p) => openManual(p), onClose: (p) => openBlock(p) });
+  const bookFromPick = (p) => { const preset = manualPick ? { ...p, userId: manualPick.userId, date: adminDate } : p; manualPick = null; $(".pro-pick-hint")?.remove(); openManual(preset); };
+  UX.mountTimeline({ onBook: bookFromPick, onClose: (p) => openBlock(p) });
+  if ($("#manual-pick-cancel")) $("#manual-pick-cancel").onclick = () => { manualPick = null; $(".pro-pick-hint")?.remove(); };
+  // Перенос записи от администратора: спросить, нужно ли подтверждение мастера.
+  const askMoveConfirm = () => new Promise((resolve) => {
+    modal(`<h2>Перенести запись</h2><p class="small muted">Эту запись создал администратор. Мастер получит уведомление о новом времени.</p><div class="pro-panel__actions"><button type="button" class="chrome pro-primary" data-move-choice="ask">Попросить мастера подтвердить</button><button type="button" class="chrome" data-move-choice="skip">Перенести без подтверждения</button></div>`);
+    let done = false;
+    $$("[data-move-choice]").forEach((b) => (b.onclick = () => { done = true; $("#dialog").close(); resolve(b.dataset.moveChoice); }));
+    $("#dialog").addEventListener("close", () => { if (!done) resolve(null); }, { once: true });
+  });
   UX.mountDrag({ onMove: async (id, t) => {
-    await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate });
+    const moving = adminData.bookings.find((x) => x.id === id);
+    let skipConfirm = false;
+    if (moving?.policy?.adminCreated) {
+      const choice = await askMoveConfirm();
+      if (!choice) { adminCache = true; await render(); return; }
+      skipConfirm = choice === "skip";
+    }
+    await api(`/admin/bookings/${id}/move`, "POST", { resourceId: t.rid, hour: t.hour, date: adminDate, skipConfirm });
+    if (moving?.policy?.adminCreated) moving.policy = { ...moving.policy, masterConfirm: skipConfirm ? "skipped" : "awaiting" };
     // Перенос уже виден на экране: обновляем данные на месте, без перезагрузки и мигания.
     const b = adminData.bookings.find((x) => x.id === id);
     if (b) { const dur = new Date(b.ends_at) - new Date(b.starts_at), start = new Date(`${adminDate}T${String(t.hour).padStart(2, "0")}:00:00+03:00`); b.resource_id = t.rid; b.resource_name = adminData.resources.find((r) => r.id === t.rid)?.name || b.resource_name; b.starts_at = start.toISOString(); b.ends_at = new Date(start.getTime() + dur).toISOString(); }
     notify("Запись перенесена");
     adminCache = true; await render();
   } });
-  $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); openManual({ resourceId, hour: Number(hour) }); }));
+  $$("[data-new-slot]").forEach((b) => (b.onclick = () => { const [resourceId, hour] = b.dataset.newSlot.split("|"); bookFromPick({ resourceId, hour: Number(hour) }); }));
   $$("[data-day-shift]").forEach((b) => (b.onclick = () => { adminDate = b.dataset.dayShift === "0" ? today() : addDate(adminDate, Number(b.dataset.dayShift)); render(); }));
   $$("[data-schedule-view]").forEach((b) => (b.onclick = () => { scheduleView = b.dataset.scheduleView; render(); }));
   const statusFilter = $('.admin-content [name="listStatus"]');
@@ -1904,6 +1945,21 @@ if (savedAdmin.view) scheduleView = savedAdmin.view;
 if (savedAdmin.city) adminCity = savedAdmin.city;
 const saveAdmin = (extra = {}) => { try { sessionStorage.setItem("to.admin", JSON.stringify({ ...JSON.parse(sessionStorage.getItem("to.admin") || "{}"), tab: adminTab, date: adminDate, view: scheduleView, city: adminCity, ...extra })); } catch {} };
 let scrollSaveBound = false, lastRenderHash = null;
+// Живое обновление: календарь админа и кабинет мастера сами подхватывают изменения
+// (мастер подтвердил запись, админ создал или перенёс запись). Не мешает, пока открыт диалог или идёт ввод.
+let pulseVersion = null, pulseBusy = false;
+setInterval(async () => {
+  const live = location.hash.startsWith("#/admin") || location.hash.startsWith("#/cabinet");
+  if (!me || !live || pulseBusy || document.visibilityState !== "visible") { if (!live) pulseVersion = null; return; }
+  if ($("#dialog")?.open || document.body.classList.contains("pro-dragging") || document.activeElement?.matches?.("input,textarea,select")) return;
+  pulseBusy = true;
+  try {
+    const { v } = await api("/pulse");
+    const changed = pulseVersion !== null && v !== pulseVersion;
+    pulseVersion = v;
+    if (changed) { if (location.hash.startsWith("#/admin")) adminCache = false; await render(); }
+  } catch {} finally { pulseBusy = false; }
+}, 15000);
 async function render() {
   if (!$("#office-view")) return;
   residentInfoCleanup();

@@ -2666,3 +2666,30 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .users-subline .users-kind button {min-height:30px;padding:4px 14px;font-size:13px;white-space:nowrap;}
 .office-feature .admin-users-list--masters .admin-user-actions button {white-space:nowrap;}
 @media (max-width:700px) { .office-feature .users-subline .users-kind {max-width:100%;overflow-x:auto;scrollbar-width:none;} .office-feature .users-subline .users-kind button {flex:none;padding:4px 9px;font-size:12px;} }
+
+/* Шапка таблиц стоит на месте при прокрутке — во всех разделах админки.
+   Обёртка таблицы не должна быть отдельной областью прокрутки (overflow:clip сохраняет скругление углов). */
+@media (min-width:701px) {
+  body.admin-session .admin-content .table-wrap,body.admin-session .office-feature .admin-users-list .table-wrap,body.admin-session .admin-content .table-wrap > table {overflow:clip;}
+  body.admin-session .admin-content thead th {position:sticky;top:0;z-index:3;background:var(--panel-2);white-space:nowrap;}
+}
+/* Форма новой записи: «Выделить в календаре» и подсказка над расписанием */
+.manual-pick {display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 16px;}
+.manual-pick .chrome {display:inline-flex;align-items:center;gap:8px;}
+.manual-pick .ui-icon {width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.pro-pick-hint {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:10px 14px;border:1px dashed var(--ink-3);border-radius:14px;background:var(--panel-2);font-size:13px;}
+.pro-pick-hint .chrome {flex:none;min-height:32px;padding:4px 12px;font-size:13px;}
+
+/* Запись от администратора ждёт подтверждения мастера: штриховка и пунктирная рамка в календаре */
+.tl-booking.tl-booking--awaiting {background:repeating-linear-gradient(135deg,#fff 0 9px,#efefef 9px 18px)!important;color:var(--ink)!important;border:1.5px dashed #111!important;box-shadow:none!important;}
+.tl-booking.tl-booking--awaiting small {color:var(--ink-2)!important;}
+:root[data-theme="dark"] .tl-booking.tl-booking--awaiting {background:repeating-linear-gradient(135deg,#1c1c1c 0 9px,#262626 9px 18px)!important;border-color:#eee!important;}
+.office-feature .badge.badge--awaiting {display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:20px;background:var(--panel-2);border:1px dashed var(--ink-2);box-shadow:none;font-size:11px;line-height:1.4;color:var(--ink);white-space:nowrap;}
+.badge.badge--awaiting::before {content:"";width:8px;height:8px;border-radius:50%;border:1.5px dashed currentColor;box-sizing:border-box;flex:none;}
+.tl-booking.tl-booking--awaiting .badge {background:#fff!important;border-color:#111!important;color:#111!important;}
+/* Кабинет мастера: записи, которые нужно подтвердить */
+.cabinet-confirm {display:grid;gap:10px;margin:0 0 18px;padding:16px;border:1.5px dashed var(--ink-2);border-radius:18px;background:var(--panel-2);}
+.cabinet-confirm__item {display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--panel);}
+.cabinet-confirm__item h3 {margin:0 0 4px;font-size:16px;}
+.cabinet-confirm__item p {margin:0;}
+.cabinet-confirm__item .row {gap:8px;flex-wrap:wrap;}

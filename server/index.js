@@ -283,7 +283,7 @@ export async function createApp(db) {
     const row = await one(q, "SELECT count(*) FILTER (WHERE status='completed')::int AS completed, count(*) FILTER (WHERE status IN ('pending','confirmed','invoiced','cancel_requested') AND policy->>'loyaltyFree'='true')::int AS reserved FROM bookings WHERE user_id=$1", [userId]);
     return {completed:row.completed, progress:row.completed % 20, cycle:Math.floor(row.completed / 20)+1, freeNext:row.completed % 20 === 19 && row.reserved === 0, reserved:row.reserved > 0};
   };
-  const confirmed = async (q, b) => {
+  const confirmed = async (q, b, { notify = true } = {}) => {
     const u = await one(
       q,
       "UPDATE users SET sequence=sequence+1 WHERE id=$1 RETURNING sequence",
@@ -293,7 +293,7 @@ export async function createApp(db) {
       "UPDATE bookings SET status='confirmed',deposit=$1,session_no=$2,expires_at=NULL WHERE id=$3",
       [b.deposit, ((u.sequence - 1) % 20) + 1, b.id],
     );
-    await enqueue(q, "booking.confirmed", { bookingId: b.id });
+    if (notify) await enqueue(q, "booking.confirmed", { bookingId: b.id });
     await enqueue(q, "calendar.upsert", { bookingId: b.id });
   };
   const available = async (q, resource, start, end, except = null) => {
@@ -733,8 +733,11 @@ export async function createApp(db) {
       ]);
       const b = await one(q, "SELECT * FROM bookings WHERE id=$1", [id]);
       if (manual) {
-        await confirmed(q, b);
-        await q.query("UPDATE bookings SET deposit=0 WHERE id=$1", [id]);
+        // Запись от администратора по умолчанию ждёт подтверждения мастера; можно создать и без него.
+        const askMaster = req.body.masterConfirm !== false;
+        await confirmed(q, b, { notify: !askMaster });
+        await q.query("UPDATE bookings SET deposit=0,policy=policy||$2::jsonb WHERE id=$1", [id, JSON.stringify({ masterConfirm: askMaster ? "awaiting" : "skipped", adminCreated: true })]);
+        if (askMaster) await enqueue(q, "booking.master_confirm", { bookingId: id });
         await audit(q, req.user.id, "booking.manual", { id });
       } else if (used === deposit) await confirmed(q, b);
       else {
@@ -747,6 +750,28 @@ export async function createApp(db) {
       return { bookingId: id, paymentId: payment };
     });
     res.status(201).json(result);
+  });
+  // Мастер подтверждает запись, которую для него создал или перенёс администратор.
+  app.post("/api/bookings/:id/master-confirm", auth, async (req, res) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Запись не найдена", 404);
+    await db.transaction(async (q) => {
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE", [req.params.id, req.user.id]);
+      if (!b) fail("Запись не найдена", 404);
+      if (b.policy?.masterConfirm !== "awaiting") return;
+      if (!["confirmed", "pending"].includes(b.status)) fail("Запись уже не активна", 409);
+      await q.query("UPDATE bookings SET policy=policy||$2::jsonb WHERE id=$1", [b.id, JSON.stringify({ masterConfirm: "confirmed", masterConfirmedAt: new Date().toISOString() })]);
+      await enqueue(q, "booking.master_confirmed", { bookingId: b.id });
+      await audit(q, req.user.id, "booking.master_confirm", { id: b.id });
+    });
+    res.json({ ok: true });
+  });
+  // Лёгкая проверка изменений для живого обновления календаря и кабинета.
+  app.get("/api/pulse", auth, async (req, res) => {
+    const admin = req.user.role === "admin";
+    const row = await one(db, `SELECT md5(COALESCE(string_agg(b.id::text||b.status||b.starts_at::text||b.resource_id::text||COALESCE(b.policy->>'masterConfirm',''),',' ORDER BY b.id),'')) AS v
+      FROM bookings b WHERE ($1 OR b.user_id=$2) AND b.ends_at > now() - interval '2 days'`, [admin, req.user.id]);
+    const unread = await one(db, "SELECT count(*)::int AS n FROM notifications WHERE user_id=$1 AND read_at IS NULL", [req.user.id]);
+    res.json({ v: row.v + ":" + unread.n });
   });
   app.get("/api/notifications", auth, async (req, res) =>
     res.json({

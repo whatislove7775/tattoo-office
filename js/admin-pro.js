@@ -198,7 +198,7 @@ export async function manualRepeat(d) {
   const weeks = Number(d.repeat || 1), done = [], skipped = [];
   for (let i = 0; i < weeks; i++) {
     const date = c.addDate(d.date, i * 7);
-    try { await c.api("/bookings", "POST", { userId: d.userId, resourceId: d.resourceId, date, hour: Number(d.hour), duration: Number(d.duration), extras: [], manual: true }); done.push(date); }
+    try { await c.api("/bookings", "POST", { userId: d.userId, resourceId: d.resourceId, date, hour: Number(d.hour), duration: Number(d.duration), extras: [], manual: true, masterConfirm: d.skipConfirm !== "on" }); done.push(date); }
     catch (e) { if (i === 0 && weeks === 1) throw e; skipped.push(date); }
   }
   if (weeks > 1) c.notify(`Создано записей: ${done.length}${skipped.length ? `. Пропущены занятые даты: ${skipped.map((x) => c.dateLabel(x + "T12:00:00+03:00")).join(", ")}` : ""}`);

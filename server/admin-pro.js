@@ -81,12 +81,27 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       if (!r) fail("Рабочее место не найдено", 404);
       const [start, end] = slot(String(req.body.date || ""), Number(req.body.hour), b.tariff, s);
       if (!(await available(q, r.id, start, end, b.id))) fail("Это время на выбранном месте занято", 409);
-      await q.query("UPDATE bookings SET resource_id=$1,starts_at=$2,ends_at=$3,policy=policy||$4::jsonb WHERE id=$5", [r.id, start, end, JSON.stringify({ city: r.city }), b.id]);
+      // Запись от администратора после переноса снова ждёт подтверждения мастера — если не выбрано «без подтверждения».
+      const askMaster = !!b.policy?.adminCreated && req.body.skipConfirm !== true;
+      const confirmPolicy = b.policy?.adminCreated ? { masterConfirm: askMaster ? "awaiting" : "skipped", moved: true } : {};
+      await q.query("UPDATE bookings SET resource_id=$1,starts_at=$2,ends_at=$3,policy=policy||$4::jsonb WHERE id=$5", [r.id, start, end, JSON.stringify({ city: r.city, ...confirmPolicy }), b.id]);
       await q.query("DELETE FROM reminders WHERE booking_id=$1", [b.id]);
       await q.query("DELETE FROM reminders_sent WHERE booking_id=$1", [b.id]);
       await enqueue(q, "calendar.upsert", { bookingId: b.id });
-      await enqueue(q, "booking.moved", { bookingId: b.id });
+      await enqueue(q, askMaster ? "booking.master_moved" : "booking.moved", { bookingId: b.id });
       await audit(q, req.user.id, "booking.move", { id: b.id, from: { resource: b.resource_id, start: b.starts_at }, to: { resource: r.id, start } });
+    });
+    res.json({ ok: true });
+  });
+  // Администратор подтверждает запись за мастера (без ожидания ответа).
+  app.post("/api/admin/bookings/:id/master-confirm", staff, async (req, res) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) fail("Запись не найдена", 404);
+    await db.transaction(async (q) => {
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [req.params.id]);
+      if (!b) fail("Запись не найдена", 404);
+      if (b.policy?.masterConfirm !== "awaiting") return;
+      await q.query("UPDATE bookings SET policy=policy||$2::jsonb WHERE id=$1", [b.id, JSON.stringify({ masterConfirm: "skipped" })]);
+      await audit(q, req.user.id, "booking.master_confirm_skip", { id: b.id });
     });
     res.json({ ok: true });
   });
