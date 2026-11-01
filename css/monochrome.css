@@ -2813,3 +2813,17 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .admin-content .admin-users-list--masters .mu-actions .admin-user-remove {border-color:transparent;background:transparent;color:var(--ink-3);}
 .office-feature .admin-content .admin-users-list--masters .mu-actions .admin-user-remove:hover {color:#b3261e;background:#b3261e0a;}
 .mu-act svg {width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Таблица мастеров: всё по центру колонок, без вертикальных линий */
+@media (min-width:701px) {
+  .office-feature [data-admin-section="users"] .admin-users-list--masters td,.office-feature [data-admin-section="users"] .admin-users-list--masters th {border-left:0!important;text-align:center!important;}
+  .office-feature .admin-users-list--masters .mu-identity {justify-content:center;}
+  .office-feature .admin-users-list--masters .admin-user-identity {justify-items:start;text-align:left;}
+  .office-feature .admin-users-list--masters .mu-actions {justify-content:center!important;}
+  .office-feature .admin-users-list--masters .admin-user-status {margin-left:auto;margin-right:auto;}
+  .office-feature .admin-users-list--masters td > .admin-cell-value {display:flex;flex-direction:column;align-items:center;justify-content:center;}
+}
+.admin-users-list--masters .mu-rank,.admin-users-list--masters .mu-points b {white-space:nowrap;}
+.office-feature .admin-users-list--masters td.mu-rank {padding-left:6px;padding-right:6px;}
+.mu-points {justify-items:center;width:100%;}
+.mu-points__tools {justify-content:center;}
