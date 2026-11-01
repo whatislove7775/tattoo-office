@@ -1182,6 +1182,12 @@ export async function createApp(db) {
     });
     res.json({ok:true,score:target});
   });
+  // История изменения баллов мастера (кто, когда, сколько было и стало).
+  app.get("/api/admin/masters/:id/points-history", roles("admin"), async (req,res) => {
+    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
+    const rows=(await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='master.points.update' AND a.details->>'id'=$1 ORDER BY a.created_at DESC LIMIT 50",[req.params.id])).rows;
+    res.json({history:rows.map(r=>({at:r.created_at,actor:r.actor_name||"",previous:r.details?.previous??null,score:r.details?.score??null}))});
+  });
   // Владелец выбирает, какие профили мастеров стоят карточками на главной.
   app.patch("/api/admin/masters/:id/main", ownerOnly, async (req,res) => {
     if(typeof req.body.onMain!=="boolean")fail("Проверьте настройку");

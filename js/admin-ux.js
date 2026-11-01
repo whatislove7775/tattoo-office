@@ -36,6 +36,8 @@ export function scheduleTimeline(a, s, date, city) {
   if (!cols) return `<div class="empty">В этом городе пока нет рабочих мест. Добавьте их в «Студия → Рабочие места».</div>`;
   const row = (h) => h - from + 2;
   const startOf = (x) => (new Date(x.starts_at) < dayStart ? from : Math.max(from, mskHour(x.starts_at)));
+  // Доля блока выше красной линии — по тем же часам сетки, по которым блок нарисован.
+  const gridPast = (st, en) => { const h = (now - dayStart.getTime()) / 3600000; return h > st && h < en ? Math.round(((h - st) / (en - st)) * 1000) / 10 : 0; };
   const endOf = (x) => (new Date(x.ends_at) > dayEnd ? to : Math.min(to, new Date(x.ends_at).getTime() === dayEnd.getTime() ? 24 : mskHour(x.ends_at) + (mskMinute(x.ends_at) ? 1 : 0)));
   const owner = (rid, h) => day.find((b) => b.resource_id === rid && startOf(b) <= h && endOf(b) > h);
   const closed = (rid, h) => closedList.some((k) => (!k.resource_id || k.resource_id === rid) && startOf(k) <= h && endOf(k) > h);
@@ -59,7 +61,8 @@ export function scheduleTimeline(a, s, date, city) {
     const movable = ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > now;
     const dur = Math.max(1, Math.round((new Date(b.ends_at) - new Date(b.starts_at)) / 3600000));
     const awaiting = b.policy?.masterConfirm === "awaiting";
-    return `<div class="tl-booking tl-booking--${b.status}${awaiting ? " tl-booking--awaiting" : ""}${isPast ? " is-past" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${awaiting ? awaitBadge() : badge(b.status)}</div>`;
+    const part = gridPast(st, en);
+    return `<div class="tl-booking tl-booking--${b.status}${awaiting ? " tl-booking--awaiting" : ""}${isPast ? " is-past" : ""}${part ? " is-running" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}${part ? `;--past:${part}%` : ""}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${awaiting ? awaitBadge() : badge(b.status)}</div>`;
   }).join("");
   const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>';
   const closedCards = closedList.flatMap((k) => places.map((r, i) => {
@@ -67,7 +70,8 @@ export function scheduleTimeline(a, s, date, city) {
     const st = startOf(k), en = Math.max(st + 1, endOf(k));
     if (en <= from || st >= to) return "";
     const reason = k.reason && k.reason !== "Закрыто" ? k.reason : "";
-    return `<div class="tl-closed${new Date(k.ends_at) <= now ? " is-past" : ""}" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}">${reason ? `<b>${esc(reason)}</b>` : ""}<small>${c.timeLabel(k.starts_at)}—${c.timeLabel(k.ends_at)} · ${Math.round((new Date(k.ends_at) - new Date(k.starts_at)) / 3600000)} ч</small>${k.external ? '<span class="tl-closed__lock is-static">' + lock + "Google Calendar</span>" : `<button type="button" class="tl-closed__lock" data-unblock="${k.id}" title="Открыть время">${lock}Время закрыто</button>`}</div>`;
+    const part = gridPast(st, en);
+    return `<div class="tl-closed${new Date(k.ends_at) <= now ? " is-past" : ""}${part ? " is-running" : ""}" style="${part ? `--past:${part}%;` : ""}grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}">${reason ? `<b>${esc(reason)}</b>` : ""}<small>${c.timeLabel(k.starts_at)}—${c.timeLabel(k.ends_at)} · ${Math.round((new Date(k.ends_at) - new Date(k.starts_at)) / 3600000)} ч</small>${k.external ? '<span class="tl-closed__lock is-static">' + lock + "Google Calendar</span>" : `<button type="button" class="tl-closed__lock" data-unblock="${k.id}" title="Открыть время">${lock}Время закрыто</button>`}</div>`;
   })).join("");
   // Прошедшее время бледнеет до красной линии «сейчас».
   let line = "", pastShade = "";
