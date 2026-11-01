@@ -1,3 +1,6 @@
+import { mountGallery } from './profile-media.js';
+import { bindFileUpload } from './file-upload.js';
+
 /* Автоматизация админ-панели: пульт дня, перенос и неявки, CRM-карточка мастера,
    рассылки, часы мест, склад, промокоды, правила цен, ответы на обращения.
    Модуль получает помощники из office.js через init(). */
@@ -172,6 +175,7 @@ export async function userCard(id) {
   modal(`<div class="pro-card"><h2>${esc(u.name)}</h2><p class="small muted" data-keep-case>${u.email ? esc(u.email) + " · " : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? `Админ смены · вход по паролю <button type="button" class="pro-link" id="card-shift-link">скопировать ссылку для входа</button>` : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? "" : isAdmin ? "Администратор" : u.accountType === "customer" ? "Клиент" : u.role === "resident" ? "Резидент" : "Мастер"}${u.city ? " · " + esc(u.city) : ""} · с ${dateLabel(u.createdAt)}${u.telegramLinked ? " · Telegram подключён" : ""}</p><div class="pro-tags">${tagChips(row)}</div>
   ${isAdmin ? "" : `<div class="pro-tiles"><div class="pro-tile"><span>Сеансов</span><strong>${stats.done}</strong></div><div class="pro-tile"><span>Впереди</span><strong>${stats.upcoming}</strong></div><div class="pro-tile"><span>Неявки</span><strong>${stats.noShows}</strong></div>${owner ? `<div class="pro-tile"><span>Оплачено</span><strong>${money(stats.spent)}</strong></div><div class="pro-tile"><span>Баланс</span><strong>${money(u.balance)}</strong></div>` : ""}</div>`}
   ${owner ? `<form id="card-extra" class="pro-card__form"><h3>Заметки администратора</h3><label class="field"><span>Видны только администраторам</span><textarea name="notes" maxlength="4000">${esc(u.notes)}</textarea></label>${isAdmin ? select("staffLevel", "Уровень доступа", [["owner", "Владелец — всё, включая деньги и настройки"], ["shift", "Администратор смены — расписание и брони"]], u.staffLevel) : `<label class="check"><input type="checkbox" name="fullPrepay" ${u.fullPrepay ? "checked" : ""}><span>Полная предоплата для новых броней (защита от неявок)</span></label>`}<button type="submit" class="chrome">Сохранить</button></form>
+  ${u.accountType === 'master' ? `<div class="pro-card__form"><h3>Профиль мастера</h3><p class="small muted">Имя, фото, описание, ссылка для записи, работы и эскизы.</p><button type="button" class="chrome" id="card-edit-master">Редактировать профиль и портфолио</button></div>` : ''}
   ${isAdmin ? "" : `<form id="card-balance" class="pro-card__form"><h3>Баланс</h3><div class="form-grid">${field("amount", "Сумма, ₽ (минус — списание)", "", "number", 'required step="1" data-plain-number="true"')}${field("reason", "Причина", "", "text", 'required maxlength="200" placeholder="Компенсация, возврат…"')}</div><button type="submit" class="chrome">Изменить баланс</button></form>`}
   <form id="card-password" class="pro-card__form"><h3>Пароль</h3>${field("password", "Новый пароль (от 12 символов)", "", "text", 'required minlength="12" maxlength="128" autocomplete="off"')}<p class="small muted">Все сеансы пользователя будут завершены. Передайте пароль лично.${u.role === "admin" && u.staffLevel === "shift" ? " Админ смены входит только по этому паролю на странице «Вход для админа смены», поэтому у каждого админа смены пароль должен быть свой." : ""}</p><button type="submit" class="chrome">Задать пароль</button></form>
   ${isAdmin || !u.active ? "" : `<div class="pro-card__form"><h3>Вход от имени пользователя</h3><p class="small muted">Вы выйдете из админ-панели и увидите кабинет так, как его видит пользователь. Действие записывается в журнал.</p><button type="button" class="chrome" id="card-impersonate">Войти от имени ${esc(u.name)}</button></div>`}` : u.notes ? `<p class="note-paper">${esc(u.notes)}</p>` : ""}
@@ -185,6 +189,40 @@ export async function userCard(id) {
   if (shiftLink) shiftLink.onclick = async () => { try { await navigator.clipboard.writeText(location.origin + location.pathname + "#/admin/shift"); notify("Ссылка для входа скопирована"); } catch { notify("Не удалось скопировать ссылку"); } };
   const imp = $("#card-impersonate");
   if (imp) imp.onclick = async () => { imp.disabled = true; try { await api(`/admin/users/${id}/impersonate`, "POST", {}); $("#dialog").close(); await c.refresh(); c.go("cabinet"); notify("Вы вошли как " + u.name + ". Чтобы вернуться, выйдите и войдите как администратор."); } catch (e) { imp.disabled = false; notify(e.message); } };
+  const editMaster = $('#card-edit-master');
+  if (editMaster) editMaster.onclick = () => masterProfileEditor(id).catch(e => notify(e.message));
+}
+
+async function masterProfileEditor(id) {
+  const { api, esc, field, select, textarea, modal, notify } = c;
+  const { name, profile: p } = await api(`/admin/users/${encodeURIComponent(id)}/profile`);
+  $('#dialog').close();
+  modal(`<div class="admin-master-editor"><h2>Профиль мастера · ${esc(name)}</h2><form id="admin-master-profile-form" class="pro-card__form"><div class="admin-master-avatar file-upload-zone"><span class="admin-master-avatar__preview">${p.avatar ? `<img src="${esc(p.avatar)}" alt="Фото мастера">` : 'Фото не загружено'}</span><button type="button" class="chrome" id="admin-master-avatar-choose">${p.avatar ? 'Заменить фото' : 'Загрузить фото'}</button><input type="file" id="admin-master-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(p.avatar || '')}"></div><div class="form-grid">${field('name','Имя',name,'text','required maxlength="100"')}${select('city','Город',[['Москва','Москва'],['СПБ','СПБ']],p.city||'Москва')}${field('birthDate','Дата рождения',p.birthDate||'','date')}${field('experience','Стаж',p.experience||'','text','maxlength="80"')}${field('specialty','Стиль',p.specialty||'','text','maxlength="100"')}${field('status','Статус на сегодня',p.status||'','text','maxlength="100"')}${field('bookingLink','Ссылка на чат в Telegram',p.adminBookingLink||'','url','maxlength="2048" placeholder="https://t.me/имя"')}<div class="wide">${textarea('bio','О себе',p.bio||'')}</div></div><label class="check"><input type="checkbox" name="rankingVisible" ${p.rankingVisible !== false ? 'checked' : ''}><span>Показывать в рейтинге</span></label><button type="submit" class="chrome">Сохранить данные мастера</button></form><div class="tabs admin-master-editor__tabs"><button type="button" data-admin-gallery="portfolio" aria-selected="true">Работы</button><button type="button" data-admin-gallery="drafts" aria-selected="false">Эскизы</button></div><section id="admin-master-gallery" class="profile-gallery profile-gallery--tab"></section></div>`);
+  const file = $('#admin-master-avatar-file');
+  bindFileUpload($('.admin-master-avatar'), file, $('#admin-master-avatar-choose'), async files => {
+    const selected = files[0]; if (!selected) return;
+    if (!['image/jpeg','image/png','image/webp'].includes(selected.type) || selected.size > 5*1024*1024) { notify('Выберите JPG, PNG или WebP до 5 МБ'); return; }
+    try {
+      const bitmap = await createImageBitmap(selected), canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 192;
+      try { const ctx = canvas.getContext('2d'), side = Math.min(bitmap.width,bitmap.height); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,192,192); ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192); } finally { bitmap.close(); }
+      const value = canvas.toDataURL('image/jpeg',.78);
+      if (value.length > 90000) throw Error('Выберите фото меньшего размера');
+      $('#admin-master-profile-form [name="avatar"]').value = value;
+      $('.admin-master-avatar__preview').innerHTML = `<img src="${value}" alt="Новое фото мастера">`;
+      notify('Фото выбрано. Сохраните данные мастера.');
+    } catch (error) { notify(error.message || 'Не удалось загрузить фото'); }
+  });
+  c.onForm('#admin-master-profile-form', async d => {
+    await api(`/admin/users/${encodeURIComponent(id)}/profile`, 'PATCH', { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === 'on' } });
+    await c.refresh(); await c.render(); notify('Профиль мастера сохранён');
+  });
+  const showGallery = async kind => {
+    $$('.admin-master-editor__tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.adminGallery === kind)));
+    await mountGallery($('#admin-master-gallery'), api, notify, async () => {}, kind, `/admin/users/${encodeURIComponent(id)}/gallery`);
+  };
+  $$('.admin-master-editor__tabs button').forEach(b => b.onclick = () => showGallery(b.dataset.adminGallery).catch(e => notify(e.message)));
+  await showGallery('portfolio');
 }
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 

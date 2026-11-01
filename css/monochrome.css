@@ -2087,6 +2087,15 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .pro-card h3 {margin:20px 0 8px;font-size:15px;}
 .pro-card__form {margin-top:10px;padding:16px;border-radius:14px;background:var(--panel-2);display:grid;gap:10px;}
 .pro-card__form h3 {margin:0;}
+#dialog:has(.admin-master-editor) {width:min(860px,calc(100vw - 24px));}
+.admin-master-editor {display:grid;gap:20px;min-width:0;}
+.admin-master-editor h2 {margin-bottom:0;}
+.admin-master-editor .pro-card__form {margin:0;}
+.admin-master-avatar {display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.admin-master-avatar__preview {display:grid;place-items:center;width:88px;height:88px;overflow:hidden;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel);color:var(--ink-3);font-size:12px;text-align:center;}
+.admin-master-avatar__preview img {width:100%;height:100%;max-height:none;object-fit:cover;}
+.admin-master-editor__tabs {margin:0;}
+@media (max-width:700px) {.admin-master-editor .form-grid {grid-template-columns:minmax(0,1fr);}.admin-master-avatar {justify-content:space-between;}.admin-master-avatar__preview {width:72px;height:72px;}}
 .pro-surcharge {font-style:normal;font-size:11px;padding:1px 6px;border-radius:10px;background:var(--ink);color:var(--bg);}
 .pro-promo {display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:14px 0;}
 .pro-promo .field {flex:1 1 200px;}

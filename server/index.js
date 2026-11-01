@@ -1,7 +1,9 @@
 import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import {updateOperatorDetails} from "./operator-details.js";
+import {updateLegalDocuments} from "./legal-migration.js";
 import {ageFromBirthDate} from "./profile-age.js";
+import {adminMasterProfileRoutes} from "./admin-master-profile.js";
 import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
@@ -58,7 +60,7 @@ export async function createApp(db) {
   );
   await db.transaction(async q => {
     const row = (await q.query("SELECT data FROM settings WHERE id=1 FOR UPDATE")).rows[0];
-    let updated = updateOperatorDetails(row.data);
+    let updated = updateLegalDocuments(updateOperatorDetails(row.data));
     if (!updated.website) updated = {...updated,website:"https://tattoo-office.com"};
     if (updated.rulesContentVersion !== studioRulesVersion) updated = {...updated, rules:studioRules, rulesVersion:studioRulesVersion, rulesContentVersion:studioRulesVersion};
     if (updated !== row.data) await q.query("UPDATE settings SET data=$1 WHERE id=1", [JSON.stringify(updated)]);
@@ -158,6 +160,7 @@ export async function createApp(db) {
     }),
   );
   app.use("/api/me/gallery",express.json({limit:"400kb"}));
+  app.use(/^\/api\/admin\/users\/[^/]+\/gallery(?:\/|$)/,express.json({limit:"400kb"}));
   app.use("/api/admin/media",express.json({limit:"1200kb"}));
   app.use(
     express.json({
@@ -314,6 +317,7 @@ export async function createApp(db) {
   };
   telegramRoutes(app, { db, session, auth });
   adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
+  adminMasterProfileRoutes(app, { db, one, ownerOnly, audit });
   app.get("/api/health", async (req, res) => {
     await db.query("SELECT 1");
     res.json({ ok: true });
