@@ -140,8 +140,9 @@ export const defaults = {
   privacy: legalSamples.privacy,
   offer: legalSamples.offer,
   consent: legalSamples.consent,
+  taxationRegime: "ausn",
   taxationSystem: null,
-  vat: null,
+  vat: 0,
   legalApproved: false,
 };
 

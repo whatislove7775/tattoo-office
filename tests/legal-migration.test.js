@@ -9,6 +9,9 @@ test('unchanged legacy footer policy is upgraded and requires owner review', () 
   const updated = updateLegalDocuments(current);
   assert.match(updated.privacy, /Технические cookie-файлы/);
   assert.equal(updated.legalApproved, false);
+  assert.equal(updated.taxationRegime, 'ausn');
+  assert.equal(updated.vat, 0);
+  assert.equal(updated.taxationSystem, null);
   assert.equal(updateLegalDocuments(updated), updated);
   const custom = { ...current, privacy: 'Утверждённая владельцем политика' };
   assert.equal(updateLegalDocuments(custom), custom);

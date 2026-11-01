@@ -10,12 +10,17 @@ const legacyHashes = {
 
 export function updateLegalDocuments(settings) {
   let next;
+  // The owner confirmed АУСН. Keep the provider's numeric KKT code unset until
+  // the AУСН object and the fiscalization scenario are agreed with the provider.
+  if (settings.taxationRegime == null || settings.vat == null)
+    next = { ...settings, taxationRegime: settings.taxationRegime ?? 'ausn', vat: settings.vat ?? 0 };
   for (const key of Object.keys(legacyHashes)) {
     const text = settings[key];
     if (typeof text !== 'string') continue;
     const hash = createHash('sha256').update(text).digest('hex');
     if (!legacyHashes[key].has(hash)) continue;
-    next ||= { ...settings, legalApproved: false };
+    next ||= { ...settings };
+    next.legalApproved = false;
     next[key] = legalSamples[key];
   }
   return next || settings;
