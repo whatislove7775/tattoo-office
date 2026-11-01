@@ -10,16 +10,16 @@ async function compressed(file,max,longest) {
     throw Error('Фотография слишком сложная. Попробуйте уменьшить её размер.');
   }finally{bitmap.close();}
 }
-export async function mountGallery(root, api, notify, onChange = async () => {}, kind = 'portfolio') {
+export async function mountGallery(root, api, notify, onChange = async () => {}, kind = 'portfolio', basePath = '/me/gallery') {
   const isDraft = kind === 'drafts';
   const title = isDraft ? 'Эскизы' : 'Работы';
   const other = isDraft ? 'portfolio' : 'drafts';
   const otherLabel = isDraft ? 'работы' : 'эскизы';
   let items = [], busy = false, dragged = null, feedback = '', failed = false;
   const visible = () => items.filter(item => item.kind === kind);
-  const reload = async () => { items = (await api('/me/gallery')).items; paint(); };
+  const reload = async () => { items = (await api(basePath)).items; paint(); };
   const save = async () => {
-    await api('/me/gallery', 'PATCH', {items: items.map(({id, kind, caption}) => ({id, kind, caption}))});
+    await api(basePath, 'PATCH', {items: items.map(({id, kind, caption}) => ({id, kind, caption}))});
     feedback = 'Портфолио сохранено'; notify(feedback);
   };
   const run = async action => {
@@ -57,7 +57,7 @@ export async function mountGallery(root, api, notify, onChange = async () => {},
       await save(); feedback = `Перенесено в раздел «${isDraft ? 'Работы' : 'Эскизы'}»`; notify(feedback);
     }));
     root.querySelectorAll('[data-delete]').forEach(el => el.onclick = () => run(async () => {
-      await save(); await api('/me/gallery/' + el.dataset.delete, 'DELETE'); notify('Фотография удалена');
+      await save(); await api(basePath + '/' + el.dataset.delete, 'DELETE'); notify('Фотография удалена');
     }));
     root.querySelector('#gallery-save').onclick = () => run(save);
     root.querySelectorAll('[data-gallery-id]').forEach(el => {
@@ -78,7 +78,7 @@ export async function mountGallery(root, api, notify, onChange = async () => {},
         for (const [index, file] of files.entries()) {
           feedback = `Загрузка ${index + 1} из ${files.length}…`; root.querySelector('.gallery-status').textContent = feedback;
           const image = await compressed(file, 300000, 1280), thumbnail = await compressed(file, 50000, 320);
-          await api('/me/gallery', 'POST', {kind, caption: '', image, thumbnail});
+          await api(basePath, 'POST', {kind, caption: '', image, thumbnail});
         }
         feedback = `Добавлено фотографий: ${files.length}`; notify(feedback);
       });
