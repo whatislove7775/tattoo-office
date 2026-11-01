@@ -1,4 +1,4 @@
-import {POINT_RULES,pointRules} from "./ranking-points.js";
+import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import {updateOperatorDetails} from "./operator-details.js";
 import {ageFromBirthDate} from "./profile-age.js";
@@ -924,7 +924,7 @@ export async function createApp(db) {
     }
     if (role === "admin") {
       const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;
-      result.masterPoints=(await masterDirectory(db,{includeInactive:true})).map(m=>({id:m.id,name:m.name,score:m.score,userId:m.registered?(pointLinks.find(l=>l.master_id===m.id)?.user_id||m.id):null,archive:catalogIds.has(m.id),avatar:m.avatar||"",resident:m.resident,onMain:m.onMain===true}));
+      result.masterPoints=(await masterDirectory(db,{includeInactive:true})).map(m=>({id:m.id,name:m.name,score:m.score,userId:m.registered?(pointLinks.find(l=>l.master_id===m.id)?.user_id||m.id):null,archive:catalogIds.has(m.id),avatar:m.avatar||"",resident:m.resident,onMain:m.onMain===true,archived:m.archived===true}));
       result.audit = (
         await db.query("SELECT * FROM audit ORDER BY created_at DESC LIMIT 100")
       ).rows;
@@ -1182,11 +1182,62 @@ export async function createApp(db) {
     });
     res.json({ok:true,score:target});
   });
-  // История изменения баллов мастера (кто, когда, сколько было и стало).
+  // История баллов мастера: дата, действие, за что и как начислено (автоматически по правилам рейтинга или вручную).
   app.get("/api/admin/masters/:id/points-history", roles("admin"), async (req,res) => {
     if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
-    const rows=(await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='master.points.update' AND a.details->>'id'=$1 ORDER BY a.created_at DESC LIMIT 50",[req.params.id])).rows;
-    res.json({history:rows.map(r=>({at:r.created_at,actor:r.actor_name||"",previous:r.details?.previous??null,score:r.details?.score??null}))});
+    const master=(await masterDirectory(db,{includeInactive:true})).find(m=>m.id===req.params.id);
+    if(!master)fail("Мастер не найден",404);
+    const link=await one(db,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
+    const userId=master.registered?(link?.user_id||master.id):null;
+    const rub=v=>Math.round(Number(v)/100).toLocaleString("ru-RU")+" ₽", items=[];
+    if(userId){
+      const {rules,byUser}=await rankingFacts(db), facts=byUser.get(userId)||{bookings:[],media:[]};
+      for(const b of facts.bookings){
+        if(!bookingEarns(b))continue;
+        items.push({at:b.starts_at,action:"Сеанс завершён и оплачен",reason:`Аренда ${rub(b.rate)} · ${rules.bookingPoints} баллов за каждые ${rub(rules.bookingRubles*100)}`,method:"Автоматически",points:Math.round(Math.max(0,Number(b.rate))*rules.bookingPoints/(rules.bookingRubles*100))});
+        for(const x of b.extras||[]){
+          if(!(x.price>0&&x.qty>0))continue;
+          if(x.kind==="service")items.push({at:b.starts_at,action:"Дополнительная услуга",reason:`${x.name||"Услуга"} × ${x.qty} · ${rules.servicePoints} за каждую`,method:"Автоматически",points:x.qty*rules.servicePoints});
+          if(x.kind==="product")items.push({at:b.starts_at,action:"Товары к сеансу",reason:`${x.name||"Товары"} на ${rub(x.price*x.qty)} · ${rules.productPointsPer1000} за каждую 1 000 ₽`,method:"Автоматически",points:Math.round(x.price*x.qty*rules.productPointsPer1000/100000)});
+        }
+      }
+      // Работы и эскизы — по уникальным фотографиям, в порядке загрузки и с лимитами из правил.
+      const media=(await db.query("SELECT kind,md5(image) AS fp,created_at FROM master_media WHERE user_id=$1 ORDER BY created_at,id",[userId])).rows;
+      const works=new Set(media.filter(m=>m.kind==="portfolio").map(m=>m.fp)), seen=new Set();let w=0,d=0;
+      for(const m of media){
+        if(seen.has(m.fp))continue;
+        if(m.kind==="portfolio"&&w<rules.workLimit){seen.add(m.fp);w++;items.push({at:m.created_at,action:"Работа в портфолио",reason:`Уникальная фотография · ${rules.workPoints} за работу (до ${rules.workLimit})`,method:"Автоматически",points:rules.workPoints});}
+        else if(m.kind==="drafts"&&!works.has(m.fp)&&d<rules.draftLimit){seen.add(m.fp);d++;items.push({at:m.created_at,action:"Эскиз",reason:`Уникальная фотография · ${rules.draftPoints} за эскиз (до ${rules.draftLimit})`,method:"Автоматически",points:rules.draftPoints});}
+      }
+      if(master.pointsBreakdown?.profile>0)items.push({at:null,action:"Профиль заполнен полностью",reason:"Имя, фото, город, описание от 80 символов, стиль, стаж и хотя бы одна работа",method:"Автоматически",points:master.pointsBreakdown.profile});
+    }
+    const manual=(await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='master.points.update' AND a.details->>'id'=$1 ORDER BY a.created_at DESC LIMIT 100",[req.params.id])).rows;
+    for(const r of manual){const from=Number(r.details?.previous??0),to=Number(r.details?.score??0);items.push({at:r.created_at,action:"Ручное изменение",reason:`Было ${from.toLocaleString("ru-RU")} → стало ${to.toLocaleString("ru-RU")}`,method:"Вручную"+(r.actor_name?" · "+r.actor_name:""),points:to-from});}
+    items.sort((x,y)=>(y.at?new Date(y.at):Infinity)-(x.at?new Date(x.at):Infinity));
+    res.json({score:master.score,history:items});
+  });
+  // Статус мастера одним переключателем: обычный профиль, резидент Private Club или архив.
+  app.patch("/api/admin/masters/:id/status", ownerOnly, async (req,res) => {
+    const status=req.body.status;
+    if(!["guest","resident","archive"].includes(status))fail("Проверьте статус");
+    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
+    await db.transaction(async q=>{
+      await lock(q);
+      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
+      if(!master)fail("Мастер не найден",404);
+      const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
+      const userId=master.registered?(link?.user_id||master.id):null;
+      if(userId){
+        if(status==="archive") await q.query("UPDATE users SET profile=profile||'{\"archived\":true}'::jsonb WHERE id=$1",[userId]);
+        else {
+          await q.query("UPDATE users SET role=$1,profile=profile||'{\"archived\":false}'::jsonb,deposit_waived=CASE WHEN $1='resident' THEN deposit_waived ELSE false END WHERE id=$2 AND role IN ('guest','resident')",[status,userId]);
+          await q.query("DELETE FROM sessions WHERE user_id=$1",[userId]);
+        }
+      }
+      if(catalogIds.has(master.id)) await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[catalogContentId(master.id),JSON.stringify(status==="archive"?{archived:true}:{archived:false,resident:status==="resident"})]);
+      await audit(q,req.user.id,"master.status.update",{id:master.id,status});
+    });
+    res.json({ok:true});
   });
   // Владелец выбирает, какие профили мастеров стоят карточками на главной.
   app.patch("/api/admin/masters/:id/main", ownerOnly, async (req,res) => {
@@ -1397,6 +1448,7 @@ export async function createApp(db) {
       const previous=await one(q,"SELECT data FROM content WHERE id=$1",[req.params.id]);
       if(previous?.data?.pointsAdjustment!==undefined)data.pointsAdjustment=previous.data.pointsAdjustment;
       if(typeof previous?.data?.mainCard==="boolean")data.mainCard=previous.data.mainCard;
+      for(const key of ["resident","archived"]) if(typeof previous?.data?.[key]==="boolean")data[key]=previous.data[key];
       await q.query(
         "INSERT INTO content VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2",
         [req.params.id, JSON.stringify(data)],

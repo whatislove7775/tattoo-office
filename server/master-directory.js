@@ -24,8 +24,9 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
   const byUser=new Map(users.map(u=>[u.id,u])),byContent=new Map(content.map(c=>[c.id,c.data]));
   const gallery=(id,kind)=>media.filter(m=>m.user_id===id&&m.kind===kind).map(m=>({id:m.id,src:'/api/media/'+m.id,thumb:'/api/media/'+m.id+'?size=thumb',cap:m.caption}));
   const fromUser=(u,base={})=>{
-    const p=u.profile||{},resident=u.role==='resident';
-    const master={...base,id:base.id||u.id,name:u.name,resident,active:u.active,registered:true,
+    const p=u.profile||{},resident=u.role==='resident',archived=p.archived===true||base.archived===true;
+    // В архиве: мастер скрыт с сайта (главная, рейтинг, личная страница), но виден в админке.
+    const master={...base,id:base.id||u.id,name:u.name,resident,active:u.active&&!archived,archived,registered:true,
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
       status:text(p.status,160),
@@ -42,8 +43,8 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
   const result=catalog.map(m=>{
     const c=byContent.get(m.contentId)||{};
     const base={id:m.id,name:c.title||localized(m.name),city:localized(m.city),age:m.age,exp:localized(m.exp),avatar:m.photo,
-      bio:c.body||localized(m.bio),specialty:c.specialty||'',resident:m.resident===true,active:true,registered:false,featured:c.featured!==false,rankingVisible:true,
-      mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&m.resident===true,
+      bio:c.body||localized(m.bio),specialty:c.specialty||'',resident:typeof c.resident==='boolean'?c.resident:m.resident===true,active:c.archived!==true,archived:c.archived===true,registered:false,featured:c.featured!==false,rankingVisible:true,
+      mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&(typeof c.resident==='boolean'?c.resident:m.resident===true),
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,
       portfolio:(c.portfolio?.length?c.portfolio.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.portfolio.map(w=>({...w,cap:''}))),
       drafts:(c.drafts?.length?c.drafts.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.drafts.map(w=>({...w,cap:''})))};

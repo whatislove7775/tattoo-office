@@ -2787,9 +2787,6 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .mu-row--bronze {--mu-metal:#f1bc9c;}
 .mu-row--gold td,.mu-row--silver td,.mu-row--bronze td {color:#1a1a1a;}
 .mu-row--gold .admin-user-email,.mu-row--silver .admin-user-email,.mu-row--bronze .admin-user-email,.mu-row--gold .mu-rank,.mu-row--silver .mu-rank,.mu-row--bronze .mu-rank {color:#2c2c2c;}
-.mu-history {display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none;}
-.mu-history li {display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 12px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--panel-2);font-size:13px;}
-.mu-history small {grid-column:1/-1;color:var(--ink-2);}
 @media (max-width:700px) {
   .office-feature .admin-users-list--masters tbody tr {grid-template-columns:auto auto minmax(0,1fr)!important;}
   .office-feature .admin-users-list--masters td.mu-rank {grid-column:1;grid-row:1;padding:0 8px 0 0;align-self:center;}
@@ -2827,3 +2824,40 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .admin-users-list--masters td.mu-rank {padding-left:6px;padding-right:6px;}
 .mu-points {justify-items:center;width:100%;}
 .mu-points__tools {justify-content:center;}
+
+/* Плашка тестового режима: компактная, в одну строку, по центру внизу */
+.demo-bar {left:50%!important;right:auto!important;bottom:10px!important;transform:translateX(-50%);flex-wrap:nowrap!important;gap:4px!important;width:max-content;max-width:calc(100vw - 16px)!important;padding:5px 6px!important;border-radius:12px!important;font-size:11px!important;line-height:1.2;overflow-x:auto;scrollbar-width:none;}
+.demo-bar::-webkit-scrollbar {display:none;}
+.demo-bar b {flex:none;padding:2px 7px!important;border-radius:8px!important;font-size:11px;}
+.demo-bar span {flex:none;white-space:nowrap;}
+.demo-bar button {flex:none;padding:3px 8px!important;border-radius:8px!important;font-size:11px!important;line-height:1.3;white-space:nowrap;}
+.demo-bar.is-collapsed span,.demo-bar.is-collapsed button:not(.demo-bar__toggle) {display:none;}
+@media (max-width:700px) { .demo-bar {bottom:calc(76px + env(safe-area-inset-bottom))!important;} .demo-bar span {display:none;} }
+
+/* Статус мастера — переключатель как у городов; архив; служебная почта; история баллов */
+.office-feature .admin-users-list--masters .mu-status {margin:0 auto!important;padding:3px;gap:2px;flex-wrap:nowrap;}
+.office-feature .admin-users-list--masters .mu-status button {min-height:26px;padding:3px 9px;font-size:12px;white-space:nowrap;}
+.admin-user-email.is-placeholder {color:var(--ink-3);}
+#dialog.mu-history-dialog {width:min(860px,96vw);max-width:none;}
+.mu-history-wrap {max-height:min(60vh,560px);overflow:auto;margin-top:12px;border:1px solid var(--panel-edge);border-radius:14px;}
+.mu-history {width:100%;border-collapse:collapse;font-size:13px;}
+.mu-history th {position:sticky;top:0;z-index:1;padding:10px 12px;background:var(--panel-2);font-size:12px;font-weight:600;color:var(--ink-2);text-align:left;white-space:nowrap;}
+.mu-history td {padding:10px 12px;border-top:1px solid var(--panel-edge);vertical-align:top;}
+.mu-history td small {color:var(--ink-3);}
+.mu-history__pts {font-weight:700;white-space:nowrap;text-align:right;}
+.mu-history__pts.is-minus {color:#b3261e;}
+@media (max-width:700px) { .mu-history th:nth-child(4),.mu-history td:nth-child(4) {display:none;} }
+.admin-users-list--masters th:nth-child(1) {width:4%!important;}
+.admin-users-list--masters th:nth-child(2) {width:8%!important;}
+.admin-users-list--masters th:nth-child(3) {width:27%!important;}
+.admin-users-list--masters th:nth-child(4) {width:24%!important;}
+.admin-users-list--masters th:nth-child(5) {width:8%!important;}
+.admin-users-list--masters th:nth-child(6) {width:10%!important;}
+.admin-users-list--masters th:nth-child(7) {width:19%!important;}
+.office-feature .admin-users-list--masters .mu-status button {padding:3px 8px;font-size:11.5px;}
+.office-feature .admin-users-list--masters .admin-user-email > span {overflow-wrap:anywhere;}
+@media (min-width:701px) { .office-feature [data-admin-section="users"] .admin-users-list--masters td:nth-child(4) {padding-left:6px!important;padding-right:6px!important;} }
+.office-feature .admin-users-list--masters .mu-status {max-width:100%;overflow:visible;}
+.office-feature .admin-users-list--masters .mu-status button {padding:3px 7px;}
+.office-feature .admin-users-list--masters .admin-user-email {max-width:100%;}
+.office-feature .admin-users-list--masters .admin-user-email > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;}

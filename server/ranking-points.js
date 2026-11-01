@@ -4,10 +4,12 @@ export const POINT_RULES = Object.freeze({bookingPoints:70,bookingRubles:3200,se
 export function pointRules(settings={}) {
   return Object.fromEntries(Object.entries(POINT_RULES).map(([key,fallback])=>[key,Number.isInteger(settings.rankingRules?.[key])&&settings.rankingRules[key]>=0&&settings.rankingRules[key]<=100000&&(key!=='bookingRubles'||settings.rankingRules[key]>0)?settings.rankingRules[key]:fallback]));
 }
+// Сеанс приносит баллы, только если завершён и полностью оплачен (не тестовым платежом).
+export const bookingEarns=b=>!(b.status!=='completed'||b.test_payment||Number(b.total)<=0||Number(b.paid)+Number(b.balance_used)<Number(b.total)||Number(b.unsettled)>0);
 export function scoreMaster(master,facts,rules=POINT_RULES) {
   const breakdown={bookings:0,services:0,products:0,profile:0,works:0,drafts:0};
   for(const b of facts.bookings||[]) {
-    if(b.status!=='completed'||b.test_payment||Number(b.total)<=0||Number(b.paid)+Number(b.balance_used)<Number(b.total)||Number(b.unsettled)>0)continue;
+    if(!bookingEarns(b))continue;
     breakdown.bookings+=Math.round(Math.max(0,Number(b.rate))*rules.bookingPoints/(rules.bookingRubles*100));
     for(const item of b.extras||[]) {
       if(!(item.price>0&&item.qty>0))continue;
@@ -28,7 +30,7 @@ export function scoreMaster(master,facts,rules=POINT_RULES) {
 export async function rankingFacts(db,{period="all"}={}) {
   const [settings,bookings,media]=await Promise.all([
     db.query('SELECT data FROM settings WHERE id=1'),
-    db.query(`SELECT b.id,b.user_id,b.status,b.rate,b.total,b.balance_used,b.extras,
+    db.query(`SELECT b.id,b.user_id,b.status,b.rate,b.total,b.balance_used,b.extras,b.starts_at,
       COALESCE(SUM(p.amount) FILTER(WHERE p.status='paid'),0)::bigint AS paid,
       COALESCE(BOOL_OR(COALESCE(p.is_test,p.provider_id NOT LIKE 'cash:%',true)) FILTER(WHERE p.status='paid'),false) AS test_payment,
       COUNT(p.id) FILTER(WHERE p.status='pending')::int AS unsettled

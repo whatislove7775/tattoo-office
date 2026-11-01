@@ -56,3 +56,52 @@ test("owner chooses which master profiles are cards on the main page", async () 
     server.close();
   }
 });
+
+test("master status switch: regular, resident, archive; itemized points history", async () => {
+  process.env.DATA_DIR = "memory://";
+  const db = await database(), app = await createApp(db), server = app.listen(0, "127.0.0.1");
+  await new Promise((r) => server.on("listening", r));
+  const origin = "http://127.0.0.1:" + server.address().port;
+  try {
+    const account = async (name, role, profile = {}) => {
+      const id = randomUUID(), token = "t-" + id;
+      await db.query("INSERT INTO users(id,email,password,name,role,account_type,profile) VALUES($1,$2,'unused',$3,$4,$5,$6)", [id, `${name}@test.invalid`, name, role, role === "admin" ? "admin" : "master", JSON.stringify(profile)]);
+      await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '1 day')", [hashToken(token), id]);
+      return { id, cookie: "office_session=" + token };
+    };
+    const owner = await account("owner", "admin"), shift = await account("shift", "admin", { staffLevel: "shift" }), guest = await account("guest", "guest");
+    const call = (who, path, method, data) => fetch(origin + "/api" + path, { method, headers: { "Content-Type": "application/json", Cookie: who.cookie }, body: data ? JSON.stringify(data) : undefined });
+    const directory = async () => (await (await fetch(origin + "/api/directory")).json()).masters;
+
+    // Обычный → резидент: меняется роль аккаунта.
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "resident" })).status, 200);
+    assert.equal((await db.query("SELECT role FROM users WHERE id=$1", [guest.id])).rows[0].role, "resident");
+    // Архив: мастер пропадает с сайта, но виден в админке с пометкой.
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "archive" })).status, 200);
+    assert.equal((await directory()).some((m) => m.id === guest.id), false);
+    const admin = await (await call(owner, "/admin", "GET")).json();
+    assert.equal(admin.masterPoints.find((m) => m.id === guest.id).archived, true);
+    // Из архива обратно в обычный профиль.
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "guest" })).status, 200);
+    const back = (await directory()).find((m) => m.id === guest.id);
+    assert.equal(back.resident, false);
+    // Карточка из архива студии: можно сделать обычным профилем и убрать в архив.
+    const card = (await directory()).find((m) => !m.registered && m.resident);
+    assert.equal((await call(owner, `/admin/masters/${card.id}/status`, "PATCH", { status: "guest" })).status, 200);
+    assert.equal((await directory()).find((m) => m.id === card.id).resident, false);
+    assert.equal((await call(owner, `/admin/masters/${card.id}/status`, "PATCH", { status: "archive" })).status, 200);
+    assert.equal((await directory()).some((m) => m.id === card.id), false);
+    // Права: только владелец; неверный статус отклоняется.
+    assert.equal((await call(shift, `/admin/masters/${guest.id}/status`, "PATCH", { status: "resident" })).status, 403);
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "vip" })).status, 400);
+
+    // История баллов: ручное изменение — с датой, причиной, способом и разницей.
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/points`, "PATCH", { score: 40 })).status, 200);
+    const history = await (await call(shift, `/admin/masters/${guest.id}/points-history`, "GET")).json();
+    const manual = history.history.find((h) => h.action === "Ручное изменение");
+    assert.ok(manual.at && manual.method.startsWith("Вручную") && manual.points === 40 && /стало 40/.test(manual.reason));
+    assert.equal(history.score, 40);
+  } finally {
+    server.close();
+  }
+});
