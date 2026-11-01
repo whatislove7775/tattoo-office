@@ -1337,7 +1337,7 @@ async function adminPage() {
       const photo = `<span class="mu-photo">${mp.avatar ? `<img src="${esc(mp.avatar)}" alt="">` : `<span class="mu-photo__empty">${esc(String(name).slice(0, 1))}</span>`}${resident ? '<img class="mu-photo__mark" src="assets/resident-mark.svg?v=clean-2" alt="Резидент Private Club" title="Резидент Private Club">' : ""}</span>`;
       const identity = `<div class="mu-identity">${photo}<div class="admin-user-identity"><span class="admin-user-name">${u ? `<button type="button" class="pro-link" data-user-card="${u.id}">${esc(name)}</button>` : `<span>${esc(name)}</span>`}${copyButton(name, "имя")}</span>${(() => { const mail = u?.email || `${mp.id}@archive.tattoo-office`; return `<span class="admin-user-email${u ? "" : " is-placeholder"}" title="${u ? esc(mail) : "Служебная почта карточки — аккаунт не привязан"}"><span>${esc(mail)}</span>${copyButton(mail, "email")}</span>`; })()}</div></div>`;
       const status = archived ? "archive" : resident ? "resident" : "guest";
-      const access = shift ? `<div class="admin-user-role">${resident ? "Резидент Private Club" : "Обычный профиль"}</div>` : `<div class="tabs admin-city-tabs mu-status" role="tablist" aria-label="Статус ${esc(name)}">${[["guest", "Обычный"], ["resident", "Резидент"], ["archive", "Архив"]].map(([v, l]) => `<button type="button" role="tab" data-master-status="${esc(mp.id)}" data-status="${v}" aria-selected="${status === v}" title="${{ guest: "Обычный профиль", resident: "Резидент Private Club", archive: "В архив — скрыть с сайта" }[v]}">${l}</button>`).join("")}</div>${u && !u.active ? '<span class="admin-user-status">Доступ закрыт</span>' : ""}`;
+      const access = shift ? `<div class="admin-user-role">${resident ? "Резидент Private Club" : "Обычный профиль"}</div>` : `<div class="mu-status-select"><select data-master-status="${esc(mp.id)}" aria-label="Статус ${esc(name)}">${[["guest", "Обычный профиль"], ["resident", "Резидент Private Club"], ["archive", "В архив"]].map(([v, l]) => `<option value="${v}" ${status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>${u && !u.active ? '<span class="admin-user-status">Доступ закрыт</span>' : ""}`;
       const points = `<div class="mu-points"><b>${(mp.score || 0).toLocaleString("ru-RU")}</b><span class="mu-points__tools">${shift ? "" : `<button type="button" class="mu-icon" data-edit-points="${esc(mp.id)}" aria-label="Изменить баллы: ${esc(name)}" title="Изменить баллы"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg></button>`}<button type="button" class="mu-icon" data-points-history="${esc(mp.id)}" aria-label="История баллов: ${esc(name)}" title="История баллов"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/></svg></button></span></div>`;
       const main = shift ? `<span class="small">${mp.onMain ? "На главной" : "—"}</span>` : `<label class="mu-switch" title="${mp.onMain ? "Убрать с главной" : "Добавить на главную"}"><input type="checkbox" data-main-master="${esc(mp.id)}" ${mp.onMain ? "checked" : ""} aria-label="Карточка ${esc(name)} на главной"><span aria-hidden="true"></span></label>${mp.onMain && !mp.avatar ? '<small class="mu-warn">нет фото — карточка не видна</small>' : ""}`;
       // Все прежние действия — компактными значками с подсказками.
@@ -1608,18 +1608,17 @@ function mountAdmin() {
       }),
   );
   // Статус мастера: обычный профиль, резидент или архив — сохраняется сразу.
-  $$("[data-master-status]").forEach((b) => (b.onclick = async () => {
-    if (b.getAttribute("aria-selected") === "true") return;
-    const id = b.dataset.masterStatus, status = b.dataset.status;
-    if (status === "archive" && !(await new Promise((ok) => { modal(`<h2>Перенести в архив?</h2><p>Мастер пропадёт с сайта: с главной, из рейтинга и с личной страницы. В админке он останется в разделе «Архив», вернуть можно в любой момент.</p><div class="pro-panel__actions"><button type="button" class="chrome pro-primary" id="archive-yes">В архив</button><button type="button" class="chrome" id="archive-no">Отмена</button></div>`); let done = false; $("#archive-yes").onclick = () => { done = true; $("#dialog").close(); ok(true); }; $("#archive-no").onclick = () => $("#dialog").close(); $("#dialog").addEventListener("close", () => { if (!done) ok(false); }, { once: true }); }))) return;
-    $$(`[data-master-status="${CSS.escape(id)}"]`).forEach((x) => (x.disabled = true));
+  $$("select[data-master-status]").forEach((sel) => (sel.onchange = async () => {
+    const id = sel.dataset.masterStatus, status = sel.value;
+    if (status === "archive" && !(await new Promise((ok) => { modal(`<h2>Перенести в архив?</h2><p>Мастер пропадёт с сайта: с главной, из рейтинга и с личной страницы. В админке он останется в разделе «Архив», вернуть можно в любой момент.</p><div class="pro-panel__actions"><button type="button" class="chrome pro-primary" id="archive-yes">В архив</button><button type="button" class="chrome" id="archive-no">Отмена</button></div>`); let done = false; $("#archive-yes").onclick = () => { done = true; $("#dialog").close(); ok(true); }; $("#archive-no").onclick = () => $("#dialog").close(); $("#dialog").addEventListener("close", () => { if (!done) ok(false); }, { once: true }); }))) { adminCache = true; await render(); return; }
+    sel.disabled = true;
     try {
       await api("/admin/masters/" + encodeURIComponent(id) + "/status", "PATCH", { status });
       const mp = adminData.masterPoints?.find((m) => m.id === id);
       if (mp) { mp.archived = status === "archive"; if (status !== "archive") mp.resident = status === "resident"; if (mp.userId) { const u = adminData.users.find((x) => x.id === mp.userId); if (u && status !== "archive") u.role = status; } }
       notify({ guest: "Обычный профиль", resident: "Резидент Private Club", archive: "Мастер в архиве" }[status]);
       adminCache = true; await render(); refresh().catch(() => {});
-    } catch (error) { $$(`[data-master-status="${CSS.escape(id)}"]`).forEach((x) => (x.disabled = false)); notify(error.message); }
+    } catch (error) { notify(error.message); adminCache = true; await render(); }
   }));
   $$("[data-master-kind]").forEach((b) => (b.onclick = () => { masterKind = b.dataset.masterKind; adminCache = true; render(); }));
   // «На главной»: сразу сохраняем выбор и обновляем список без перезагрузки.

@@ -2861,3 +2861,6 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .admin-users-list--masters .mu-status button {padding:3px 7px;}
 .office-feature .admin-users-list--masters .admin-user-email {max-width:100%;}
 .office-feature .admin-users-list--masters .admin-user-email > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;}
+/* Статус мастера — кастомный выпадающий список, как фильтры над таблицей */
+.mu-status-select {display:flex;justify-content:center;width:100%;}
+.office-feature .admin-users-list--masters .mu-status-select .office-select {width:100%;max-width:190px;height:32px!important;min-height:32px!important;padding:4px 30px 4px 12px!important;border:1px solid var(--panel-edge)!important;border-radius:11px!important;font-size:13px!important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none!important;}
