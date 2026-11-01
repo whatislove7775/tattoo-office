@@ -2779,12 +2779,12 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .mu-photo__mark {position:absolute;right:-9px;bottom:-7px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #fff,0 1px 4px #0004;}
 .mu-identity {align-items:center;}
 /* Металл: золото, серебро, бронза — с лёгкой «шлифовкой» */
-.mu-row--gold td {background:repeating-linear-gradient(0deg,#ffffff14 0 1px,transparent 1px 3px),linear-gradient(90deg,#f3dc6e,#fbeea8 18%,#f0d561 40%,#fff4b8 58%,#ead059 78%,#f7e48a)!important;}
-.mu-row--silver td {background:repeating-linear-gradient(0deg,#ffffff1a 0 1px,transparent 1px 3px),linear-gradient(90deg,#d4d4d4,#ececec 20%,#cfcfcf 42%,#f2f2f2 60%,#d1d1d1 80%,#e3e3e3)!important;}
-.mu-row--bronze td {background:repeating-linear-gradient(0deg,#ffffff14 0 1px,transparent 1px 3px),linear-gradient(90deg,#efb08a,#f8c9ac 20%,#eba67f 42%,#fbd2b8 60%,#e9a37b 80%,#f3bb98)!important;}
-.mu-row--gold {--mu-metal:linear-gradient(90deg,#f3dc6e,#fbeea8 18%,#f0d561 40%,#fff4b8 58%,#ead059 78%,#f7e48a);}
-.mu-row--silver {--mu-metal:linear-gradient(90deg,#d4d4d4,#ececec 20%,#cfcfcf 42%,#f2f2f2 60%,#d1d1d1 80%,#e3e3e3);}
-.mu-row--bronze {--mu-metal:linear-gradient(90deg,#efb08a,#f8c9ac 20%,#eba67f 42%,#fbd2b8 60%,#e9a37b 80%,#f3bb98);}
+.mu-row--gold td {background:#f2dc78!important;}
+.mu-row--silver td {background:#dcdcdc!important;}
+.mu-row--bronze td {background:#f1bc9c!important;}
+.mu-row--gold {--mu-metal:#f2dc78;}
+.mu-row--silver {--mu-metal:#dcdcdc;}
+.mu-row--bronze {--mu-metal:#f1bc9c;}
 .mu-row--gold td,.mu-row--silver td,.mu-row--bronze td {color:#1a1a1a;}
 .mu-row--gold .admin-user-email,.mu-row--silver .admin-user-email,.mu-row--bronze .admin-user-email,.mu-row--gold .mu-rank,.mu-row--silver .mu-rank,.mu-row--bronze .mu-rank {color:#2c2c2c;}
 .mu-history {display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none;}
