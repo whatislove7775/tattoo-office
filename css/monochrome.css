@@ -2754,11 +2754,11 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .admin-users-list--masters table {table-layout:fixed;}
 .admin-users-list--masters th:nth-child(1) {width:5%;text-align:center;}
 .admin-users-list--masters th:nth-child(2) {width:9%;text-align:center;}
-.admin-users-list--masters th:nth-child(3) {width:28%;}
-.admin-users-list--masters th:nth-child(4) {width:15%;}
+.admin-users-list--masters th:nth-child(3) {width:33%;}
+.admin-users-list--masters th:nth-child(4) {width:17%;}
 .admin-users-list--masters th:nth-child(5) {width:9%;text-align:right;}
 .admin-users-list--masters th:nth-child(6) {width:11%;text-align:center;}
-.admin-users-list--masters th:nth-child(7) {width:23%;text-align:right;}
+.admin-users-list--masters th:nth-child(7) {width:16%;text-align:right;}
 @media (min-width:701px) {
   .office-feature [data-admin-section="users"] .admin-users-list--masters td {vertical-align:middle;border-left:1px solid #0000001f;}
   .office-feature [data-admin-section="users"] .admin-users-list--masters td:first-child,.office-feature [data-admin-section="users"] .admin-users-list--masters th:first-child {border-left:0;}
@@ -2782,8 +2782,6 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .mu-row--gold td {background:repeating-linear-gradient(0deg,#ffffff14 0 1px,transparent 1px 3px),linear-gradient(90deg,#f3dc6e,#fbeea8 18%,#f0d561 40%,#fff4b8 58%,#ead059 78%,#f7e48a)!important;}
 .mu-row--silver td {background:repeating-linear-gradient(0deg,#ffffff1a 0 1px,transparent 1px 3px),linear-gradient(90deg,#d4d4d4,#ececec 20%,#cfcfcf 42%,#f2f2f2 60%,#d1d1d1 80%,#e3e3e3)!important;}
 .mu-row--bronze td {background:repeating-linear-gradient(0deg,#ffffff14 0 1px,transparent 1px 3px),linear-gradient(90deg,#efb08a,#f8c9ac 20%,#eba67f 42%,#fbd2b8 60%,#e9a37b 80%,#f3bb98)!important;}
-/* Узор из знака резидента поверх строки резидента */
-.office-feature [data-admin-section="users"] .admin-users-list--masters tr.mu-row--resident td {background-image:url("../assets/resident-pattern.svg"),repeating-linear-gradient(0deg,#ffffff14 0 1px,transparent 1px 3px),var(--mu-metal,linear-gradient(#fff,#f5f5f5))!important;background-size:36px 36px,auto,auto!important;}
 .mu-row--gold {--mu-metal:linear-gradient(90deg,#f3dc6e,#fbeea8 18%,#f0d561 40%,#fff4b8 58%,#ead059 78%,#f7e48a);}
 .mu-row--silver {--mu-metal:linear-gradient(90deg,#d4d4d4,#ececec 20%,#cfcfcf 42%,#f2f2f2 60%,#d1d1d1 80%,#e3e3e3);}
 .mu-row--bronze {--mu-metal:linear-gradient(90deg,#efb08a,#f8c9ac 20%,#eba67f 42%,#fbd2b8 60%,#e9a37b 80%,#f3bb98);}
@@ -2807,3 +2805,11 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .office-feature .admin-users-list--masters th:nth-child(2),.office-feature .admin-users-list--masters td:nth-child(2) {text-align:center!important;}
 .office-feature .admin-users-list--masters .admin-user-identity {justify-items:start;text-align:left;}
 @media (max-width:700px) { .office-feature .admin-users-list--masters td {text-align:left!important;} .office-feature .admin-users-list--masters td:nth-child(2) .mu-points {justify-items:start;} }
+/* Действия в таблице мастеров — компактные значки */
+.office-feature .admin-users-list--masters .mu-actions {flex-wrap:nowrap;gap:4px;justify-content:flex-end;}
+.office-feature .admin-content .admin-users-list--masters .mu-actions .mu-act {display:grid;place-items:center;width:34px;height:34px;min-height:34px;padding:0;border:1px solid var(--panel-edge);border-radius:10px;background:var(--control-fill);box-shadow:none;color:var(--ink);cursor:pointer;}
+.office-feature .admin-content .admin-users-list--masters .mu-actions .mu-act:hover {background:var(--panel);border-color:var(--ink-3);}
+.office-feature .admin-content .admin-users-list--masters .mu-actions .mu-act.is-on {background:var(--action-fill,#111);border-color:#111;color:#fff;}
+.office-feature .admin-content .admin-users-list--masters .mu-actions .admin-user-remove {border-color:transparent;background:transparent;color:var(--ink-3);}
+.office-feature .admin-content .admin-users-list--masters .mu-actions .admin-user-remove:hover {color:#b3261e;background:#b3261e0a;}
+.mu-act svg {width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
