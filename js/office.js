@@ -68,7 +68,8 @@ let me = null,
   pub = null,
   routeVersion = 0,
   adminTab = "home",
-  cabTab = "bookings";
+  cabTab = "bookings",
+  profileTab = "portfolio";
 let draft = {
   city: null,
   step: 0,
@@ -909,6 +910,44 @@ async function rankingPage() {
   };
   return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
+// Форма личного дела мастера: во вкладке «Личное дело» и в окне «Редактировать профиль».
+function profileFormHTML() {
+  return `<form id="profile-form"><div class="profile-avatar-picker file-upload-zone"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span class="file-upload-copy"><b>Фотография профиля</b><small>Нажмите кнопку или перетащите фото · JPG, PNG, WebP до 5 МБ</small><span id="avatar-upload-status" class="file-upload-status" role="status" aria-live="polite">${me.profile.avatar?'Фото загружено':''}</span></span><button class="chrome" type="button" id="avatar-choose">${me.profile.avatar?'Заменить фото':'Выбрать фото'}</button><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></div><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("birthDate", "Дата рождения", me.profile.birthDate||"", "date", 'data-styled="true" autocomplete="bday" max="'+today()+'"')}${field("experience", "Стаж", me.profile.experience||"", "text", 'maxlength="80" placeholder="Например, 5 лет"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "", "text", 'placeholder="Сочная милфа 300 м от вас"')}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form>`;
+}
+// Возраст по дате рождения — как на публичной странице мастера.
+function ownAge(birthDate) {
+  if (!birthDate) return "";
+  const b = new Date(birthDate + "T12:00:00"), n = new Date();
+  let age = n.getFullYear() - b.getFullYear();
+  if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) age--;
+  if (!(age > 0 && age < 120)) return "";
+  return age + " " + ({ one: "год", few: "года", many: "лет", other: "лет" }[new Intl.PluralRules("ru").select(age)]);
+}
+// Профиль мастера в кабинете — та же вёрстка, что на публичной странице и в карточке на главной, но с редактированием.
+function ownProfileHTML(publicProfileId, publicProfileUrl) {
+  const dm = (window.DATA.masters || []).find((m) => m.id === publicProfileId) || {};
+  const p = me.profile || {}, resident = me.role === "resident", photo = p.avatar || dm.photo || "";
+  const age = ownAge(p.birthDate), pick = (v) => (typeof v === "object" ? v?.ru || "" : v || "");
+  const booking = pick(dm.bookingLink) || dm.bookingLink || "";
+  const share = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg>';
+  const pane = profileTab === "about"
+    ? `<section class="master-about own-about"><div class="own-about__head"><h3>О себе</h3><button type="button" class="chrome" data-own-edit="bio">Изменить</button></div>${p.status ? `<p class="master-about__status">${esc(p.status)}</p>` : ""}<p class="master-about__bio">${esc(p.bio || "Расскажите о себе — нажмите «Изменить».")}</p>${p.specialty ? `<dl><div><dt>Стиль</dt><dd>${esc(p.specialty)}</dd></div></dl>` : ""}</section>`
+    : `<section id="profile-gallery" class="profile-gallery profile-gallery--tab"><h3>${profileTab === "drafts" ? "Эскизы" : "Работы"}</h3><p class="small muted" role="status">Загрузка фотографий…</p></section>`;
+  return `<section class="cabinet-public-profile own-profile" aria-label="Ваш публичный профиль">
+    <div class="own-profile__bar"><span class="eyebrow">ВАШ ПРОФИЛЬ · ТАК ЕГО ВИДЯТ ВСЕ</span><div class="own-profile__actions"><a class="chrome" href="${esc("#/master/" + encodeURIComponent(publicProfileId))}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button type="button" class="chrome pro-primary" data-own-edit="all">Редактировать</button><button id="logout" class="small cabinet-action">Выйти</button></div></div>
+    <div class="master own-profile__master"><div class="master-profile">
+      <button type="button" class="own-photo" data-own-edit="photo" aria-label="Изменить фото">${photo ? `<img class="master__photo" src="${esc(photo)}" alt="${esc(me.name)}">` : `<span class="master__photo own-photo__empty">${esc(me.name.slice(0, 1))}</span>`}<span class="own-photo__hint">Изменить фото</span></button>
+      <div class="master-profile__copy">
+        <div class="master__name"><span>${esc(me.name)}${resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><button class="master-share" type="button" id="share-public-profile" aria-label="Поделиться профилем" title="Поделиться профилем">${share}</button></div>
+        <div class="master-pass own-pass"><span>Tattoo Office Pass</span><span class="own-pass__row"><input id="public-profile-link" type="text" value="${esc(publicProfileUrl)}" readonly spellcheck="false" aria-label="Ссылка на ваш публичный профиль"><button class="cabinet-action" type="button" id="copy-public-profile">Скопировать</button></span></div>
+        <div class="master-profile__facts">${p.city ? `<span class="master__city">${esc(p.city)}</span>` : ""}${age ? `<span class="master__age">${esc(age)}</span>` : ""}${p.experience ? `<span class="master__exp">Стаж ${esc(p.experience)}</span>` : ""}${!p.city && !age && !p.experience ? '<button type="button" class="own-empty" data-own-edit="all">+ Город, возраст и стаж</button>' : ""}</div>
+        <div class="master__bio">${p.bio ? esc(p.bio) : '<button type="button" class="own-empty" data-own-edit="bio">+ Добавьте описание — его увидят на вашей странице</button>'}</div>
+        ${resident ? `<p class="master-profile__action">${booking ? `<a class="btn btn--primary" href="${esc(booking)}" target="_blank" rel="noopener noreferrer">Записаться</a>` : '<button class="btn btn--primary" type="button" disabled>Записаться</button><small class="muted">Контакт для записи добавит администратор</small>'}</p>` : ""}
+      </div></div>
+      <div class="own-profile__works"><div class="own-profile__tabs" role="tablist" aria-label="Разделы профиля">${[["portfolio", "Работы"], ["drafts", "Эскизы"], ["about", "О себе"]].map(([v, l]) => `<button type="button" role="tab" class="tab" data-ptab="${v}" aria-selected="${profileTab === v}"><span class="pin"></span><span class="tab__label">${l}</span></button>`).join("")}</div>
+      <div class="own-profile__pane">${pane}</div></div>
+    </div></section>`;
+}
 async function cabinetPage() {
   if (!me) return authPage(false);
   const data = await api("/bookings"),
@@ -919,6 +958,7 @@ async function cabinetPage() {
       ),
     ),
     done = data.bookings.filter((b) => b.status === "completed").length;
+  if (me.accountType === "master" && ["portfolio", "drafts"].includes(cabTab)) { profileTab = cabTab; cabTab = "bookings"; }
   const personalPoints=cabTab==="profile"&&me.accountType==="master"?await api("/me/ranking"):null;
   const publicProfileId = me.publicProfileId || me.id;
   const publicProfilePath = "#/master/" + encodeURIComponent(publicProfileId);
@@ -948,21 +988,20 @@ async function cabinetPage() {
           .join("")
       : '<div class="empty">Входящих пока нет.</div>';
   if (cabTab === "profile")
-    body = `<form id="profile-form"><div class="profile-avatar-picker file-upload-zone"><span class="profile-avatar-preview">${me.profile.avatar ? `<img src="${esc(me.profile.avatar)}" alt="Ваш аватар">` : `<span>${esc(me.name.slice(0,1))}</span>`}</span><span class="file-upload-copy"><b>Фотография профиля</b><small>Нажмите кнопку или перетащите фото · JPG, PNG, WebP до 5 МБ</small><span id="avatar-upload-status" class="file-upload-status" role="status" aria-live="polite">${me.profile.avatar?'Фото загружено':''}</span></span><button class="chrome" type="button" id="avatar-choose">${me.profile.avatar?'Заменить фото':'Выбрать фото'}</button><input type="file" id="profile-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(me.profile.avatar || "")}"></div><div class="form-grid">${field("name", "Имя", me.name, "text", 'required maxlength="100"')}${select("city", "Город", [["Москва", "Москва"], ["СПБ", "СПБ"]], me.profile.city || "Москва")}${field("birthDate", "Дата рождения", me.profile.birthDate||"", "date", 'data-styled="true" autocomplete="bday" max="'+today()+'"')}${field("experience", "Стаж", me.profile.experience||"", "text", 'maxlength="80" placeholder="Например, 5 лет"')}${field("specialty", "Ваш стиль", me.profile.specialty || "")}${field("status", "Статус на сегодня", me.profile.status || "", "text", 'placeholder="Сочная милфа 300 м от вас"')}<div class="wide">${textarea("bio", "О себе", me.profile.bio || "")}</div></div><label class="check ranking-visibility"><input type="checkbox" name="rankingVisible" ${me.profile.rankingVisible !== false ? "checked" : ""}><span>Показывать меня в рейтинге мастеров</span></label><button class="chrome" type="submit">Сохранить личное дело</button></form><div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
+    body = `${profileFormHTML()}<div class="note-paper">${me.telegramLinked ? "Telegram подключён" : pub.telegramEnabled ? '<a href="/api/auth/telegram">Привязать Telegram →</a>' : "Telegram пока не подключён студией"}</div><h3 style="margin-top:35px">Сменить пароль</h3><form id="password-form" class="form-grid">${field("current", "Текущий пароль", "", "password", "required")}${field("password", "Новый пароль", "", "password", 'required minlength="12" maxlength="128"')}<button class="chrome" type="submit">Изменить пароль</button></form>`;
   if(personalPoints){
     const names={name:"имя",avatar:"фото",city:"город",bio:"описание от 80 символов",specialty:"стиль",experience:"стаж",portfolio:"хотя бы одну работу"};
     body=`<section class="personal-ranking"><h3>Ваш рейтинг: ${personalPoints.score.toLocaleString("ru-RU")} ${pointsWord(personalPoints.score)}</h3><dl>${Object.entries(personalPoints.breakdown).map(([key,value])=>`<div><dt>${scoreLabels[key]}</dt><dd>${value}</dd></div>`).join("")}</dl><p>Профиль заполнен: ${personalPoints.profileProgress.filled} из ${personalPoints.profileProgress.total}.${personalPoints.profileProgress.missing.length?` Добавьте: ${personalPoints.profileProgress.missing.map(k=>names[k]).join(", ")}.`:" Все поля для бонуса заполнены."}</p></section>`+body;
   }
-  if(['portfolio','drafts'].includes(cabTab) && me.accountType==='master')body='<section id="profile-gallery" class="profile-gallery profile-gallery--tab"><h3>'+ (cabTab==='drafts'?'Эскизы':'Работы') +'</h3><p class="small muted" role="status">Загрузка фотографий…</p></section>';
+  // Работы и эскизы теперь во вкладках самого профиля наверху.
   const accent = '';
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet"><div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}${publicProfileCard}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId, publicProfileUrl)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}${publicProfileCard}`}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
       ["notifications", "Входящие"],
-      ...(me.accountType==='master' ? [["portfolio", "Работы"], ["drafts", "Эскизы"]] : []),
       ["profile", "Личное дело"],
     ]
       .map(
@@ -1000,6 +1039,31 @@ function bookingItem(b, payments) {
     (p) => p.booking_id === b.id && p.status === "pending",
   );
   return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p>${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+}
+// Фото и сохранение личного дела — и во вкладке, и в окне «Редактировать профиль».
+function mountProfileForm(onSaved) {
+  const avatarFile = $("#profile-avatar-file");
+  if(avatarFile)bindFileUpload($('.profile-avatar-picker'),avatarFile,$('#avatar-choose'),async files=>{
+    const file=files[0];if(!file)return;
+    const zone=$('.profile-avatar-picker'),status=$('#avatar-upload-status'),button=$('#avatar-choose'),submit=$('#profile-form button[type="submit"]');
+    const show=(message,error=false)=>{status.textContent=message;zone.classList.toggle('has-error',error);};
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){show('Выберите JPG, PNG или WebP до 5 МБ',true);return;}
+    zone.classList.add('is-loading');button.disabled=true;submit.disabled=true;show('Подготавливаем фотографию…');
+    try{
+      const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;
+      try{const ctx=canvas.getContext('2d'),side=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,192,192);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);}finally{bitmap.close();}
+      const value=canvas.toDataURL('image/jpeg',.78);if(value.length>90000)throw Error('Выберите фотографию меньшего размера');
+      $('#profile-form [name="avatar"]').value=value;$('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Предпросмотр фотографии">`;
+      button.textContent='Заменить фото';show('Фото выбрано. Нажмите «Сохранить личное дело».');
+    }catch(error){show(error.message||'Не удалось прочитать фотографию',true);}finally{zone.classList.remove('is-loading');button.disabled=false;submit.disabled=false;}
+  });
+  onForm("#profile-form", async (d) => {
+    await api("/me", "PATCH", { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === "on" } });
+    await refresh();
+    notify("Личное дело сохранено");
+    if ($("#dialog").open && $("#dialog #profile-form")) $("#dialog").close();
+    onSaved();
+  });
 }
 function mountCabinet() {
   if (!me) {
@@ -1072,28 +1136,20 @@ function mountCabinet() {
         };
       }),
   );
-  if($('#profile-gallery'))mountGallery($('#profile-gallery'),api,notify,refresh,cabTab).catch(e=>notify(e.message));
-  const avatarFile = $("#profile-avatar-file");
-  if(avatarFile)bindFileUpload($('.profile-avatar-picker'),avatarFile,$('#avatar-choose'),async files=>{
-    const file=files[0];if(!file)return;
-    const zone=$('.profile-avatar-picker'),status=$('#avatar-upload-status'),button=$('#avatar-choose'),submit=$('#profile-form button[type="submit"]');
-    const show=(message,error=false)=>{status.textContent=message;zone.classList.toggle('has-error',error);};
-    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){show('Выберите JPG, PNG или WebP до 5 МБ',true);return;}
-    zone.classList.add('is-loading');button.disabled=true;submit.disabled=true;show('Подготавливаем фотографию…');
-    try{
-      const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;
-      try{const ctx=canvas.getContext('2d'),side=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,192,192);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);}finally{bitmap.close();}
-      const value=canvas.toDataURL('image/jpeg',.78);if(value.length>90000)throw Error('Выберите фотографию меньшего размера');
-      $('#profile-form [name="avatar"]').value=value;$('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Предпросмотр фотографии">`;
-      button.textContent='Заменить фото';show('Фото выбрано. Нажмите «Сохранить личное дело».');
-    }catch(error){show(error.message||'Не удалось прочитать фотографию',true);}finally{zone.classList.remove('is-loading');button.disabled=false;submit.disabled=false;}
-  });
-  onForm("#profile-form", async (d) => {
-    await api("/me", "PATCH", { name: d.name, profile: { ...d, rankingVisible: d.rankingVisible === "on" } });
-    await refresh();
-    notify("Личное дело сохранено");
-    render();
-  });
+  if($('#profile-gallery'))mountGallery($('#profile-gallery'),api,notify,refresh,profileTab).catch(e=>notify(e.message));
+  $$("[data-ptab]").forEach((b) => (b.onclick = () => { profileTab = b.dataset.ptab; render(); }));
+  // «Редактировать», клик по фото и пустые поля открывают личное дело в окне поверх профиля.
+  $$("[data-own-edit]").forEach((b) => (b.onclick = () => {
+    const tabForm = $(".cabinet-content #profile-form");
+    if (tabForm) { tabForm.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    modal(`<h2>Редактировать профиль</h2><p class="small muted">Так ваш профиль увидят на главной и на вашей странице.</p>${profileFormHTML()}`);
+    $("#dialog").classList.add("own-edit-dialog");
+    $("#dialog").addEventListener("close", () => { $("#dialog").classList.remove("own-edit-dialog"); $("#dialog-content").innerHTML = ""; }, { once: true });
+    mountProfileForm(() => render());
+    const focus = { photo: "#avatar-choose", bio: '#dialog [name="bio"]' }[b.dataset.ownEdit];
+    if (focus) setTimeout(() => $(focus)?.focus(), 60);
+  }));
+  mountProfileForm(() => render());
   onForm("#password-form", async (d) => {
     await api("/me/password", "POST", d);
     await refresh();
