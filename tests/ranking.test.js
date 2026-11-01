@@ -108,6 +108,10 @@ test('ranking uses fully paid completed rentals, equal rules for residents and p
     assert.equal((await remove(ids.Resident)).status,403);
     assert.equal((await remove('bad-id')).status,404);
     const beforeHistory=(await db.query("SELECT COUNT(*)::int AS count FROM bookings WHERE user_id=$1",[ids.Regular])).rows[0].count;
+    // Мастера удаляются только из архива.
+    assert.equal((await remove(ids.Regular)).status,409);
+    assert.equal((await fetch(origin+'/api/admin/masters/'+ids.Regular+'/status',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:'office_session='+token},body:JSON.stringify({status:'archive'})})).status,200);
+    await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '1 day') ON CONFLICT DO NOTHING",[hashToken('regular-session'),ids.Regular]);
     assert.equal((await remove(ids.Regular)).status,200);
     assert.equal((await remove(ids.Regular)).status,200);
     assert.equal((await db.query("SELECT COUNT(*)::int AS count FROM bookings WHERE user_id=$1",[ids.Regular])).rows[0].count,beforeHistory);
