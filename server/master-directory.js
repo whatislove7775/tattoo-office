@@ -31,6 +31,8 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
       status:text(p.status,160),
       age:p.birthDate?ageFromBirthDate(p.birthDate):(Number.isInteger(p.age)?p.age:base.age||null),exp:text(p.experience,80)||base.exp||'',
       bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
+      // «На главной»: выбор владельца; по умолчанию как раньше — резиденты (у карточки из архива — если она не скрыта).
+      onMain:typeof base.mainChoice==='boolean'?base.mainChoice:typeof p.adminMainCard==='boolean'?p.adminMainCard:(base.featuredFlag??true)&&resident,
       completed:u.completed,bookings:u.bookings,score:0,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};
@@ -41,10 +43,11 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
     const c=byContent.get(m.contentId)||{};
     const base={id:m.id,name:c.title||localized(m.name),city:localized(m.city),age:m.age,exp:localized(m.exp),avatar:m.photo,
       bio:c.body||localized(m.bio),specialty:c.specialty||'',resident:m.resident===true,active:true,registered:false,featured:c.featured!==false,rankingVisible:true,
+      mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&m.resident===true,
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,
       portfolio:(c.portfolio?.length?c.portfolio.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.portfolio.map(w=>({...w,cap:''}))),
       drafts:(c.drafts?.length?c.drafts.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.drafts.map(w=>({...w,cap:''})))};
     const link=links.find(l=>l.master_id===m.id);return link?(byUser.has(link.user_id)?fromUser(byUser.get(link.user_id),base):{...base,active:false}):applyPointsAdjustment(base,c.pointsAdjustment);
   });
-  return [...result,...users.filter(u=>!linked.has(u.id)).map(u=>fromUser(u,{featured:true}))].filter(m=>includeInactive||m.active).map(({active,...m})=>m);
+  return [...result,...users.filter(u=>!linked.has(u.id)).map(u=>fromUser(u,{featured:true}))].filter(m=>includeInactive||m.active).map(({active,mainChoice,featuredFlag,...m})=>m);
 }

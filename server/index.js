@@ -899,7 +899,7 @@ export async function createApp(db) {
     }
     if (role === "admin") {
       const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;
-      result.masterPoints=(await masterDirectory(db,{includeInactive:true})).map(m=>({id:m.id,name:m.name,score:m.score,userId:m.registered?(pointLinks.find(l=>l.master_id===m.id)?.user_id||m.id):null}));
+      result.masterPoints=(await masterDirectory(db,{includeInactive:true})).map(m=>({id:m.id,name:m.name,score:m.score,userId:m.registered?(pointLinks.find(l=>l.master_id===m.id)?.user_id||m.id):null,archive:catalogIds.has(m.id),avatar:m.avatar||"",resident:m.resident,onMain:m.onMain===true}));
       result.audit = (
         await db.query("SELECT * FROM audit ORDER BY created_at DESC LIMIT 100")
       ).rows;
@@ -1157,6 +1157,20 @@ export async function createApp(db) {
     });
     res.json({ok:true,score:target});
   });
+  // Владелец выбирает, какие профили мастеров стоят карточками на главной.
+  app.patch("/api/admin/masters/:id/main", ownerOnly, async (req,res) => {
+    if(typeof req.body.onMain!=="boolean")fail("Проверьте настройку");
+    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
+    await db.transaction(async q=>{
+      await lock(q);
+      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
+      if(!master)fail("Мастер не найден",404);
+      if(catalogIds.has(master.id)) await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[catalogContentId(master.id),JSON.stringify({mainCard:req.body.onMain})]);
+      else await q.query("UPDATE users SET profile=profile||$1::jsonb WHERE id=$2",[JSON.stringify({adminMainCard:req.body.onMain}),master.id]);
+      await audit(q,req.user.id,"master.main.update",{id:master.id,onMain:req.body.onMain});
+    });
+    res.json({ok:true});
+  });
   app.post("/api/admin/resources", ownerOnly, async (req, res) => {
     const id = req.body.id || uuid(),
       name = String(req.body.name || "").trim(),
@@ -1351,6 +1365,7 @@ export async function createApp(db) {
       await lock(q);
       const previous=await one(q,"SELECT data FROM content WHERE id=$1",[req.params.id]);
       if(previous?.data?.pointsAdjustment!==undefined)data.pointsAdjustment=previous.data.pointsAdjustment;
+      if(typeof previous?.data?.mainCard==="boolean")data.mainCard=previous.data.mainCard;
       await q.query(
         "INSERT INTO content VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=$2",
         [req.params.id, JSON.stringify(data)],

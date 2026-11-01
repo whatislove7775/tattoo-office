@@ -56,7 +56,7 @@
   /* =========================== 1. КАТАЛОГ МАСТЕРОВ ======================== */
   var Masters = {
     html: function () {
-      var cards = global.DATA.masters.filter(function (m) { return m.featured !== false && m.resident === true && Boolean(m.photo); }).map(function (m) {
+      var cards = global.DATA.masters.filter(function (m) { return (typeof m.onMain === 'boolean' ? m.onMain : m.featured !== false && m.resident === true) && Boolean(m.photo); }).map(function (m) {
         var name = pick(m.name);
         return '<button class="polaroid" data-id="' + esc(m.id) + '" data-sfx="click" ' +
                'aria-label="' + esc(name) + '">' +

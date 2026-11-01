@@ -223,7 +223,7 @@ function onForm(id, fn) {
 }
 function modal(html) {
   $("#dialog-content").innerHTML = `<div class="office-feature">${html}</div>`;
-  $("#dialog").showModal();
+  if (!$("#dialog").open) $("#dialog").showModal();
 }
 $("#dialog").addEventListener("click", (e) => {
   if (e.target === $("#dialog")) $("#dialog").close();
@@ -1095,6 +1095,7 @@ function mountCabinet() {
 let adminCache = false, openManualAfterRender = false, adminData,
   adminDate = today(),
   usersFilter = "all",
+  masterKind = "all",
   usersTag = "",
   scheduleView = "day",
   listStatus = "all",
@@ -1240,22 +1241,37 @@ async function adminPage() {
       usersIcons = { all: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.4c2.1.7 3.5 2.8 3.5 5.6", master: "M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16zM14 7l3 3", admin: "M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4" },
       usersTitle = (shift ? { all: "Все тату-мастера", resident: "Private Club", guest: "Обычный профиль" } : { all: "Все пользователи", master: "Тату-мастера", admin: "Админы" })[usersFilter] || "Все пользователи",
       tagOptions = [["", "Все метки"], ...AP.TAG_FILTERS.map(([value, label]) => [value, `${label} · ${a.users.filter((u) => AP.userTags(u).some(([k]) => k === value)).length}`])];
+    // Тату-мастера: единый список — аккаунты мастеров и карточки из архива (masterPoints с сервера).
+    const masterView = shift || usersFilter === "master", kind = shift ? usersFilter : masterKind;
+    const masterRows = !masterView ? [] : (() => {
+      const known = new Set(), rows = (a.masterPoints || []).map((mp) => {
+        const u = mp.userId ? a.users.find((x) => x.id === mp.userId) : null;
+        if (u) known.add(u.id);
+        const cardNo = mp.archive ? legacyMasters.findIndex((x) => x.id === mp.id) + 1 : 0;
+        return { mp, u, cardNo, resident: u ? u.role === "resident" : !!mp.resident };
+      });
+      for (const u of a.users) if (isMaster(u) && !known.has(u.id)) rows.push({ mp: { id: u.id, name: u.name, avatar: "", onMain: false }, u, cardNo: 0, resident: u.role === "resident" });
+      return rows.filter((r) => (kind === "resident" ? r.resident : kind === "guest" ? !r.resident : true) && (!usersTag || (r.u && AP.userTags(r.u).some(([k]) => k === usersTag))));
+    })();
+    const mainCards = (a.masterPoints || []).filter((m) => m.onMain);
+    const masterRow = ({ mp, u, cardNo, resident }) => {
+      const name = u?.name || mp.name, avatar = mp.avatar ? `<img class="mu-avatar" src="${esc(mp.avatar)}" alt="">` : `<span class="mu-avatar mu-avatar--empty">${esc(String(name).slice(0, 1))}</span>`;
+      const identity = `<div class="mu-identity">${avatar}<div class="admin-user-identity"><span class="admin-user-name">${u ? `<button type="button" class="pro-link" data-user-card="${u.id}">${esc(name)}</button>` : `<span>${esc(name)}</span>`}${copyButton(name, "имя")}</span>${u ? `<span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email, "email")}</span>` : '<span class="admin-user-email"><span>Карточка из архива · аккаунт не привязан</span></span>'}${u ? `<span class="pro-tags">${AP.tagChips(u)}</span>` : ""}</div></div>`;
+      const status = `<div class="admin-user-role">${resident ? "Резидент Private Club" : "Обычный профиль"}${u?.role === "resident" && u.deposit_waived ? "<br><small>Без предоплаты · наличные</small>" : ""}</div>${u ? `<span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span>` : '<span class="admin-user-status">Без аккаунта</span>'}`;
+      const main = shift ? `<span class="small">${mp.onMain ? "На главной" : "—"}</span>` : `<label class="mu-switch" title="${mp.onMain ? "Убрать с главной" : "Добавить на главную"}"><input type="checkbox" data-main-master="${esc(mp.id)}" ${mp.onMain ? "checked" : ""} aria-label="Карточка ${esc(name)} на главной"><span aria-hidden="true"></span></label>${mp.onMain && !mp.avatar ? '<small class="mu-warn">нет фото — карточка не видна</small>' : ""}`;
+      const actions = `<div class="admin-user-actions">${u ? `<button type="button" data-edit-user="${u.id}">Изменить</button>` : ""}${cardNo && !shift ? `${u ? "" : `<button type="button" data-edit-master="${cardNo}">Личное дело</button>`}<button type="button" data-link-master="${cardNo}" title="${u ? "Карточка на главной привязана к этому аккаунту — сменить или отвязать" : "Привязать карточку к аккаунту мастера"}">${u ? "Аккаунт" : "Привязать"}</button>` : ""}${u && u.id !== me.id && !shift ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div>`;
+      return `<tr><td>${identity}</td><td>${status}</td><td>${pointsButton(mp.id)}</td><td><span class="admin-user-balance">${!u || u.balance === null ? "—" : money(u.balance)}</span></td><td>${main}</td><td>${actions}</td></tr>`;
+    };
     body = `<div class="pro-dayline users-line"><div class="pro-dayline__left"><div class="tabs admin-city-tabs users-tabs" role="tablist" aria-label="Кого показать">${shift
       // Админ смены: три значка; у выбранного пункта значок сменяется подписью, бегунок ездит за курсором.
       ? [["all", ico(usersIcons.all), "Все тату-мастера"], ["guest", '<svg class="ui-icon" aria-hidden="true"><use href="#ui-user"></use></svg>', "Обычный профиль"], ["resident", '<img src="assets/resident-mark.svg?v=clean-2" width="17" height="17" alt="">', "Резиденты Private Club"]].map(([value, icon, label]) => `<button type="button" role="tab" class="users-tab--morph" data-users-filter="${value}" aria-selected="${usersFilter === value}" aria-label="${label}"><span class="users-tab__ico" aria-hidden="true">${icon}</span><span class="users-tab__txt" aria-hidden="true">${label}</span></button>`).join("")
-      : [["all", ico(usersIcons.all), 'aria-label="Все пользователи" title="Все пользователи"'], ["master", "Тату-мастера", ""], ["admin", "Админы", ""]].map(([value, label, extra]) => `<button type="button" role="tab" data-users-filter="${value}" aria-selected="${usersFilter === value}" ${extra}>${label}</button>`).join("")}</div>${shift ? "" : `<span class="users-line__gap" aria-hidden="true"></span><button type="button" class="date-open pro-listbtn" id="add-user" aria-label="Новый пользователь" title="Новый пользователь">${ico("M12 5v14M5 12h14")}</button>`}${shift ? "" : `<button type="button" class="date-open pro-listbtn" id="broadcast" aria-label="Рассылка" title="Рассылка">${ico("M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM4 7l8 6 8-6")}</button>`}</div><div class="pro-dayline__center"><strong class="pro-daynav__label">${usersTitle} <span class="users-line__count">${shown.length}</span></strong></div><div class="pro-dayline__right"><div class="pro-dayline__filters">${select("usersTag", "Метка", tagOptions, usersTag)}<input id="list-search" class="pro-list-search" type="search" placeholder="Поиск" aria-label="Поиск по пользователям"></div></div></div><p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="pro-scroll" data-own-search><div class="admin-users-list">${table(
+      : [["all", ico(usersIcons.all), 'aria-label="Все пользователи" title="Все пользователи"'], ["master", "Тату-мастера", ""], ["admin", "Админы", ""]].map(([value, label, extra]) => `<button type="button" role="tab" data-users-filter="${value}" aria-selected="${usersFilter === value}" ${extra}>${label}</button>`).join("")}</div>${shift ? "" : `<span class="users-line__gap" aria-hidden="true"></span><button type="button" class="date-open pro-listbtn" id="add-user" aria-label="Новый пользователь" title="Новый пользователь">${ico("M12 5v14M5 12h14")}</button>`}${shift ? "" : `<button type="button" class="date-open pro-listbtn" id="broadcast" aria-label="Рассылка" title="Рассылка">${ico("M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM4 7l8 6 8-6")}</button>`}${masterView && !shift ? `<button type="button" class="date-open pro-listbtn" id="main-cards" aria-label="Карточки на главной" title="Карточки на главной · ${mainCards.length}">${ico("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z")}</button>` : ""}</div><div class="pro-dayline__center"><strong class="pro-daynav__label">${usersTitle} <span class="users-line__count">${masterView ? masterRows.length : shown.length}</span></strong></div><div class="pro-dayline__right"><div class="pro-dayline__filters">${select("usersTag", "Метка", tagOptions, usersTag)}<input id="list-search" class="pro-list-search" type="search" placeholder="Поиск" aria-label="Поиск по пользователям"></div></div></div>${masterView && !shift ? `<div class="users-subline"><div class="tabs admin-city-tabs users-kind" role="tablist" aria-label="Тип профиля">${[["all", "Все"], ["guest", "Обычный профиль"], ["resident", "Резиденты Private Club"]].map(([v, l]) => `<button type="button" role="tab" data-master-kind="${v}" aria-selected="${masterKind === v}">${l}</button>`).join("")}</div></div>` : ""}<p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="pro-scroll" data-own-search>${masterView ? `<div class="admin-users-list admin-users-list--masters">${table(["Мастер", "Статус и доступ", "Баллы", "Баланс", "На главной", "Действия"], masterRows.map(masterRow))}</div>` : `<div class="admin-users-list">${table(
       ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
         (u) =>
           `<tr><td><div class="admin-user-identity"><span class="admin-user-name"><button type="button" class="pro-link" data-user-card="${u.id}">${esc(u.name)}</button>${copyButton(u.name,"имя")}</span>${u.staff_level === "shift" && !u.email ? `<span class="admin-user-email"><span>Вход по паролю</span>${copyButton(shiftLoginLink(),"ссылку для входа")}</span>` : `<span class="admin-user-email"><span>${esc(u.email)}</span>${copyButton(u.email,"email")}</span>`}<span class="pro-tags">${AP.tagChips(u)}</span></div></td><td><div class="admin-user-role">${roleLabel(u)}</div><span class="admin-user-status${u.active ? " is-active" : ""}">${u.active ? "Активен" : "Доступ закрыт"}</span></td><td>${pointsButton(u.id)}</td><td><span class="admin-user-balance">${u.balance === null ? "—" : money(u.balance)}</span></td><td><div class="admin-user-actions"><button type="button" data-edit-user="${u.id}">Изменить</button>${u.id!==me.id ? `<button type="button" class="admin-user-remove" data-delete-user="${u.id}" aria-label="Удалить пользователя ${esc(u.name)}" title="Удалить пользователя"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6m4-6v6"/></svg></button>` : ""}</div></td></tr>`,
       ),
-    )}</div>${usersFilter === "master" || (shift && usersFilter === "all") ? `<h3 class="users-cards-title">Карточки мастеров на сайте</h3><p data-help class="small muted">Архивные карточки с главной. Укажите реальные имена, распределите работы и привяжите карточку к аккаунту мастера — тогда имя, резидентство и статистика будут браться из аккаунта. Личные страницы сохраняются, даже если карточка скрыта с главной.</p>${table(
-      ["Фото", "Мастер", "Баллы", "На главной", ""],
-      masters.map(
-        (m) =>
-          `<tr><td><img src="${m.photo}" alt="" style="width:44px;height:55px;object-fit:cover"></td><td>${esc(m.name)}</td><td>${pointsButton(legacyMasters[m.id-1].id)}</td><td><label class="check"><input type="checkbox" data-featured-master="${m.id}" aria-label="Показывать ${esc(m.name)} на главной" ${m.featured ? "checked" : ""}><span>${m.featured ? "Показывается" : "Скрыт"}</span></label></td><td><button data-edit-master="${m.id}">Личное дело</button> <button data-link-master="${m.id}">Привязать аккаунт</button></td></tr>`,
-      ),
-    )}` : ""}</div>`;
+    )}</div>`}</div>`;
   }
   if (adminTab === "catalog")
     body = `<div class="admin-tools">${AP.isShift() ? "" : '<button class="chrome" id="add-catalog">+ Товар или услуга</button>'}</div>${table(
@@ -1497,6 +1513,31 @@ function mountAdmin() {
         render();
       }),
   );
+  $$("[data-master-kind]").forEach((b) => (b.onclick = () => { masterKind = b.dataset.masterKind; adminCache = true; render(); }));
+  // «На главной»: сразу сохраняем выбор и обновляем список без перезагрузки.
+  const setMain = async (id, onMain) => {
+    await api("/admin/masters/" + encodeURIComponent(id) + "/main", "PATCH", { onMain });
+    const mp = adminData.masterPoints?.find((m) => m.id === id);
+    if (mp) mp.onMain = onMain;
+    const dm = window.DATA.masters.find((m) => m.id === id);
+    if (dm) dm.onMain = onMain;
+    notify(onMain ? "Карточка добавлена на главную" : "Карточка убрана с главной");
+  };
+  $$("[data-main-master]").forEach((input) => (input.onchange = async () => {
+    input.disabled = true;
+    try { await setMain(input.dataset.mainMaster, input.checked); adminCache = true; await render(); }
+    catch (error) { input.checked = !input.checked; input.disabled = false; notify(error.message); }
+  }));
+  if ($("#main-cards")) $("#main-cards").onclick = () => {
+    const paint = () => {
+      const cards = (adminData.masterPoints || []).filter((m) => m.onMain);
+      modal(`<h2>Карточки на главной</h2><p class="small muted">Эти мастера стоят карточками на главной странице. Без фото карточка на главной не показывается. Добавить мастера — переключатель «На главной» в списке.</p>${cards.length ? `<div class="main-cards">${cards.map((m) => `<figure class="main-card${m.avatar ? "" : " is-empty"}">${m.avatar ? `<img src="${esc(m.avatar)}" alt="">` : `<span>${esc(String(m.name).slice(0, 1))}</span>`}<figcaption><b>${esc(m.name)}</b><small>${m.resident ? "Резидент Private Club" : "Обычный профиль"}${m.avatar ? "" : " · нет фото"}</small></figcaption><button type="button" class="small" data-main-remove="${esc(m.id)}">Убрать</button></figure>`).join("")}</div>` : '<p>Пока на главной нет карточек.</p>'}<p><a class="chrome" href="#/masters">Открыть главную ↗</a></p>`);
+      $$("[data-main-remove]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { await setMain(b.dataset.mainRemove, false); paint(); } catch (error) { b.disabled = false; notify(error.message); } }));
+      $$('#dialog a[href="#/masters"]').forEach((link) => link.addEventListener("click", () => $("#dialog").close()));
+    };
+    paint();
+    $("#dialog").addEventListener("close", () => { adminCache = true; render(); }, { once: true });
+  };
   const usersTagSelect = $('.admin-content [name="usersTag"]');
   if (usersTagSelect) usersTagSelect.onchange = () => { usersTag = usersTagSelect.value; render(); };
   $$("[data-users-tag]").forEach((b) => (b.onclick = () => { usersTag = usersTag === b.dataset.usersTag ? "" : b.dataset.usersTag; render(); }));
