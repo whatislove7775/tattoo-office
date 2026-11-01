@@ -1142,7 +1142,8 @@ function mountCabinet() {
     const dirty=()=>{gallery.dataset.dirty='1';};
     gallery.addEventListener('input',dirty);gallery.addEventListener('drop',dirty);
     gallery.addEventListener('click',e=>{if(e.target.closest('[data-move],[data-up],[data-down]'))dirty();if(e.target.closest('#gallery-save,[data-delete],[data-transfer]'))gallery.dataset.dirty='';});
-    mountGallery(gallery,api,notify,refresh,profileTab).catch(e=>notify(e.message));
+    // После изменения фото рейтинг во вкладке «Личное дело» пересчитывается сразу.
+    mountGallery(gallery,api,notify,async()=>{await refresh();if(cabTab==="profile")setTimeout(()=>render(),0);},profileTab).catch(e=>notify(e.message));
   }
   $$("[data-ptab]").forEach((b) => (b.onclick = () => { profileTab = b.dataset.ptab; render(); }));
   // «Редактировать», клик по фото и пустые поля открывают личное дело в окне поверх профиля.
