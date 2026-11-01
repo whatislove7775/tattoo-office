@@ -33,7 +33,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
       age:p.birthDate?ageFromBirthDate(p.birthDate):(Number.isInteger(p.age)?p.age:base.age||null),exp:text(p.experience,80)||base.exp||'',
       bookingLink:p.adminBookingLink===undefined?base.bookingLink||'':bookingContact(p.adminBookingLink),rankingVisible:p.rankingVisible!==false,
       // «На главной»: выбор владельца; по умолчанию как раньше — резиденты (у карточки из архива — если она не скрыта).
-      onMain:typeof base.mainChoice==='boolean'?base.mainChoice:typeof p.adminMainCard==='boolean'?p.adminMainCard:(base.featuredFlag??true)&&resident,
+      onMain:archived?false:typeof base.mainChoice==='boolean'?base.mainChoice:typeof p.adminMainCard==='boolean'?p.adminMainCard:(base.featuredFlag??true)&&resident,
       completed:u.completed,bookings:u.bookings,score:0,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};
@@ -44,7 +44,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
     const c=byContent.get(m.contentId)||{};
     const base={id:m.id,name:c.title||localized(m.name),city:localized(m.city),age:m.age,exp:localized(m.exp),avatar:m.photo,
       bio:c.body||localized(m.bio),specialty:c.specialty||'',resident:typeof c.resident==='boolean'?c.resident:m.resident===true,active:c.archived!==true,archived:c.archived===true,registered:false,featured:c.featured!==false,rankingVisible:true,
-      mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&(typeof c.resident==='boolean'?c.resident:m.resident===true),
+      mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:c.archived===true?false:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&(typeof c.resident==='boolean'?c.resident:m.resident===true),
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,
       portfolio:(c.portfolio?.length?c.portfolio.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.portfolio.map(w=>({...w,cap:''}))),
       drafts:(c.drafts?.length?c.drafts.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.drafts.map(w=>({...w,cap:''})))};

@@ -2870,3 +2870,5 @@ html,body,body * {-webkit-user-select:none;user-select:none;-webkit-touch-callou
 input,textarea,select,[contenteditable="true"],[contenteditable=""],input *,textarea * {-webkit-user-select:text!important;user-select:text!important;-webkit-touch-callout:default;}
 img {-webkit-user-drag:none;}
 .admin-users-list--masters td:nth-child(6) .small {white-space:nowrap;}
+.mu-row--archived td {color:var(--ink-2);}
+.mu-row--archived .mu-photo img:first-child {filter:grayscale(1);opacity:.7;}

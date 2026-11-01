@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { database } from "../server/db.js";
 import { createApp } from "../server/index.js";
-import { hashToken } from "../server/domain.js";
+import { hashToken, hashPassword } from "../server/domain.js";
 
 test("owner chooses which master profiles are cards on the main page", async () => {
   process.env.DATA_DIR = "memory://";
@@ -81,6 +81,14 @@ test("master status switch: regular, resident, archive; itemized points history"
     assert.equal((await directory()).some((m) => m.id === guest.id), false);
     const admin = await (await call(owner, "/admin", "GET")).json();
     assert.equal(admin.masterPoints.find((m) => m.id === guest.id).archived, true);
+    // В архиве: войти нельзя (понятное сообщение), на главную нельзя, в рейтинге его нет — а баллы сохраняются.
+    await db.query("UPDATE users SET password=$1 WHERE id=$2", [hashPassword("Guest-password-2026"), guest.id]);
+    const blocked = await fetch(origin + "/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "guest@test.invalid", password: "Guest-password-2026", accountType: "master" }) });
+    assert.equal(blocked.status, 403);
+    assert.match((await blocked.json()).error, /профиль находится в архиве/);
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/main`, "PATCH", { onMain: true })).status, 409);
+    const ranking = await (await fetch(origin + "/api/ranking?period=all")).json();
+    assert.equal((ranking.masters || []).some((m) => m.id === guest.id), false);
     // Из архива обратно в обычный профиль.
     assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "guest" })).status, 200);
     const back = (await directory()).find((m) => m.id === guest.id);
@@ -101,6 +109,10 @@ test("master status switch: regular, resident, archive; itemized points history"
     const manual = history.history.find((h) => h.action === "Ручное изменение");
     assert.ok(manual.at && manual.method.startsWith("Вручную") && manual.points === 40 && /стало 40/.test(manual.reason));
     assert.equal(history.score, 40);
+    // Удалить тату-мастера можно только из архива.
+    assert.equal((await call(owner, `/admin/users/${guest.id}`, "DELETE")).status, 409);
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "archive" })).status, 200);
+    assert.equal((await call(owner, `/admin/users/${guest.id}`, "DELETE")).status, 200);
   } finally {
     server.close();
   }

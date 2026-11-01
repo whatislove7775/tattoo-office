@@ -27,6 +27,17 @@ test("preview test mode: seeded database, one-click login, admin overview throug
     assert.ok(ov.attention.risky.length >= 1);
     assert.ok(ov.attention.invoices.length >= 1);
     assert.ok(ov.stats.month.revenue > 0);
+    // История баллов в тестовом режиме есть у всех: автоматические начисления и ручные изменения.
+    const adminData = await (await fetch(base + "/api/demo/admin", { headers: { Cookie: cookie } })).json();
+    const katya = adminData.masterPoints.find((m) => m.name === "Катя Иванова");
+    const katyaHistory = (await (await fetch(base + "/api/demo/admin/masters/" + katya.id + "/points-history", { headers: { Cookie: cookie } })).json()).history;
+    assert.ok(katyaHistory.some((h) => h.method === "Автоматически" && h.action === "Сеанс завершён и оплачен"), "Катя получает баллы за оплаченные сеансы");
+    assert.ok(katyaHistory.some((h) => h.action === "Дополнительная услуга"));
+    assert.ok(katyaHistory.some((h) => h.method.startsWith("Вручную") && h.points < 0), "ручной штраф виден в истории");
+    for (const m of adminData.masterPoints) {
+      const h = (await (await fetch(base + "/api/demo/admin/masters/" + encodeURIComponent(m.id) + "/points-history", { headers: { Cookie: cookie } })).json()).history;
+      assert.ok(h.length > 0, "история баллов есть у " + m.name);
+    }
     const byPassword = await fetch(base + "/api/demo/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "owner@demo.tattoo-office", password: "Test-owner-2026", accountType: "admin" }) });
     assert.equal(byPassword.status, 200);
     assert.equal((await byPassword.json()).user.role, "admin");

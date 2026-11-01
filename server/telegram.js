@@ -104,6 +104,7 @@ export function telegramRoutes(app, { db, session, auth }) {
     }
     if (existing) {
       if (!existing.active) fail("Доступ закрыт администратором", 403);
+      if (existing.account_type === "master" && existing.profile?.archived === true) fail("Ваш профиль находится в архиве. Обратитесь к администратору", 403);
       await session(res, existing);
       res.redirect("/#/cabinet");
       return;

@@ -423,6 +423,7 @@ export async function createApp(db) {
       !verifyPassword(req.body.password, u.password)
     )
       fail("Email или пароль не совпадают", 401);
+    if (u.account_type === "master" && u.profile?.archived === true) fail("Ваш профиль находится в архиве. Обратитесь к администратору", 403);
     await session(res, u);
     res.json({ user: safe(u) });
   });
@@ -1147,9 +1148,11 @@ export async function createApp(db) {
     if(req.params.id===req.user.id)fail("Нельзя удалить собственный аккаунт администратора",403);
     await db.transaction(async q=>{
       await lock(q);
-      const user=await one(q,"SELECT id,role,deleted_at FROM users WHERE id=$1",[req.params.id]);
+      const user=await one(q,"SELECT id,role,account_type,profile,deleted_at FROM users WHERE id=$1",[req.params.id]);
       if(!user)fail("Пользователь не найден",404);
       if(user.deleted_at)return;
+      // Тату-мастера удаляются только из архива.
+      if(user.account_type==="master"&&["guest","resident"].includes(user.role)&&user.profile?.archived!==true)fail("Сначала перенесите мастера в архив — удалить можно только из архива",409);
       if(user.role==='admin') {
         const admins=await one(q,"SELECT COUNT(*)::int AS count FROM users WHERE role='admin' AND active=true AND deleted_at IS NULL");
         if(admins.count<=1)fail("Нельзя удалить последнего администратора",409);
@@ -1228,13 +1231,17 @@ export async function createApp(db) {
       const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
       const userId=master.registered?(link?.user_id||master.id):null;
       if(userId){
-        if(status==="archive") await q.query("UPDATE users SET profile=profile||'{\"archived\":true}'::jsonb WHERE id=$1",[userId]);
+        if(status==="archive"){
+          // В архиве: не на главной, без места в рейтинге (баллы сохраняются), войти нельзя — сессии закрываем.
+          await q.query("UPDATE users SET profile=profile||'{\"archived\":true,\"adminMainCard\":false}'::jsonb WHERE id=$1",[userId]);
+          await q.query("DELETE FROM sessions WHERE user_id=$1",[userId]);
+        }
         else {
           await q.query("UPDATE users SET role=$1,profile=profile||'{\"archived\":false}'::jsonb,deposit_waived=CASE WHEN $1='resident' THEN deposit_waived ELSE false END WHERE id=$2 AND role IN ('guest','resident')",[status,userId]);
           await q.query("DELETE FROM sessions WHERE user_id=$1",[userId]);
         }
       }
-      if(catalogIds.has(master.id)) await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[catalogContentId(master.id),JSON.stringify(status==="archive"?{archived:true}:{archived:false,resident:status==="resident"})]);
+      if(catalogIds.has(master.id)) await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[catalogContentId(master.id),JSON.stringify(status==="archive"?{archived:true,mainCard:false}:{archived:false,resident:status==="resident"})]);
       await audit(q,req.user.id,"master.status.update",{id:master.id,status});
     });
     res.json({ok:true});
@@ -1247,6 +1254,7 @@ export async function createApp(db) {
       await lock(q);
       const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
       if(!master)fail("Мастер не найден",404);
+      if(master.archived&&req.body.onMain)fail("Мастер в архиве — на главную его поставить нельзя",409);
       if(catalogIds.has(master.id)) await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[catalogContentId(master.id),JSON.stringify({mainCard:req.body.onMain})]);
       else await q.query("UPDATE users SET profile=profile||$1::jsonb WHERE id=$2",[JSON.stringify({adminMainCard:req.body.onMain}),master.id]);
       await audit(q,req.user.id,"master.main.update",{id:master.id,onMain:req.body.onMain});

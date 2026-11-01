@@ -1,5 +1,6 @@
 import { randomUUID as uuid, randomBytes } from "node:crypto";
 import { hashPassword, hashToken } from "./domain.js";
+import { masterDirectory, catalogContentId } from "./master-directory.js";
 
 // Тестовый режим на превью Vercel: своя база в памяти с примерами данных,
 // чтобы все функции админки и кабинета можно было проверить без боевого сервера.
@@ -40,17 +41,21 @@ export async function seedDemo(db) {
   const places = (await db.query("SELECT id FROM resources WHERE NOT deleted ORDER BY name")).rows.map((r) => r.id);
   const booking = async (user, place, start, hours, status, extra = {}) => {
     const id = did("8004"), total = extra.total ?? 320000, deposit = extra.deposit ?? 50000;
-    await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status,deposit,policy,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$7,$8,$9,$10,$11)", [id, ids[user], places[place % places.length], start, new Date(+start + hours * 3600000), hours, total, status, deposit, JSON.stringify(extra.policy || {}), new Date(+start - 5 * 86400000)]);
+    const extras = extra.extras || [], sum = total + extras.reduce((a, x) => a + x.price * x.qty, 0);
+    await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status,deposit,policy,created_at,extras) VALUES($1,$2,$3,$4,$5,$6,$7,$12,$8,$9,$10,$11,$13)", [id, ids[user], places[place % places.length], start, new Date(+start + hours * 3600000), hours, total, status, deposit, JSON.stringify(extra.policy || {}), new Date(+start - 5 * 86400000), sum, JSON.stringify(extras)]);
+    // Завершённые сеансы оплачены по-настоящему (наличными в студии) — за них начисляются рейтинговые баллы.
+    const real = status === "completed";
     if (["confirmed", "invoiced", "completed", "no_show", "cancel_requested"].includes(status) && deposit)
-      await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,created_at,is_test) VALUES($1,$2,'deposit',$3,'paid',$4,$5,true)", [did("8005"), id, deposit, "demo-" + id + "-d", new Date(+start - 4 * 86400000)]);
-    if (status === "completed" && total > deposit)
-      await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,created_at,is_test) VALUES($1,$2,'final',$3,'paid',$4,$5,true)", [did("8005"), id, total - deposit, "demo-" + id + "-f", new Date(+start + hours * 3600000)]);
+      await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,created_at,is_test) VALUES($1,$2,'deposit',$3,'paid',$4,$5,$6)", [did("8005"), id, deposit, (real ? "cash:demo-" : "demo-") + id + "-d", new Date(+start - 4 * 86400000), !real]);
+    if (status === "completed" && sum > deposit)
+      await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,created_at,is_test) VALUES($1,$2,'final',$3,'paid',$4,$5,$6)", [did("8005"), id, sum - deposit, (real ? "cash:demo-" : "demo-") + id + "-f", new Date(+start + hours * 3600000), !real]);
     if (status === "invoiced")
       await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,created_at) VALUES($1,$2,'final',$3,'pending',$4)", [did("8005"), id, total - deposit, new Date(+start + hours * 3600000)]);
     return id;
   };
   // Катя — 9 завершённых сеансов за 2 месяца: кандидат в резиденты.
-  for (let i = 0; i < 9; i++) await booking("master", i, MSK(-3 - i * 6, 12), 3, "completed");
+  const kit = [{ kind: "service", name: "Сборка места", price: 50000, qty: 1 }, { kind: "product", name: "Защитная плёнка", price: 30000, qty: 2 }];
+  for (let i = 0; i < 9; i++) await booking("master", i, MSK(-3 - i * 6, 12), 3, "completed", i % 4 === 0 ? { extras: kit } : {});
   // Сегодня и ближайшие дни.
   await booking("master", 0, MSK(0, 14), 3, "confirmed");
   await booking("resident", 1, MSK(0, 11), 6, "confirmed", { total: 450000, deposit: 0, policy: { paymentMethod: "cash" } });
@@ -64,7 +69,7 @@ export async function seedDemo(db) {
   await booking("risky", 2, MSK(-10, 12), 3, "no_show");
   await booking("risky", 1, MSK(-20, 12), 3, "no_show");
   // Прошлый месяц для сравнения.
-  for (let i = 0; i < 6; i++) await booking("resident", i, MSK(-33 - i * 4, 12), 6, "completed", { total: 450000 });
+  for (let i = 0; i < 6; i++) await booking("resident", i, MSK(-33 - i * 4, 12), 6, "completed", { total: 450000, ...(i === 1 ? { extras: kit } : {}) });
   await db.query("UPDATE catalog SET stock=2 WHERE id=(SELECT id FROM catalog WHERE kind='product' ORDER BY name LIMIT 1)");
   await db.query("INSERT INTO feedback(id,message,status,contact,created_at) VALUES($1,'Было бы здорово поставить ещё одну лампу у второго места.','new','guest@example.com',now()-interval '1 day'),($2,'Спасибо за кофе и музыку!','done','',now()-interval '8 days')", [did("8006"), did("8006")]);
   await db.query("INSERT INTO promo_codes(code,kind,value,max_uses,note) VALUES('OFFICE10','percent',10,100,'Пример промокода')");
@@ -72,6 +77,25 @@ export async function seedDemo(db) {
   await booking("master", 2, MSK(1, 16), 3, "confirmed", { deposit: 0, policy: { masterConfirm: "awaiting", adminCreated: true } });
   const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(Date.now() + 2 * 86400000));
   await db.query("INSERT INTO waitlist(id,user_id,city,date,hour,duration) VALUES($1,$2,'spb',$3,12,3)", [did("8007"), ids.master, day]);
+  // История баллов у каждого: сеансы новичка и Миши, затем ручные изменения владельца (с записью в журнале).
+  await booking("newbie", 3, MSK(-2, 10), 3, "completed");
+  await booking("risky", 0, MSK(-15, 12), 3, "completed");
+  const manual = async (masterId, previous, score, daysAgo) => db.query("INSERT INTO audit(id,actor,action,details,created_at) VALUES($1,$2,'master.points.update',$3,now()-$4*interval '1 day')", [did("8008"), ids.owner, JSON.stringify({ id: masterId, previous, score }), daysAgo]);
+  const directory = await masterDirectory(db, { includeInactive: true });
+  const earned = (id) => directory.find((m) => m.id === id)?.score || 0;
+  for (const [key, delta, daysAgo] of [["master", -26, 4], ["resident", 100, 12], ["risky", -40, 9], ["newbie", 15, 1]]) {
+    const id = ids[key], before = earned(id);
+    await db.query("UPDATE users SET profile=profile||$1::jsonb WHERE id=$2", [JSON.stringify({ adminPointsAdjustment: delta }), id]);
+    await manual(id, before, Math.max(0, before + delta), daysAgo);
+  }
+  // Карточки из архива студии: баллы перенесены вручную, у части — два изменения.
+  const cards = [["zinaida", 611], ["mr-a", 883], ["sexova", 515], ["kostya", 323], ["vera", 248], ["gleb", 285], ["nastya", 322], ["petr", 359], ["liza", 396], ["sasha", 433]];
+  for (const [i, [id, score]] of cards.entries()) {
+    const first = i % 3 === 0 ? Math.round(score * 0.7) : score;
+    await manual(id, 0, first, 60 - i * 3);
+    if (first !== score) await manual(id, first, score, 20 - i);
+    await db.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb", [catalogContentId(id), JSON.stringify({ pointsAdjustment: score })]);
+  }
 }
 
 // Вход в тестовый аккаунт одной кнопкой (только в тестовом режиме).
