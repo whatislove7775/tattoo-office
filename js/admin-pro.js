@@ -80,6 +80,7 @@ const paymentMethod = (p, a) => {
   return b?.policy?.paymentMethod === "cash" ? "cash" : "online";
 };
 const METHOD = { online: "Онлайн", cash: "Наличные" };
+const PAYMENT_KIND = { deposit: "Предоплата", final: "Итоговый счёт", extension: "Продление" };
 function filteredPayments(a) {
   const f = financeFilter;
   return a.payments.filter((p) => {
@@ -94,9 +95,9 @@ export function financeHTML(a, s) {
   const byMethod = Object.keys(METHOD).map((m) => [m, sum(paid.filter((p) => paymentMethod(p, a) === m))]);
   const userOf = (p) => a.bookings.find((b) => b.id === p.booking_id);
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
-  <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ["deposit", "Предоплата"], ["final", "Итоговый счёт"]], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button></div></form>
+  <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(PAYMENT_KIND)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${p.kind === "deposit" ? "Предоплата" : "Итоговый счёт"}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${statusName[p.status] || esc(p.status)}</td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${PAYMENT_KIND[p.kind] || esc(p.kind)}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${statusName[p.status] || esc(p.status)}${p.status === "pending" && paymentMethod(p, a) === "cash" && ["final", "extension"].includes(p.kind) ? `<br><button type="button" class="chrome" data-cash-payment="${p.id}">Оплата получена</button>` : ""}</td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -127,7 +128,7 @@ export function settingsFieldset(s) {
   const { field, textarea } = c, rr = s.residentRule || {};
   const hours = (name, label, value) => c.select(name, label, Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), value);
   return `<fieldset class="admin-group"><legend>Автоматизация</legend>
-  <label class="check"><input name="pro_autoInvoice" type="checkbox" ${s.autoInvoice === true ? "checked" : ""}><span>Выставлять итоговый счёт автоматически через 15 минут после окончания сеанса (по забронированному тарифу)</span></label>
+  <label class="check"><input name="pro_autoInvoice" type="checkbox" ${s.autoInvoice === true ? "checked" : ""}><span>Выставлять итоговый счёт после окончания забронированного времени (по исходному тарифу)</span></label>
   <p data-help class="small muted">Напоминания уходят сами: за ${s.reminderHours || 24} ч и за 2 ч до сеанса, а также через сутки после сеанса, если счёт не оплачен. Мастер из листа ожидания получает сообщение, когда место освобождается.</p>
   <div class="form-grid">${field("pro_resSessions", "Кандидат в резиденты: сеансов", rr.sessions ?? 8, "number", 'min="1" max="100" step="1" data-plain-number="true"')}${field("pro_resDays", "…за дней", rr.days ?? 60, "number", 'min="7" max="365" step="1" data-plain-number="true"')}${field("pro_resInactive", "Резидент неактивен после, дней", rr.inactiveDays ?? 90, "number", 'min="14" max="365" step="1" data-plain-number="true"')}</div>
   <div class="wide">${textarea("pro_replyTemplates", "Шаблоны ответов на обращения (каждый с новой строки)", (s.replyTemplates || DEFAULT_TEMPLATES).join("\n"))}</div></fieldset>`;
@@ -280,7 +281,7 @@ export function mount(tab) {
     ff.onchange = () => { Object.assign(financeFilter, Object.fromEntries(new FormData(ff))); render(); };
     $$("[data-finance-range]").forEach((b) => (b.onclick = () => { const t = c.today(); financeFilter = { ...financeFilter, from: b.dataset.financeRange === "month" ? t.slice(0, 8) + "01" : "", to: b.dataset.financeRange === "month" ? t : "" }; render(); }));
     $("#finance-csv").onclick = () => {
-      const rows = filteredPayments(a).map((p) => { const b = a.bookings.find((x) => x.id === p.booking_id); return [mskDay(p.created_at), p.id, b?.user_name || "", p.kind === "deposit" ? "Предоплата" : "Итоговый счёт", METHOD[paymentMethod(p, a)], (p.amount / 100).toFixed(2).replace(".", ","), c.statusName[p.status] || p.status]; });
+      const rows = filteredPayments(a).map((p) => { const b = a.bookings.find((x) => x.id === p.booking_id); return [mskDay(p.created_at), p.id, b?.user_name || "", PAYMENT_KIND[p.kind] || p.kind, METHOD[paymentMethod(p, a)], (p.amount / 100).toFixed(2).replace(".", ","), c.statusName[p.status] || p.status]; });
       downloadCSV(`tattoo-office-payments-${c.today()}.csv`, ["Дата", "Платёж", "Мастер", "Назначение", "Способ", "Сумма, ₽", "Статус"], rows);
     };
   }

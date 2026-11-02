@@ -830,21 +830,12 @@ async function mountBooking() {
   };
 }
 async function paymentPage(id) {
-  const { payment: p, mode, provider, test } = await api("/payments/" + id);
+  const { payment: p, provider, test, testPaymentAvailable } = await api("/payments/" + id);
+  const purpose = p.kind === "deposit" ? "Предоплата рабочего места" : p.kind === "extension" ? `Доплата за продление до ${p.policy?.extensionHold?.hours || p.tariff} часов` : "Остаток за забронированное время";
+  const calculation = p.kind === "final" ? `<div><dt>Полная стоимость</dt><dd>${money(p.policy?.finalReceiptSnapshot?.total ?? p.total)}</dd></div><div><dt>Предоплата учтена</dt><dd>−${money(p.policy?.finalReceiptSnapshot?.deposit ?? p.deposit)}</dd></div>` : p.kind === "extension" ? `<div><dt>Уже оплаченный тариф</dt><dd>До ${p.tariff} часов</dd></div><div><dt>Доплата</dt><dd>${money(p.amount)}</dd></div>` : "";
   return win(
     "Оплата",
-    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p></div><dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city]||p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome payment-primary" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
-      p.kind === "final" && p.status === "pending"
-        ? `<div style="margin-top:25px">${select(
-            "upgrade",
-            "Если сеанс занял больше времени",
-            [3, 6, 12]
-              .filter((h) => h >= p.tariff)
-              .map((h) => [h, "До " + h + " часов"]),
-            p.tariff,
-          )}<button class="chrome" id="upgrade-invoice" data-booking="${p.booking_id}">Пересчитать счёт</button></div>`
-        : ""
-    }</div>${p.kind === "deposit" && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до "+timeLabel(p.expires_at)+" (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
+    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${purpose}</p></div><dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city]||p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div>${calculation}</dl><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : testPaymentAvailable ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<p class="note-paper">Онлайн-оплата пока не подключена. Для расчёта обратитесь к администратору.</p>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}</div>${p.kind === "deposit" && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до "+timeLabel(p.expires_at)+" (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : p.kind === "extension" && p.status === "pending" ? '<p class="small muted">Дополнительное время закрепится за вами после оплаты. Резерв действует 20 минут.</p>' : ""}</div>`,
     "cabinet",
   );
 }
@@ -969,10 +960,11 @@ async function cabinetPage() {
   const awaiting = active.filter((b) => b.policy?.masterConfirm === "awaiting");
   const awaitingBlock = awaiting.length ? `<section class="cabinet-confirm" aria-label="Записи ждут вашего подтверждения"><span class="eyebrow">НУЖНО ВАШЕ ПОДТВЕРЖДЕНИЕ</span>${awaiting.map((b) => `<article class="cabinet-confirm__item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p class="small muted">${esc(b.resource_name)} · до ${b.tariff} ч · без предоплаты. Администратор ${b.policy?.adminCreated && b.policy?.moved ? "перенёс" : "создал"} для вас эту запись.</p></div><div class="row"><button type="button" class="chrome pro-primary" data-master-confirm="${b.id}">Подтвердить</button><a class="chrome" href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer">Связаться с админом</a></div></article>`).join("")}</section>` : "";
   let body = "";
-  if (cabTab === "bookings")
-    body = active.length
-      ? active.map((b) => bookingItem(b, data.payments)).join("")
-      : '<div class="empty">В вашем календаре пока тихо.<br><br><a href="#/booking">Забронировать первое место →</a></div>';
+  if (cabTab === "bookings") {
+    const recent = data.bookings.filter(b => b.status === "completed" && b.tariff < 12 && new Date(b.ends_at) <= new Date() && Date.now() - new Date(b.ends_at).getTime() <= 24 * 3600000);
+    const shown = [...active, ...recent];
+    body = shown.length ? shown.map(b => bookingItem(b, data.payments)).join("") : '<div class="empty">В вашем календаре пока тихо.<br><br><a href="#/booking">Забронировать первое место →</a></div>';
+  }
   if (cabTab === "history")
     body =
       data.bookings
@@ -1038,7 +1030,11 @@ function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p>${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+  const ended = new Date(b.ends_at) <= new Date();
+  const needsSettlement = ended && b.status === "confirmed" && !b.policy?.finalSettled && b.policy?.masterConfirm !== "awaiting";
+  const canExtend = ended && b.status === "completed" && b.tariff < 12 && Date.now() - new Date(b.ends_at).getTime() <= 24 * 3600000 && !b.policy?.extensionHold;
+  const paymentLabel = payment?.kind === "extension" ? "Оплатить продление" : payment?.kind === "final" ? "Оплатить остаток" : "Оплатить";
+  return `<article class="booking-item ${needsSettlement || b.status === "invoiced" ? "booking-item--due" : ""}"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}${b.status === "invoiced" ? ` · к оплате ${money(Math.max(0,b.total-b.deposit))}` : ""}</p>${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${needsSettlement ? "Время завершилось · нужен расчёт" : statusName[b.status]}</span>`}</div><div class="row">${needsSettlement ? `<button type="button" class="chrome" data-finish="${b.id}">Завершить и оплатить</button>` : ""}${payment ? `<a href="#/payment/${payment.id}" class="chrome">${paymentLabel} ${money(payment.amount)}</a>` : ""}${canExtend ? `<button type="button" class="chrome" data-extend="${b.id}">Продлить сеанс</button>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 // Фото и сохранение личного дела — и во вкладке, и в окне «Редактировать профиль».
 function mountProfileForm(onSaved) {
@@ -1075,6 +1071,31 @@ function mountCabinet() {
     try { await api(`/bookings/${b.dataset.masterConfirm}/master-confirm`, "POST", {}); notify("Запись подтверждена"); await render(); }
     catch (error) { b.disabled = false; notify(error.message); }
   }));
+  $$('[data-finish]').forEach(button => button.onclick = async () => {
+    button.disabled = true;
+    try {
+      const result = await api(`/bookings/${button.dataset.finish}/finish`, "POST", {});
+      if (result.paymentId) go("payment/" + result.paymentId);
+      else { notify("Сеанс закрыт: остаток к оплате — 0 ₽"); await render(); }
+    } catch (error) { button.disabled = false; notify(error.message); }
+  });
+  $$('[data-extend]').forEach(button => button.onclick = async () => {
+    button.disabled = true;
+    try {
+      const { options } = await api(`/bookings/${button.dataset.extend}/extension-options`);
+      if (!options.length) { notify("Свободного дополнительного времени нет. Обратитесь к администратору."); return; }
+      modal(`<h2>Продлить сеанс</h2><p>Исходный тариф уже оплачен. Выберите длительность: доплата — только разница между тарифами. Место закрепится после оплаты.</p><div class="settlement-options">${options.map(o => `<button type="button" class="chrome" data-extension-hours="${o.hours}">До ${o.hours} часов · +${money(o.amount)}</button>`).join("")}</div>`);
+      $$('[data-extension-hours]', $('#dialog')).forEach(option => option.onclick = async () => {
+        option.disabled = true;
+        try {
+          const result = await api(`/bookings/${button.dataset.extend}/extend`, "POST", { duration: Number(option.dataset.extensionHours) });
+          $('#dialog').close();
+          go("payment/" + result.paymentId);
+        } catch (error) { option.disabled = false; notify(error.message); }
+      });
+    } catch (error) { notify(error.message); }
+    finally { button.disabled = false; }
+  });
   const profileLink = $("#public-profile-link");
   if (profileLink) {
     profileLink.addEventListener("focus", () => profileLink.select());
@@ -2146,21 +2167,6 @@ async function render() {
       case "payment":
         html = await paymentPage(path[1]);
         mount = () => {
-          if ($("#upgrade-invoice"))
-            $("#upgrade-invoice").onclick = async () => {
-              try {
-                await api(
-                  "/bookings/" +
-                    $("#upgrade-invoice").dataset.booking +
-                    "/upgrade",
-                  "POST",
-                  { duration: Number($("[name=upgrade]").value) },
-                );
-                render();
-              } catch (e) {
-                notify(e.message);
-              }
-            };
           if ($("#card-pay"))
             $("#card-pay").onclick = async () => {
               try {

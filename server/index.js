@@ -7,7 +7,7 @@ import {adminMasterProfileRoutes} from "./admin-master-profile.js";
 import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
-import {createInvoice} from "./invoicing.js";
+import {createInvoice,extensionRate} from "./invoicing.js";
 import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswordFree,shiftAdminEmail,hideShiftEmail} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
@@ -62,6 +62,8 @@ export async function createApp(db) {
     const row = (await q.query("SELECT data FROM settings WHERE id=1 FOR UPDATE")).rows[0];
     let updated = updateLegalDocuments(updateOperatorDetails(row.data));
     if (!updated.website) updated = {...updated,website:"https://tattoo-office.com"};
+    if (updated.taxationRegime === "ausn" && (!updated.taxationObject || !updated.taxationRate)) updated = {...updated,taxationObject:"income",taxationRate:8};
+    if (updated.settlementFlowVersion !== 1) updated = {...updated,autoInvoice:true,settlementFlowVersion:1,settlementFlowStartedAt:new Date().toISOString()};
     if (updated.rulesContentVersion !== studioRulesVersion) updated = {...updated, rules:studioRules, rulesVersion:studioRulesVersion, rulesContentVersion:studioRulesVersion};
     if (updated !== row.data) await q.query("UPDATE settings SET data=$1 WHERE id=1", [JSON.stringify(updated)]);
   });
@@ -1392,6 +1394,24 @@ export async function createApp(db) {
     });
     res.json(result);
   });
+  app.post("/api/bookings/:id/finish", auth, async (req, res) => {
+    const result = await db.transaction(async q => {
+      await lock(q);
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE", [req.params.id, req.user.id]);
+      if (!b) fail("Бронь не найдена", 404);
+      if (new Date(b.ends_at) > new Date()) fail("Дождитесь окончания забронированного времени", 409);
+      if (b.policy?.masterConfirm === "awaiting") fail("Сначала подтвердите запись", 409);
+      if (b.status === "invoiced") {
+        const p = await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='final' AND status='pending'", [b.id]);
+        if (!p) fail("Счёт недоступен", 409);
+        return { paymentId: p.id };
+      }
+      if (b.status !== "confirmed" || b.policy?.finalSettled) fail("Сеанс уже закрыт", 409);
+      const invoice = await createInvoice(q, b, { duration: b.tariff, settings: await settings(q), actor: req.user.id });
+      return { paymentId: invoice.paymentId };
+    });
+    res.json(result);
+  });
   app.post(
     "/api/admin/bookings/:id/resolve-cancel",
     staff,
@@ -1491,11 +1511,11 @@ export async function createApp(db) {
         fail("Счёт уже оплачен другой транзакцией", 409);
       return;
     }
-    if (p.status === "expired" && p.kind === "deposit" && provider.startsWith("yookassa:")) {
+    if (p.status === "expired" && ["deposit", "extension"].includes(p.kind) && provider.startsWith("yookassa:")) {
       const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [p.booking_id]);
-      await q.query("UPDATE payments SET status='paid',provider_id=$1 WHERE id=$2", [provider, p.id]);
+      await q.query("UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2", [provider, p.id, yookassaTest()]);
       await ledger(q, b.user_id, b.id, p.amount, "Возврат поздней оплаты на баланс: резерв истёк");
-      await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), b.user_id, "Оплата поступила после окончания резерва. Сумма возвращена на внутренний баланс; выберите новое время."]);
+      await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), b.user_id, p.kind === "extension" ? "Оплата продления поступила после окончания резерва. Сумма зачислена на внутренний баланс; обратитесь к администратору." : "Оплата поступила после окончания резерва. Сумма возвращена на внутренний баланс; выберите новое время."]);
       await audit(q, null, "payment.late", { paymentId: p.id, amount: p.amount });
       return;
     }
@@ -1503,17 +1523,34 @@ export async function createApp(db) {
     const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [
       p.booking_id,
     ]);
+    const hold = b.policy?.extensionHold;
     if (
       (p.kind === "deposit" && b.status !== "pending") ||
-      (p.kind === "final" && b.status !== "invoiced")
+      (p.kind === "final" && b.status !== "invoiced") ||
+      (p.kind === "extension" && (b.status !== "completed" || hold?.paymentId !== p.id))
     )
       fail("Статус брони изменился", 409);
+    if (p.kind === "extension" && (new Date(hold.expiresAt) <= new Date() || !await one(q, "SELECT id FROM blocks WHERE id=$1", [hold.blockId]))) {
+      if (!provider.startsWith("yookassa:")) fail("Резерв продления истёк", 409);
+      await q.query("DELETE FROM blocks WHERE id=$1", [hold.blockId]);
+      await q.query("UPDATE bookings SET policy=policy-'extensionHold' WHERE id=$1", [b.id]);
+      await q.query("UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2", [provider, p.id, yookassaTest()]);
+      await ledger(q, b.user_id, b.id, p.amount, "Возврат поздней оплаты продления на баланс");
+      await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(), b.user_id, "Оплата продления поступила после окончания резерва. Сумма зачислена на внутренний баланс; обратитесь к администратору."]);
+      await audit(q, null, "payment.extension.late", { paymentId: p.id, amount: p.amount });
+      return;
+    }
     await q.query(
       "UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2",
       [provider, p.id, provider.startsWith("test-") || (provider.startsWith("yookassa:") && yookassaTest())],
     );
     if (p.kind === "deposit") await confirmed(q, b);
-    else
+    else if (p.kind === "extension") {
+      await q.query("DELETE FROM blocks WHERE id=$1", [hold.blockId]);
+      await q.query("UPDATE bookings SET ends_at=$1,tariff=$2,rate=$3,total=total+$4,status=$5,policy=(policy-'extensionHold')||$6::jsonb WHERE id=$7", [hold.end, hold.hours, hold.rate, p.amount, new Date(hold.end) > new Date() ? "confirmed" : "completed", JSON.stringify({ finalSettled: true }), b.id]);
+      await enqueue(q, "calendar.upsert", { bookingId: b.id });
+      await audit(q, null, "booking.extension.paid", { bookingId: b.id, paymentId: p.id, hours: hold.hours });
+    } else
       await q.query("UPDATE bookings SET status='completed' WHERE id=$1", [
         b.id,
       ]);
@@ -1522,43 +1559,46 @@ export async function createApp(db) {
       await enqueue(q, "receipt.create", { bookingId: b.id, paymentId: p.id });
   };
 
-  app.post("/api/bookings/:id/upgrade", auth, async (req, res) => {
-    await db.transaction(async (q) => {
+  app.get("/api/bookings/:id/extension-options", auth, async (req, res) => {
+    const b = await one(db, "SELECT * FROM bookings WHERE id=$1 AND user_id=$2", [req.params.id, req.user.id]);
+    if (!b) fail("Бронь не найдена", 404);
+    if (b.status !== "completed" || b.policy?.extensionHold || new Date(b.ends_at) > new Date() || Date.now() - new Date(b.ends_at).getTime() > 24 * 3600000) fail("Продление сейчас недоступно", 409);
+    const s = await settings(), options = [];
+    for (const hours of [3, 6, 12].filter(h => h > b.tariff)) {
+      const end = new Date(new Date(b.starts_at).getTime() + hours * 3600000);
+      const rate = extensionRate(b, hours, s, req.user.role), amount = rate - b.rate;
+      if (amount > 0 && await available(db, b.resource_id, b.ends_at, end.toISOString(), b.id)) options.push({ hours, amount });
+    }
+    res.json({ options });
+  });
+  app.post("/api/bookings/:id/extend", auth, async (req, res) => {
+    const result = await db.transaction(async q => {
       await lock(q);
-      const b = await one(
-        q,
-        "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE",
-        [req.params.id, req.user.id],
-      );
-      if (!b || b.status !== "invoiced")
-        fail("Нет открытого итогового счёта", 409);
-      const h = Number(req.body.duration);
-      if (![3, 6, 12].includes(h) || h < b.tariff)
-        fail("Можно выбрать только текущий тариф или выше");
-      if (h === b.tariff) return;
-      if (await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='final' AND status='pending' AND checkout_id IS NOT NULL", [b.id])) fail("Счёт уже передан в кассу. Обратитесь к администратору для изменения", 409);
-      const s = await settings(q),
-        rates = b.policy.rates || s.rates[req.user.role],
-        rate = b.policy.loyaltyFree ? 0 : rates?.[h];
-      if (rate === undefined) fail("Тариф недоступен");
-      const total = rate + b.extras.reduce((a, x) => a + x.qty * x.price, 0);
-      await q.query(
-        "UPDATE bookings SET tariff=$1,rate=$2,total=$3 WHERE id=$4",
-        [h, rate, total, b.id],
-      );
-      await q.query(
-        "UPDATE payments SET amount=$1 WHERE booking_id=$2 AND kind='final' AND status='pending'",
-        [total - b.deposit, b.id],
-      );
-      await audit(q, req.user.id, "invoice.upgrade", { id: b.id, duration: h });
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE", [req.params.id, req.user.id]);
+      if (!b) fail("Бронь не найдена", 404);
+      if (b.status !== "completed" || b.policy?.extensionHold || new Date(b.ends_at) > new Date() || Date.now() - new Date(b.ends_at).getTime() > 24 * 3600000) fail("Продление сейчас недоступно", 409);
+      const hours = Number(req.body.duration);
+      if (![3, 6, 12].includes(hours) || hours <= b.tariff) fail("Выберите более длительный тариф");
+      const end = new Date(new Date(b.starts_at).getTime() + hours * 3600000);
+      if (!await available(q, b.resource_id, b.ends_at, end.toISOString(), b.id)) fail("Место уже занято в дополнительное время", 409);
+      const rate = extensionRate(b, hours, await settings(q), req.user.role), amount = rate - b.rate;
+      if (amount <= 0) fail("Обратитесь к администратору для продления этого тарифа", 409);
+      const blockId = uuid(), paymentId = uuid();
+      const hold = { blockId, paymentId, hours, end: end.toISOString(), rate, expiresAt: new Date(Date.now() + 20 * 60000).toISOString() };
+      await q.query("INSERT INTO blocks(id,resource_id,starts_at,ends_at,reason) VALUES($1,$2,$3,$4,$5)", [blockId, b.resource_id, b.ends_at, hold.end, "Ожидание оплаты продления"]);
+      const originalReceipt = b.policy?.finalReceiptSnapshot || { total: b.total, deposit: b.deposit, rate: b.rate, tariff: b.tariff };
+      await q.query("UPDATE bookings SET policy=policy||$1::jsonb WHERE id=$2", [JSON.stringify({ extensionHold: hold, finalReceiptSnapshot: originalReceipt }), b.id]);
+      await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'extension',$3)", [paymentId, b.id, amount]);
+      await audit(q, req.user.id, "booking.extension.request", { bookingId: b.id, hours, amount });
+      return { paymentId };
     });
-    res.json({ ok: true });
+    res.status(201).json(result);
   });
   app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
     await db.transaction(async q => {
       await lock(q);
       const p = await one(q, "SELECT p.*,b.policy,b.starts_at FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 FOR UPDATE OF p", [req.params.id]);
-      if (!p || p.kind !== "final" || p.policy.paymentMethod !== "cash" || new Date(p.starts_at) > new Date()) fail("Наличный расчёт недоступен", 409);
+      if (!p || !["final", "extension"].includes(p.kind) || p.policy.paymentMethod !== "cash" || new Date(p.starts_at) > new Date()) fail("Наличный расчёт недоступен", 409);
       if (p.status === "paid") return;
       await settle(q, p.id, "cash:" + p.id);
       await audit(q, req.user.id, "payment.cash", { paymentId: p.id, amount: p.amount });
@@ -1588,13 +1628,14 @@ export async function createApp(db) {
       const p = await one(q, "SELECT p.*,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 AND b.user_id=$2 AND p.status='pending' FOR UPDATE OF p", [req.params.id, req.user.id]);
       if (!p) fail("Счёт недоступен или резерв истёк", 409);
       if (p.policy.paymentMethod === "cash") fail("Оплата наличными в студии", 409);
+      if (p.kind === "extension" && (p.policy.extensionHold?.paymentId !== p.id || new Date(p.policy.extensionHold.expiresAt) <= new Date())) fail("Резерв продления истёк. Выберите время снова", 409);
       const remote = p.checkout_id
         ? await yookassaRequest("payments/" + encodeURIComponent(p.checkout_id))
         : await yookassaRequest("payments", {
             amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
             capture: true,
             confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
-            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : "Tattoo Office — итоговый счёт за сеанс",
+            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "extension" ? "Tattoo Office — продление рабочего места" : "Tattoo Office — итоговый счёт за сеанс",
             metadata: { payment_id: p.id, booking_id: p.booking_id },
           }, p.id + "-" + p.amount);
       verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
@@ -1605,11 +1646,12 @@ export async function createApp(db) {
     res.json(result);
   });
   app.get("/api/payments/:id", auth, async (req, res) => {
-    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
+    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.total,b.deposit,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
     await syncYookassa(p);
     p = { ...p, ...(await one(db, "SELECT * FROM payments WHERE id=$1", [p.id])) };
-    res.json({ payment: p, mode: (await settings()).mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() ? "yookassa" : null, test: yookassaTest() });
+    const mode = (await settings()).mode;
+    res.json({ payment: p, mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() ? "yookassa" : null, test: yookassaTest(), testPaymentAvailable: mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
   });
   app.post("/api/webhooks/yookassa", async (req, res) => {
     const id = req.body?.object?.id;

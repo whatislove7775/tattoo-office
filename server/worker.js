@@ -42,8 +42,16 @@ async function notifyUser(q, user, text) {
 }
 // Автоматизация студии: итоговый счёт после сеанса, напоминания, лист ожидания.
 export async function automationTick(q, settings) {
+  const expiredHolds = (await q.query("SELECT id,policy FROM bookings WHERE policy ? 'extensionHold' AND (policy#>>'{extensionHold,expiresAt}')::timestamptz<=now() FOR UPDATE SKIP LOCKED")).rows;
+  for (const b of expiredHolds) {
+    const hold = b.policy.extensionHold;
+    await q.query("DELETE FROM blocks WHERE id=$1", [hold.blockId]);
+    await q.query("UPDATE payments SET status='expired' WHERE id=$1 AND status='pending'", [hold.paymentId]);
+    await q.query("UPDATE bookings SET policy=policy-'extensionHold' WHERE id=$1", [b.id]);
+  }
+  await q.query("UPDATE bookings SET status='completed' WHERE status='confirmed' AND policy->>'finalSettled'='true' AND ends_at<=now()");
   if (settings.autoInvoice === true) {
-    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
+    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND policy->>'finalSettled' IS DISTINCT FROM 'true' AND policy->>'masterConfirm' IS DISTINCT FROM 'awaiting' AND ends_at<=now() AND ends_at>=COALESCE($1::timestamptz,'-infinity'::timestamptz) ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED", [settings.settlementFlowStartedAt || null])).rows;
     for (const b of done) await createInvoice(q, b, { duration: b.tariff, settings, auto: true });
   }
   const remind = async (sql, kind, label) => {

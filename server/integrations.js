@@ -125,8 +125,9 @@ export async function sendEmail(to, subject, text, id) {
   });
 }
 export function receiptPayload(booking, payment, user, settings) {
-  const deposit = payment.kind === "deposit",
-    vat = deposit && settings.vat ? settings.vat + 100 : settings.vat;
+  const deposit = payment.kind === "deposit", extension = payment.kind === "extension",
+    vat = deposit && settings.vat ? settings.vat + 100 : settings.vat,
+    final = booking.policy?.finalReceiptSnapshot || booking;
   const items = deposit
     ? [
         {
@@ -139,17 +140,25 @@ export function receiptPayload(booking, payment, user, settings) {
           Object: 4,
         },
       ]
-    : [
+    : extension ? [{
+        Label: `Продление рабочего места до ${booking.tariff} часов`,
+        Price: payment.amount / 100,
+        Quantity: 1,
+        Amount: payment.amount / 100,
+        Vat: vat,
+        Method: 4,
+        Object: 4,
+      }] : [
         {
-          Label: `Рабочее место, до ${booking.tariff} часов`,
-          Price: booking.rate / 100,
+          Label: `Рабочее место, до ${final.tariff} часов`,
+          Price: final.rate / 100,
           Quantity: 1,
-          Amount: booking.rate / 100,
+          Amount: final.rate / 100,
           Vat: vat,
           Method: 4,
           Object: 4,
         },
-        ...booking.extras.map((x) => ({
+        ...final.extras.map((x) => ({
           Label: x.name,
           Price: x.price / 100,
           Quantity: x.qty,
@@ -170,7 +179,7 @@ export function receiptPayload(booking, payment, user, settings) {
       Email: user.email,
       Amounts: {
         Electronic: payment.amount / 100,
-        AdvancePayment: deposit ? 0 : booking.deposit / 100,
+        AdvancePayment: deposit || extension ? 0 : final.deposit / 100,
       },
       CalculationPlace: process.env.APP_ORIGIN || "local test",
     },

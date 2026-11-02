@@ -461,66 +461,61 @@ test("one site operator has full access and legacy staff roles cannot be created
   });
   assert.equal(reg.data.user.role, "guest");
 });
-test("invoice upgrade uses captured tariff and is restricted to booking owner", async () => {
-  const user = (await request("/me", "GET", null, other)).data.user;
+test("master pays the booked tariff before a separate extension payment", async () => {
+  const artist = await register("settlement@test.invalid");
   const created = await request(
     "/bookings",
     "POST",
-    {
-      ...booking(pub.resources[0].id, tomorrow(20)),
-      manual: true,
-      userId: user.id,
-    },
-    admin,
+    booking(pub.resources[0].id, tomorrow(20)),
+    artist,
   );
   assert.equal(created.status, 201);
   const id = created.data.bookingId;
+  assert.equal((await request("/payments/" + created.data.paymentId + "/test", "POST", {}, artist)).status, 200);
   await db.query(
     "UPDATE bookings SET starts_at=now()-interval '4 hours',ends_at=now()-interval '1 hour' WHERE id=$1",
     [id],
   );
-  await request(
-    "/admin/bookings/" + id + "/invoice",
-    "POST",
-    { duration: 3 },
-    admin,
-  );
-  assert.equal(
-    (
-      await request(
-        "/bookings/" + id + "/upgrade",
-        "POST",
-        { duration: 6 },
-        resident,
-      )
-    ).status,
-    409,
-  );
-  assert.equal(
-    (
-      await request(
-        "/bookings/" + id + "/upgrade",
-        "POST",
-        { duration: 6 },
-        other,
-      )
-    ).status,
-    200,
-  );
-  const b = (await db.query("SELECT * FROM bookings WHERE id=$1", [id]))
-    .rows[0];
+  assert.equal((await request("/bookings/" + id + "/finish", "POST", {}, resident)).status, 404);
+  const final = await request("/bookings/" + id + "/finish", "POST", {}, artist);
+  assert.equal(final.status, 200);
+  assert.equal((await db.query("SELECT amount FROM payments WHERE id=$1", [final.data.paymentId])).rows[0].amount, defaults.rates.guest[3] - defaults.deposit);
+  assert.equal((await request("/bookings/" + id + "/extend", "POST", {duration:6}, artist)).status, 409);
+  assert.equal((await request("/payments/" + final.data.paymentId + "/test", "POST", {}, artist)).status, 200);
+  const options = await request("/bookings/" + id + "/extension-options", "GET", null, artist);
+  assert.equal(options.status, 200);
+  assert.ok(options.data.options.some(o => o.hours === 6 && o.amount === defaults.rates.guest[6] - defaults.rates.guest[3]));
+  assert.equal((await request("/bookings/" + id + "/extend", "POST", {duration:6}, resident)).status, 404);
+  const extension = await request("/bookings/" + id + "/extend", "POST", {duration:6}, artist);
+  assert.equal(extension.status, 201);
+  assert.equal((await request("/payments/" + extension.data.paymentId + "/test", "POST", {}, artist)).status, 200);
+  const b = (await db.query("SELECT * FROM bookings WHERE id=$1", [id])).rows[0];
   assert.equal(b.rate, defaults.rates.guest[6]);
-  assert.equal(
-    (
-      await request(
-        "/bookings/" + id + "/upgrade",
-        "POST",
-        { duration: 3 },
-        other,
-      )
-    ).status,
-    400,
-  );
+  assert.equal(b.total, defaults.rates.guest[6]);
+  assert.equal(b.tariff, 6);
+  assert.equal(b.policy.extensionHold, undefined);
+  const { receiptPayload } = await import("../server/integrations.js");
+  const originalPayment = (await db.query("SELECT * FROM payments WHERE id=$1", [final.data.paymentId])).rows[0];
+  const owner = (await db.query("SELECT * FROM users WHERE email='settlement@test.invalid'")).rows[0];
+  const receipt = receiptPayload(b, originalPayment, owner, { inn: "", vat: 0, taxationSystem: null });
+  assert.equal(receipt.CustomerReceipt.Items[0].Amount, defaults.rates.guest[3] / 100, "первый чек не растёт после продления");
+  assert.equal(receipt.CustomerReceipt.Amounts.AdvancePayment, defaults.deposit / 100);
+  await db.query("UPDATE bookings SET ends_at=now()-interval '1 minute' WHERE id=$1", [id]);
+  const { automationTick } = await import("../server/worker.js");
+  await db.transaction(async q => automationTick(q, (await q.query("SELECT data FROM settings WHERE id=1")).rows[0].data));
+  assert.equal((await db.query("SELECT status FROM bookings WHERE id=$1", [id])).rows[0].status, "completed");
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM payments WHERE booking_id=$1 AND kind='final'", [id])).rows[0].n, 1);
+  const unpaidExtension = await request("/bookings/" + id + "/extend", "POST", { duration: 12 }, artist);
+  assert.equal(unpaidExtension.status, 201);
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM blocks WHERE reason='Ожидание оплаты продления'")).rows[0].n, 1);
+  await db.query("UPDATE bookings SET policy=jsonb_set(policy,'{extensionHold,expiresAt}',to_jsonb((now()-interval '1 minute')::text)) WHERE id=$1", [id]);
+  await db.transaction(async q => automationTick(q, (await q.query("SELECT data FROM settings WHERE id=1")).rows[0].data));
+  assert.equal((await db.query("SELECT status FROM payments WHERE id=$1", [unpaidExtension.data.paymentId])).rows[0].status, "expired");
+  assert.equal((await db.query("SELECT count(*)::int AS n FROM blocks WHERE reason='Ожидание оплаты продления'")).rows[0].n, 0);
+  assert.equal((await request("/payments/" + unpaidExtension.data.paymentId + "/test", "POST", {}, artist)).status, 409);
+  const current = (await db.query("SELECT * FROM bookings WHERE id=$1", [id])).rows[0];
+  await db.query("INSERT INTO blocks(id,resource_id,starts_at,ends_at,reason) VALUES($1,$2,$3,$4,'Чужая бронь')", [randomUUID(), current.resource_id, current.ends_at, new Date(new Date(current.starts_at).getTime() + 12 * 3600000).toISOString()]);
+  assert.equal((await request("/bookings/" + id + "/extend", "POST", { duration: 12 }, artist)).status, 409);
 });
 
 test("admin chooses which existing masters appear on the public home", async () => {
