@@ -141,8 +141,6 @@ export const defaults = {
   offer: legalSamples.offer,
   consent: legalSamples.consent,
   taxationRegime: "ausn",
-  taxationObject: "income",
-  taxationRate: 8,
   taxationSystem: null,
   vat: 0,
   legalApproved: false,

@@ -102,7 +102,6 @@ test("admin automation: overview, move, no-show, waitlist, promo, balance, roles
     assert.ok(card.data.bookings.length >= 3);
 
     // Automatic final invoice after a finished session.
-    await db.query("UPDATE settings SET data=jsonb_set(data,'{settlementFlowStartedAt}','\"2000-01-01T00:00:00.000Z\"') WHERE id=1");
     const finished = randomUUID();
     await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status,deposit,policy) VALUES($1,$2,$3,now()-interval '5 hours',now()-interval '2 hours',3,200000,200000,'confirmed',50000,'{}')", [finished, master.id, places[0].id]);
     await db.transaction(async (q) => automationTick(q, (await q.query("SELECT data FROM settings WHERE id=1")).rows[0].data));
