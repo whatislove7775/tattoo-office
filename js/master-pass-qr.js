@@ -4,7 +4,8 @@ const version = 12;
 const correction = EccMap.L;
 const size = version * 4 + 17;
 const quietZone = 4;
-const artworkSize = 37;
+const artworkSize = 55;
+const artworkRadius = artworkSize / 2;
 const artworkOffset = (size - artworkSize) / 2;
 const logoSource = new URL("../assets/mark.svg", import.meta.url).href;
 
@@ -56,7 +57,9 @@ function constraintsFor(code, pixels, words) {
   for (let row = 0; row < artworkSize; row++) {
     for (let col = 0; col < artworkSize; col++) {
       const x = artworkOffset + col, y = artworkOffset + row;
-      if (code.types[y][x]) continue;
+      // The circular artwork needs no control over the corners of its bounds.
+      const outsideLogo = (col + .5 - artworkRadius) ** 2 + (row + .5 - artworkRadius) ** 2 > artworkRadius ** 2;
+      if (outsideLogo || code.types[y][x]) continue;
       const darkness = pixels[row * artworkSize + col];
       constraints.push({
         x, y,
@@ -154,16 +157,10 @@ function drawArtwork(url, pixels) {
     if (!invalid) break;
   }
   const qr = new QrCode(version, correction, result, base.mask);
-  const dark = [], gray = [];
-  qr.modules.forEach((row, y) => row.forEach((bit, x) => {
-    if (!bit) return;
-    const col = x - artworkOffset, rowIndex = y - artworkOffset;
-    const inside = col >= 0 && col < artworkSize && rowIndex >= 0 && rowIndex < artworkSize;
-    const background = inside && !qr.types[y][x] && pixels[rowIndex * artworkSize + col] < 105;
-    (background ? gray : dark).push(`M${x + quietZone} ${y + quietZone}h1v1h-1z`);
-  }));
+  const modules = qr.modules.flatMap((row, y) => row.map((bit, x) =>
+    bit ? `M${x + quietZone} ${y + quietZone}h1v1h-1z` : "")).join("");
   const imageSize = size + 2 * quietZone;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${imageSize} ${imageSize}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${imageSize}v${imageSize}H0z"/><path fill="#111" d="${dark.join("")}"/><path fill="#626262" d="${gray.join("")}"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${imageSize} ${imageSize}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${imageSize}v${imageSize}H0z"/><path fill="black" d="${modules}"/></svg>`;
 }
 
 async function readLogo() {
