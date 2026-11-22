@@ -463,14 +463,21 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
   body[data-page="master"] .section-head:has(.crumbs) .crumbs {min-height:0;}
   body[data-page="master"] .section-head { margin-bottom:18px;row-gap:24px; }
   .master { gap:24px; }
-  .master-profile { display:grid;grid-template-columns:108px minmax(0,1fr);gap:16px;align-items:start; }
-  .master-profile .master__photo { width:108px;max-width:none;aspect-ratio:3/4; }
-  .master-profile__copy { min-width:0; }
+  .master-profile {
+    display:grid;
+    grid-template-columns:clamp(76px,26vw,108px) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    gap:8px 12px;
+    align-items:start;
+  }
+  .master-profile__copy {display:contents;}
+  .master-profile > .master__photo,.master-profile > .own-photo {grid-column:1;grid-row:1/3;}
+  .master-profile .master__photo {width:100%;max-width:none;aspect-ratio:3/4;}
+  .master-profile__identity {grid-column:2;grid-row:1;}
+  .master-profile .master__bio {grid-column:1/-1;grid-row:3;margin:0;max-width:none;font-size:14px;line-height:1.45;}
+  .master-profile .master__bio:empty {display:none;}
+  .master-profile__action {grid-column:1/-1;grid-row:4;margin:0;}
   .master-profile .master__name { margin:0;font-size:19px;line-height:1.25; }
-  .master-profile .master__city { margin:7px 0;font-size:13px; }
-  .master-profile .master__meta { flex-wrap:wrap;gap:4px 10px;font-size:12px; }
-  .master-profile .master__bio { margin-top:12px;font-size:14px;line-height:1.45; }
-  .master-profile__action { margin:18px 0 0; }
   .master-profile__action .btn { padding:11px 12px;font-size:13px; }
   .office-feature .auth-form--role { min-height:440px; }
   .office-feature .auth-form:not(.auth-form--role) { margin-top:24px; }
@@ -1287,23 +1294,21 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .master-profile .master__bio {margin-top:10px;}
 }
 @media (max-width:700px) {
-  .master-profile {position:relative;min-height:200px;}
-  .master-profile__facts {position:absolute;left:0;top:154px;width:108px;display:grid;grid-template-columns:max-content max-content;gap:3px 6px;font-size:12px;line-height:1.5;}
-  .master-profile__facts .master__city {grid-column:auto;margin:0;font-size:12px;white-space:nowrap;}
-  .master-profile__facts .master__age {white-space:nowrap;}
-  .master-profile__facts .master__exp {grid-column:1/-1;font-size:12px;}
-  .master-profile .master__bio {margin-top:8px;}
-}
-
-/* Share the lower profile row: facts under the photo, booking beside them. */
-@media (max-width:700px) {
-  .master-profile {grid-template-rows:max-content minmax(0,1fr) auto;row-gap:8px;min-height:0;}
-  .master-profile__copy {display:contents;}
-  .master-profile .master__photo,.master-profile > .own-photo {grid-column:1;grid-row:1/3;}
-  .master-profile__identity {grid-column:2;grid-row:1;}
-  .master-profile .master__bio {grid-column:2;grid-row:2;margin:0;}
-  .master-profile__facts {position:static;grid-column:1;grid-row:3;width:auto;margin-top:1px;align-self:start;}
-  .master-profile__action {grid-column:2;grid-row:3;margin:0;align-self:start;}
+  .master-profile__facts {
+    grid-column:2;
+    grid-row:2;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:3px 7px;
+    min-width:0;
+    font-size:12px;
+    line-height:1.4;
+    overflow-wrap:anywhere;
+  }
+  .master-profile__facts .master__city {font-size:inherit;}
+  .master-profile__facts .master__city:empty {display:none;}
+  .master-profile__facts .master__exp {width:100%;}
 }
 
 /* Landscape tablets need the whole content panel for paired gallery cards. */
@@ -1487,17 +1492,9 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .ranking-name {font-size:16px;}
   .master-pass {gap:4px;margin:5px 0 0;padding-inline:7px 3px;}
   .master-pass__label {font-size:10px;}
+  .master-profile .master-pass__label {white-space:normal;}
   .master-pass__link {font-size:13px;}
 }
-@media (max-width:420px) {
-  .master-profile {grid-template-rows:auto;}
-  .master-profile .master__photo,.master-profile > .own-photo {grid-row:1;}
-  .master-profile__facts {grid-column:2;grid-row:1;align-self:center;}
-  .master-profile__identity {grid-column:1/-1;grid-row:2;}
-  .master-profile .master__bio {grid-column:1/-1;grid-row:3;}
-  .master-profile__action {grid-column:1/-1;grid-row:4;}
-}
-
 /* Compact editorial standings: identity, membership and completed sessions. */
 .ranking-heading {display:flex;justify-content:space-between;gap:16px;padding:0 16px 14px 102px;color:var(--ink-3);font-size:12px;border-bottom:1px solid var(--panel-edge);}
 .ranking-list--compact {margin:0;gap:0;}
