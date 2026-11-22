@@ -570,8 +570,8 @@ button[disabled], .btn[disabled], .slot[disabled], input[disabled], select[disab
 }
 .master__photo {
   width: 100%;
-  aspect-ratio: 3 / 3.6;
-  object-fit: cover;
+  aspect-ratio: auto 3 / 3.6;
+  object-fit: contain;
   border: 1px solid var(--line);
   background: var(--panel-2);
 }

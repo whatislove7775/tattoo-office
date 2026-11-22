@@ -1086,9 +1086,7 @@ function mountProfileForm(onSaved) {
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){show('Выберите JPG, PNG или WebP до 5 МБ',true);return;}
     zone.classList.add('is-loading');button.disabled=true;submit.disabled=true;show('Подготавливаем фотографию…');
     try{
-      const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;
-      try{const ctx=canvas.getContext('2d'),side=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#fff';ctx.fillRect(0,0,192,192);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192);}finally{bitmap.close();}
-      const value=canvas.toDataURL('image/jpeg',.78);if(value.length>90000)throw Error('Выберите фотографию меньшего размера');
+      const value = await compressImage(file, 90000, 320);
       $('#profile-form [name="avatar"]').value=value;$('.profile-avatar-preview').innerHTML=`<img src="${value}" alt="Предпросмотр фотографии">`;
       button.textContent='Заменить фото';show('Фото выбрано. Нажмите «Сохранить личное дело».');
     }catch(error){show(error.message||'Не удалось прочитать фотографию',true);}finally{zone.classList.remove('is-loading');button.disabled=false;submit.disabled=false;}
@@ -2338,7 +2336,7 @@ async function render() {
 const adminContext = {
   api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity, paymentLabels, paymentStatus,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
-  cityRatesOf, roleName, cityTabs, cityInfo,
+  cityRatesOf, roleName, cityTabs, cityInfo, compressImage,
   promosHTML: (a) => AP.promosHTML(a),
   openUserCard: (id) => AP.userCard(id).catch((e) => notify(e.message)),
   openBooking: (id) => UX.bookingPanel(id),

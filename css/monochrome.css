@@ -472,7 +472,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
   }
   .master-profile__copy {display:contents;}
   .master-profile > .master__photo,.master-profile > .own-photo {grid-column:1;grid-row:1/3;}
-  .master-profile .master__photo {width:100%;max-width:none;aspect-ratio:3/4;}
+  .master-profile .master__photo {width:100%;max-width:none;aspect-ratio:auto 3/4;}
   .master-profile__identity {grid-column:2;grid-row:1;}
   .master-profile .master__bio {grid-column:1/-1;grid-row:3;margin:0;max-width:none;font-size:14px;line-height:1.45;}
   .master-profile .master__bio:empty {display:none;}
@@ -1472,7 +1472,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 @media (min-width:1367px) {
   .master-profile__identity .master__name {margin-top:12px;}
 }
-.master-pass {display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;width:min(100%,320px);min-width:0;margin:7px 0 10px;padding:6px 7px 6px 10px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--panel-2);}
+.master-pass {display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;width:min(100%,320px);min-width:0;margin:7px 0 10px;}
 .master-pass__profile {display:grid;gap:2px;min-width:0;}
 .master-pass__label {color:var(--ink-2);font-size:11px;line-height:1.25;white-space:nowrap;}
 .master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:14px;font-weight:500;line-height:1.3;text-decoration:none;white-space:nowrap;}
@@ -1490,7 +1490,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .ranking-launch {left:14px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 86px);font-size:12px;padding:10px 12px;}
   .ranking-row {padding:14px 10px;gap:8px;grid-template-columns:24px minmax(0,1fr) 52px;}
   .ranking-name {font-size:16px;}
-  .master-pass {gap:4px;margin:5px 0 0;padding-inline:7px 3px;}
+  .master-pass {gap:4px;margin:5px 0 0;}
   .master-pass__label {font-size:10px;}
   .master-profile .master-pass__label {white-space:normal;}
   .master-pass__link {font-size:13px;}
@@ -1533,7 +1533,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .club-join .chrome {max-width:100%;}
 .profile-avatar-picker {position:relative;display:flex;align-items:center;gap:18px;padding:18px;border:1px dashed var(--panel-edge);border-radius:20px;background:var(--panel-2);margin-bottom:24px;cursor:pointer;}
 .profile-avatar-preview {display:grid;place-items:center;flex:none;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--control-fill);font-size:24px;}
-.profile-avatar-preview img {width:100%;height:100%;object-fit:cover;}
+.profile-avatar-preview img {width:100%;height:100%;object-fit:contain;}
 .profile-avatar-picker b {font-size:15px;font-weight:500;}
 .profile-avatar-picker small {display:block;color:var(--ink-3);font-size:11px;margin-top:6px;}
 .profile-avatar-picker input[type=file] {position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
@@ -2110,7 +2110,7 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 .admin-master-editor .pro-card__form {margin:0;}
 .admin-master-avatar {display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .admin-master-avatar__preview {display:grid;place-items:center;width:88px;height:88px;overflow:hidden;border:1px solid var(--panel-edge);border-radius:18px;background:var(--panel);color:var(--ink-3);font-size:12px;text-align:center;}
-.admin-master-avatar__preview img {width:100%;height:100%;max-height:none;object-fit:cover;}
+.admin-master-avatar__preview img {width:100%;height:100%;max-height:none;object-fit:contain;}
 .admin-master-editor__tabs {margin:0;}
 @media (max-width:700px) {.admin-master-editor .form-grid {grid-template-columns:minmax(0,1fr);}.admin-master-avatar {justify-content:space-between;}.admin-master-avatar__preview {width:72px;height:72px;}}
 .pro-surcharge {font-style:normal;font-size:11px;padding:1px 6px;border-radius:10px;background:var(--ink);color:var(--bg);}
@@ -2727,7 +2727,7 @@ body.admin-session [data-admin-section="users"] .pro-scroll thead th {position:s
 .own-profile__actions .chrome {min-height:34px;padding:6px 14px;font-size:13px;}
 .own-profile__master {display:grid;gap:18px;}
 .office-feature .own-photo {position:relative;display:block;width:100%;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer;}
-.own-photo .master__photo {display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;}
+.own-photo .master__photo {display:block;width:100%;height:auto;aspect-ratio:auto 3/4;}
 .own-photo__empty {display:grid!important;place-items:center;background:var(--panel-2);border:1px dashed var(--ink-3);font-size:42px;color:var(--ink-3);}
 .own-photo__hint {position:absolute;left:8px;right:8px;bottom:8px;padding:6px 8px;border-radius:10px;background:#000a;color:#fff;font-size:12px;text-align:center;opacity:0;transition:opacity .16s ease;}
 .own-photo:hover .own-photo__hint,.own-photo:focus-visible .own-photo__hint {opacity:1;}

@@ -205,11 +205,7 @@ async function masterProfileEditor(id) {
     const selected = files[0]; if (!selected) return;
     if (!['image/jpeg','image/png','image/webp'].includes(selected.type) || selected.size > 5*1024*1024) { notify('Выберите JPG, PNG или WebP до 5 МБ'); return; }
     try {
-      const bitmap = await createImageBitmap(selected), canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 192;
-      try { const ctx = canvas.getContext('2d'), side = Math.min(bitmap.width,bitmap.height); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,192,192); ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192); } finally { bitmap.close(); }
-      const value = canvas.toDataURL('image/jpeg',.78);
-      if (value.length > 90000) throw Error('Выберите фото меньшего размера');
+      const value = await c.compressImage(selected, 90000, 320);
       $('#admin-master-profile-form [name="avatar"]').value = value;
       $('.admin-master-avatar__preview').innerHTML = `<img src="${value}" alt="Новое фото мастера">`;
       notify('Фото выбрано. Сохраните данные мастера.');
