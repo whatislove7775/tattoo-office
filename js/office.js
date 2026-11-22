@@ -213,12 +213,15 @@ function onForm(id, fn) {
   f.onsubmit = async (e) => {
     e.preventDefault();
     const b = $("[type=submit]", f);
+    if (f.getAttribute("aria-busy") === "true") return;
+    f.setAttribute("aria-busy", "true");
     if (b) b.disabled = true;
     try {
       await fn(Object.fromEntries(new FormData(f)), f);
     } catch (error) {
       formError(f, error);
     } finally {
+      f.removeAttribute("aria-busy");
       if (b) b.disabled = false;
     }
   };
@@ -1281,7 +1284,7 @@ async function adminPage() {
   }
   syncMasters(adminData.content);
   const a = adminData,
-    copyButton = (value,label) => `<button type="button" class="admin-copy" data-copy-value="${esc(value)}" data-copy-label="${label}" aria-label="Скопировать ${label}" title="Скопировать ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button>`,
+    copyButton = (value,label) => `<button type="button" class="admin-copy" data-copy-value="${esc(value)}" data-copy-label="${label}" aria-label="Скопировать ${label}" title="Скопировать ${label}"><svg viewBox="0 0 24 24" aria-hidden="true"><path data-copy-motion d="M10 8h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2ZM16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg></button>`,
     pointsButton = id => {
       const master = a.masterPoints?.find(m => m.id === id || m.userId === id);
       return master ? `<button type="button" class="admin-points-button" data-edit-points="${esc(master.id)}" aria-label="Изменить баллы: ${esc(master.name)}" title="Изменить баллы"><span>${master.score.toLocaleString("ru-RU")}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg></button>` : "—";
@@ -1502,6 +1505,7 @@ function mountAdmin() {
   $$("[data-copy-value]").forEach(button => button.onclick = async () => {
     try {
       await navigator.clipboard.writeText(button.dataset.copyValue);
+      window.InterfaceMotion?.confirmCopy(button);
       notify(button.dataset.copyLabel === "имя" ? "Имя скопировано" : button.dataset.copyLabel === "ссылку для входа" ? "Ссылка для входа скопирована" : "Email скопирован");
     } catch { notify("Не удалось скопировать. Выделите текст и скопируйте вручную."); }
   });

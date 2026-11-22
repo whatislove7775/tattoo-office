@@ -1,4 +1,27 @@
 import {createMorph} from './vendor/morphicons/dom.js';
+const copiedPath = 'M5.5 12.5 10 17l9-9';
+const copyMotion = new WeakMap();
+
+function confirmCopy(control) {
+  const path = control?.querySelector('[data-copy-motion]');
+  if (!path?.isConnected) return;
+  let state = copyMotion.get(path);
+  if (!state) {
+    const idle = path.getAttribute('d');
+    state = { idle, morph: createMorph(path, idle, { reducedMotion: 'user' }) };
+    copyMotion.set(path, state);
+  }
+  clearTimeout(state.timer);
+  control.dataset.copyFeedback = 'success';
+  state.morph.morphTo(copiedPath, 'snappy');
+  state.timer = setTimeout(() => {
+    delete control.dataset.copyFeedback;
+    if (path.isConnected) state.morph.morphTo(state.idle, 'snappy');
+  }, 1050);
+}
+
+window.InterfaceMotion = { confirmCopy };
+
 const button=document.getElementById('mobileMenuToggle');
 const path=document.getElementById('menuMorphPath');
 const menu='M4 6h16M4 12h16M4 18h16';

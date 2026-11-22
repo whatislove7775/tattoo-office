@@ -26,7 +26,7 @@
     return '#/master/' + encodeURIComponent(master.username || master.id);
   }
 
-  var passLinkIcon = '<svg class="master-pass-link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 7.2 12 4.7a5.1 5.1 0 0 1 7.3 7.2l-2.5 2.5M14.5 16.8 12 19.3a5.1 5.1 0 0 1-7.3-7.2l2.5-2.5M8.8 15.2l6.4-6.4"/></svg>';
+  var passLinkIcon = '<svg class="master-pass-link-icon" viewBox="0 0 24 24" aria-hidden="true"><path data-copy-motion d="M9.5 7.2 12 4.7a5.1 5.1 0 0 1 7.3 7.2l-2.5 2.5M14.5 16.8 12 19.3a5.1 5.1 0 0 1-7.3-7.2l2.5-2.5M8.8 15.2l6.4-6.4"/></svg>';
 
   function masterPassHTML(master, editable) {
     var username = master.username || (/^[\w-]{1,32}$/.test(master.id) ? master.id : '');
@@ -47,18 +47,21 @@
   function mountMasterPass(root, notify) {
     var link = root.querySelector('.master-pass__link');
     if (!link) return;
-    async function copyProfileLink(event, feedback = notify) {
+    var copyButton = root.querySelector('[data-copy-master-pass]');
+    async function copyProfileLink(event, control = copyButton, feedback = notify) {
       if (event?.metaKey || event?.ctrlKey || event?.shiftKey || event?.altKey) return;
       event?.preventDefault();
       try {
         await navigator.clipboard.writeText(link.href);
-        feedback('Ссылка на профиль скопирована');
       } catch (_) {
         feedback('Не удалось скопировать. Скопируйте адрес через меню ссылки.');
+        return;
       }
+      feedback('Ссылка на профиль скопирована');
+      global.InterfaceMotion?.confirmCopy(control);
     }
     link.onclick = event => copyProfileLink(event);
-    root.querySelector('[data-copy-master-pass]').onclick = event => copyProfileLink(event);
+    copyButton.onclick = event => copyProfileLink(event);
     var qrButton = root.querySelector('[data-qr-master-pass]');
     if (qrButton) qrButton.onclick = async function () {
       qrButton.disabled = true;
@@ -76,7 +79,8 @@
           '<a class="master-pass-qr__link" href="' + esc(link.href) + '" title="Скопировать ссылку на профиль"><span>' + esc(link.textContent) + '</span>' + passLinkIcon + '</a>' +
           '<p class="master-pass-qr__hint" role="status">Отсканируйте, чтобы открыть профиль</p></section>';
         var hint = content.querySelector('.master-pass-qr__hint');
-        content.querySelector('.master-pass-qr__link').onclick = event => copyProfileLink(event, message => { hint.textContent = message; });
+        var modalLink = content.querySelector('.master-pass-qr__link');
+        modalLink.onclick = event => copyProfileLink(event, modalLink, message => { hint.textContent = message; });
         var previousLabel = dialog.getAttribute('aria-labelledby');
         dialog.classList.add('master-pass-qr-dialog');
         dialog.setAttribute('aria-labelledby', 'master-pass-qr-title');

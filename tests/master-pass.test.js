@@ -6,18 +6,19 @@ import {runInNewContext} from 'node:vm';
 const source = readFileSync(new URL('../js/pages.js', import.meta.url), 'utf8');
 
 function setup(writeText) {
-  const window = {}, button = {}, messages = [];
+  const button = {}, messages = [], confirmations = [];
+  const window = { InterfaceMotion: { confirmCopy: target => confirmations.push(target) } };
   const link = { href: 'https://office.test/#/master/OfficeInk' };
   const elements = { '.master-pass__link': link, '[data-copy-master-pass]': button };
   const root = { querySelector: selector => elements[selector] || null };
   runInNewContext(source, { window, navigator: { clipboard: { writeText } } });
   window.Pages.mountMasterPass(root, message => messages.push(message));
-  return { button, link, messages, pages: window.Pages };
+  return { button, link, messages, confirmations, pages: window.Pages };
 }
 
 test('Tattoo Office Pass displays a handle and copies its profile URL', async () => {
   let copied;
-  const { button, link, messages, pages } = setup(async value => { copied = value; });
+  const { button, link, messages, confirmations, pages } = setup(async value => { copied = value; });
   const master = { id: 'account-id', username: 'OfficeInk' };
   assert.match(pages.masterPassHTML(master), /href="#\/master\/OfficeInk">@OfficeInk/);
   assert.equal(pages.masterProfilePath({ id: master.id }), '#/master/account-id');
@@ -30,13 +31,15 @@ test('Tattoo Office Pass displays a handle and copies its profile URL', async ()
   assert.equal(prevented, true);
   assert.equal(copied, link.href);
   assert.equal(messages[1], 'Ссылка на профиль скопирована');
+  assert.deepEqual(confirmations, [button, button]);
   copied = undefined;
   await link.onclick({ ctrlKey: true, preventDefault() { assert.fail('Modified navigation was prevented'); } });
   assert.equal(copied, undefined);
 });
 
 test('clipboard denial explains how to copy the link', async () => {
-  const { button, messages } = setup(async () => { throw Error('denied'); });
+  const { button, messages, confirmations } = setup(async () => { throw Error('denied'); });
   await button.onclick();
   assert.match(messages[0], /Скопируйте адрес через меню ссылки/);
+  assert.deepEqual(confirmations, []);
 });

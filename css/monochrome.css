@@ -619,10 +619,17 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
 
 /* Quiet native feedback: preserve layout and respect reduced motion. */
 @media (prefers-reduced-motion:no-preference) {
+  :where(button:not(.theme,.rent-slider__thumb),a:is(.btn,.chrome),select,summary) {
+    transition:scale 120ms ease,background-color 140ms ease,box-shadow 140ms ease;
+  }
+  :where(button:not(.theme,.rent-slider__thumb),a:is(.btn,.chrome),select,summary):active:not(:disabled,[aria-disabled="true"]) {scale:.98;}
   .chrome,.office-select,.date-open,.quantity-control button,.menu-logout,.dialog-close,.modal__x {
     transition:translate 140ms ease,scale 140ms ease,background-color 160ms ease,box-shadow 160ms ease;
   }
   .chrome:active:not(:disabled),.office-select:active,.date-open:active,.quantity-control button:active:not(:disabled),.menu-logout:active,.dialog-close:active,.modal__x:active {scale:.98;translate:0 1px;}
+  :where(a[href]:not(.btn,.chrome),[role="button"]) {transition:opacity 120ms ease,color 120ms ease;}
+  :where(a[href]:not(.btn,.chrome),[role="button"]):active:not([aria-disabled="true"]) {opacity:.75;}
+  form[aria-busy="true"] [type="submit"]:disabled {animation:officePending 750ms ease-in-out 220ms infinite alternate;}
   .office-feature input[type=checkbox],.office-feature input[type=radio] {transition:background-color 150ms ease,border-color 150ms ease,scale 150ms ease;}
   .office-feature input[type=checkbox]:active,.office-feature input[type=radio]:active {scale:.9;}
   .office-picker:popover-open {animation:officePopupIn 160ms cubic-bezier(.2,.75,.25,1);transform-origin:top center;}
@@ -634,6 +641,7 @@ body[data-page]:not([data-page="login"]):not([data-page="signup"]) .office-featu
   @starting-style {#dialog[open] {opacity:0;translate:0 8px;} #dialog[open]::backdrop {opacity:0;}}
 }
 @keyframes officePopupIn {from{opacity:0;translate:0 5px;}to{opacity:1;translate:0 0;}}
+@keyframes officePending {from{opacity:.45;}to{opacity:.7;}}
 
 @media (max-width:700px) { body[data-page="masters"] .site-bottom .rent-slider {bottom:calc(max(12px,env(safe-area-inset-bottom)) + 8px);} }
 
@@ -1479,7 +1487,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .master-pass__link:hover,.master-pass__link:focus-visible {color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
 .master-pass__actions {display:flex;gap:2px;flex:none;}
 .master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink);box-shadow:none;cursor:pointer;}
-.master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel);color:var(--ink);}
+.master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible,.master-pass .master-pass__button[data-copy-feedback] {background:var(--panel-2);color:var(--ink);}
 .master-pass__button svg {display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
 :root #dialog.master-pass-qr-dialog {
   box-sizing:border-box;
@@ -1538,7 +1546,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 }
 .master-pass-qr__link span {overflow-wrap:anywhere;}
 .master-pass-qr__link .master-pass-link-icon {width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
-.master-pass-qr__link:hover,.master-pass-qr__link:focus-visible {color:#fff;background:#ffffff18;}
+.master-pass-qr__link:hover,.master-pass-qr__link:focus-visible,.master-pass-qr__link[data-copy-feedback] {color:#fff;background:#ffffff18;}
 .master-pass-qr__hint {max-width:100%;min-height:1.3em;margin:-10px 0 0;color:#c4c4c4;font-size:12px;}
 .pass-editor__status {min-height:1.4em;}
 @media (max-width:700px) {
@@ -2009,7 +2017,7 @@ body.admin-session[data-page="admin"] .admin-feedback-dock[aria-current="page"] 
 .admin-copy-value {display:inline-flex;align-items:center;gap:7px;max-width:100%;overflow-wrap:anywhere;}
 .office-feature .admin-content td .admin-copy {display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;min-height:0;padding:5px;border:0;border-radius:7px;background:none;box-shadow:none;color:var(--ink-3);}
 .admin-copy svg {display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
-.office-feature .admin-content td .admin-copy:hover {background:var(--panel-2);color:var(--ink);}
+.office-feature .admin-content td .admin-copy:is(:hover,[data-copy-feedback]) {background:var(--panel-2);color:var(--ink);}
 .office-feature .admin-content td .admin-delete-user {margin-top:6px;}
 .admin-delete-actions {display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;}
 .office-feature .workspace-card__actions button {min-height:38px;padding:9px 15px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink);font:inherit;font-size:14px;cursor:pointer;}
