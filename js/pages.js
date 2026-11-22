@@ -68,8 +68,7 @@
         var dialog = document.getElementById('dialog');
         var content = document.getElementById('dialog-content');
         if (dialog.open) return;
-        var logoSource = document.querySelector('.brand__logo img')?.getAttribute('src') || 'assets/logo-v3.svg';
-        var image = await masterPassQR(link.href, logoSource);
+        var image = await masterPassQR(link.href);
         if (!qrButton.isConnected || dialog.open) return;
         content.innerHTML = '<section class="master-pass-qr">' +
           '<h2 id="master-pass-qr-title">Tattoo Office Pass</h2>' +

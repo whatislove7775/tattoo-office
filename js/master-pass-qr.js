@@ -4,10 +4,9 @@ const version = 12;
 const correction = EccMap.L;
 const size = version * 4 + 17;
 const quietZone = 4;
-const artworkWidth = 55;
-const artworkHeight = 23;
-const artworkLeft = (size - artworkWidth) / 2;
-const artworkTop = (size - artworkHeight) / 2;
+const artworkSize = 37;
+const artworkOffset = (size - artworkSize) / 2;
+const logoSource = new URL("../assets/mark.svg", import.meta.url).href;
 
 // QArt uses a numeric segment to give the image independent bits to vary.
 // See https://research.swtch.com/qart for the encoding technique.
@@ -54,11 +53,11 @@ function encodeArtworkData(url) {
 
 function constraintsFor(code, pixels, words) {
   const constraints = [];
-  for (let row = 0; row < artworkHeight; row++) {
-    for (let col = 0; col < artworkWidth; col++) {
-      const x = artworkLeft + col, y = artworkTop + row;
+  for (let row = 0; row < artworkSize; row++) {
+    for (let col = 0; col < artworkSize; col++) {
+      const x = artworkOffset + col, y = artworkOffset + row;
       if (code.types[y][x]) continue;
-      const darkness = pixels[row * artworkWidth + col];
+      const darkness = pixels[row * artworkSize + col];
       constraints.push({
         x, y,
         priority: darkness > 127 ? 256 + darkness : 127 - darkness,
@@ -158,36 +157,32 @@ function drawArtwork(url, pixels) {
   const dark = [], gray = [];
   qr.modules.forEach((row, y) => row.forEach((bit, x) => {
     if (!bit) return;
-    const col = x - artworkLeft, rowIndex = y - artworkTop;
-    const inside = col >= 0 && col < artworkWidth && rowIndex >= 0 && rowIndex < artworkHeight;
-    const background = inside && !qr.types[y][x] && pixels[rowIndex * artworkWidth + col] < 105;
+    const col = x - artworkOffset, rowIndex = y - artworkOffset;
+    const inside = col >= 0 && col < artworkSize && rowIndex >= 0 && rowIndex < artworkSize;
+    const background = inside && !qr.types[y][x] && pixels[rowIndex * artworkSize + col] < 105;
     (background ? gray : dark).push(`M${x + quietZone} ${y + quietZone}h1v1h-1z`);
   }));
   const imageSize = size + 2 * quietZone;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${imageSize} ${imageSize}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${imageSize}v${imageSize}H0z"/><path fill="#111" d="${dark.join("")}"/><path fill="#626262" d="${gray.join("")}"/></svg>`;
 }
 
-async function readLogo(source) {
+async function readLogo() {
   const image = new Image();
-  image.src = source;
+  image.src = logoSource;
   await image.decode();
   const canvas = document.createElement("canvas");
-  canvas.width = artworkWidth;
-  canvas.height = artworkHeight;
+  canvas.width = artworkSize;
+  canvas.height = artworkSize;
   const ctx = canvas.getContext("2d");
-  const scale = Math.min(artworkWidth / image.naturalWidth, artworkHeight / image.naturalHeight);
-  const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, artworkWidth, artworkHeight);
-  ctx.drawImage(image, (artworkWidth - width) / 2, (artworkHeight - height) / 2, width, height);
-  const { data } = ctx.getImageData(0, 0, artworkWidth, artworkHeight);
-  return Uint8Array.from({ length: artworkWidth * artworkHeight }, (_, i) => 255 - data[i * 4]);
+  ctx.drawImage(image, 0, 0, artworkSize, artworkSize);
+  const { data } = ctx.getImageData(0, 0, artworkSize, artworkSize);
+  return Uint8Array.from({ length: artworkSize * artworkSize }, (_, i) => data[i * 4 + 3]);
 }
 
-export async function masterPassQR(url, logoSource) {
+export async function masterPassQR(url) {
   let svg;
   try {
-    svg = drawArtwork(url, await readLogo(logoSource));
+    svg = drawArtwork(url, await readLogo());
   } catch {
     svg = renderSVG(url, { border: quietZone });
   }

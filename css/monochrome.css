@@ -474,7 +474,7 @@ body[data-page="booking"] .site-bottom .rent-slider { display:none; }
   .master-profile > .master__photo,.master-profile > .own-photo {grid-column:1;grid-row:1/3;}
   .master-profile .master__photo {width:100%;max-width:none;aspect-ratio:auto 3/4;}
   .master-profile__identity {grid-column:2;grid-row:1;}
-  .master-profile .master__bio {grid-column:1/-1;grid-row:3;margin:0;max-width:none;font-size:14px;line-height:1.45;}
+  .master-profile .master__bio {grid-column:1/-1;grid-row:3;margin:0;max-width:none;}
   .master-profile .master__bio:empty {display:none;}
   .master-profile__action {grid-column:1/-1;grid-row:4;margin:0;}
   .master-profile .master__name { margin:0;font-size:19px;line-height:1.25; }
@@ -1288,8 +1288,9 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body:has(.photo-viewer[open])::after {display:none;}
 }
 
-.master-profile__facts {display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;color:var(--ink-2);font-size:14px;}
-.master-profile__facts .master__city {grid-column:1/-1;margin:0;}
+.master-profile__facts {display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;color:var(--ink-2);}
+.master-profile__facts,.master-profile .master__bio {font-size:14px;line-height:1.45;}
+.master-profile__facts .master__city {grid-column:1/-1;margin:0;font-size:inherit;line-height:inherit;}
 .master-profile__facts:has(> :not(:empty)) {border-top:1px solid var(--panel-edge);padding-top:8px;margin-top:4px;}
 @media (min-width:701px) {
   .master-profile .master__bio {margin-top:10px;}
@@ -1303,12 +1304,9 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
     align-items:baseline;
     gap:3px 7px;
     min-width:0;
-    font-size:12px;
-    line-height:1.4;
     overflow-wrap:anywhere;
   }
   .master-profile__facts:has(> :not(:empty)) {margin-top:0;}
-  .master-profile__facts .master__city {font-size:inherit;}
   .master-profile__facts .master__city:empty {display:none;}
   .master-profile__facts .master__exp {width:100%;}
 }
@@ -1478,11 +1476,11 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .master-pass__profile {display:grid;gap:2px;min-width:0;}
 .master-pass__label {color:var(--ink-2);font-size:11px;line-height:1.25;white-space:nowrap;}
 .master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:14px;font-weight:500;line-height:1.3;text-decoration:none;white-space:nowrap;}
-.master-pass__link:hover,.master-pass__link:focus-visible {text-decoration:underline;text-underline-offset:2px;}
+.master-pass__link:hover,.master-pass__link:focus-visible {color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
 .master-pass__actions {display:flex;gap:2px;flex:none;}
-.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
+.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink);box-shadow:none;cursor:pointer;}
 .master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel);color:var(--ink);}
-.master-pass__button svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.master-pass__button svg {display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
 :root #dialog.master-pass-qr-dialog {
   box-sizing:border-box;
   width:min(378px,calc(100vw - 28px));
@@ -1539,14 +1537,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   font-weight:500;
 }
 .master-pass-qr__link span {overflow-wrap:anywhere;}
-.master-pass-qr__link svg {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;}
-.master-pass .master-pass__button .master-pass-link-icon,.master-pass-qr__link .master-pass-link-icon {
-  stroke-width:1.35;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-.master-pass [data-copy-master-pass] .master-pass-link-icon {color:var(--ink-3);}
-.master-pass-qr__link .master-pass-link-icon {color:#b0b0b0;}
+.master-pass-qr__link .master-pass-link-icon {width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
 .master-pass-qr__link:hover,.master-pass-qr__link:focus-visible {color:#fff;background:#ffffff18;}
 .master-pass-qr__hint {max-width:100%;min-height:1.3em;margin:-10px 0 0;color:#c4c4c4;font-size:12px;}
 .pass-editor__status {min-height:1.4em;}
