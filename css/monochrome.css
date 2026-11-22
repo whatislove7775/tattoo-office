@@ -1481,10 +1481,64 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
 .master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel);color:var(--ink);}
 .master-pass__button svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
-.master-pass-qr {display:grid;justify-items:center;gap:12px;}
-#dialog-content .master-pass-qr h2 {margin:0;padding:0;font-size:20px;}
-.master-pass-qr img {display:block;width:min(100%,220px);height:auto;border-radius:8px;}
-.master-pass-qr a {max-width:100%;overflow-wrap:anywhere;}
+#dialog.master-pass-qr-dialog {
+  box-sizing:border-box;
+  width:min(344px,calc(100vw - 28px));
+  padding:0;
+  border:1px solid #484848;
+  border-radius:24px;
+  color:#fff;
+  background:linear-gradient(165deg,#333,#171717 65%);
+}
+#dialog.master-pass-qr-dialog .close {
+  top:12px;
+  right:12px;
+  color:#fff;
+  background:#ffffff14;
+  box-shadow:none!important;
+}
+.master-pass-qr {
+  display:grid;
+  justify-items:center;
+  gap:14px;
+  padding:24px 22px 22px;
+  text-align:center;
+}
+#dialog-content .master-pass-qr h2 {
+  justify-self:start;
+  margin:0;
+  padding:0 36px 0 0;
+  color:inherit;
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:-.02em;
+}
+.master-pass-qr__symbol {
+  position:relative;
+  width:min(100%,238px);
+  overflow:hidden;
+  border-radius:16px;
+  background:#fff;
+}
+.master-pass-qr__code {display:block;width:100%;height:auto;aspect-ratio:1;}
+.master-pass-qr__logo {position:absolute;aspect-ratio:1;box-sizing:border-box;padding:1.5%;pointer-events:none;}
+.master-pass-qr__link {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  max-width:100%;
+  min-height:36px;
+  padding:3px 12px;
+  border-radius:9px;
+  color:#fff;
+  font-size:20px;
+  font-weight:500;
+}
+.master-pass-qr__link span {overflow-wrap:anywhere;}
+.master-pass-qr__link svg {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.65;}
+.master-pass-qr__link:hover,.master-pass-qr__link:focus-visible {color:#fff;background:#ffffff18;}
+.master-pass-qr__hint {max-width:100%;min-height:1.3em;margin:-10px 0 0;color:#c4c4c4;font-size:12px;}
 .pass-editor__status {min-height:1.4em;}
 @media (max-width:700px) {
   .ranking-launch {left:14px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 86px);font-size:12px;padding:10px 12px;}
