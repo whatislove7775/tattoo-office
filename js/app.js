@@ -93,6 +93,13 @@
     var toggle = document.getElementById("mobileMenuToggle");
     toggle.setAttribute("aria-expanded", "false");
     toggle.setAttribute("aria-label", "Открыть меню");
+    if (/^#\/master\/[\w-]+$/.test(location.hash) && location.search.includes("qart=")) {
+      var passUrl = new URL(location.href);
+      if (/^\d+$/.test(passUrl.searchParams.get("qart") || "")) {
+        passUrl.searchParams.delete("qart");
+        history.replaceState(history.state, "", passUrl);
+      }
+    }
     var hash = location.hash || "#/masters";
     var found = resolve(hash);
     document.body.dataset.page = hash.split("/")[1] || "masters";

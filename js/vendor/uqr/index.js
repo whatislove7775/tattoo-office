@@ -737,3 +737,6 @@ function renderSVG(data, options = {}) {
 }
 
 export { QrCodeDataType, encode, renderANSI, renderSVG, renderUnicode, renderUnicodeCompact };
+
+// Low-level encoding primitives used by the site's QArt generator.
+export { QrCode, EccMap, appendBits, getNumDataCodewords };

@@ -1,49 +1,195 @@
-import { encode, QrCodeDataType } from "./vendor/uqr/index.js";
+import { QrCode, EccMap, appendBits, getNumDataCodewords, renderSVG } from "./vendor/uqr/index.js";
 
+const version = 12;
+const correction = EccMap.L;
+const size = version * 4 + 17;
 const quietZone = 4;
-const badgeSize = 9;
+const artworkWidth = 55;
+const artworkHeight = 23;
+const artworkLeft = (size - artworkWidth) / 2;
+const artworkTop = (size - artworkHeight) / 2;
 
-function logoPosition({ size, types }) {
-  const center = (size - badgeSize) / 2;
-  let best = { distance: Infinity };
-  for (let y = quietZone; y <= size - quietZone - badgeSize; y++) {
-    for (let x = quietZone; x <= size - quietZone - badgeSize; x++) {
-      const distance = (x - center) ** 2 + (y - center) ** 2;
-      if (distance >= best.distance) continue;
-      const cells = types.slice(y, y + badgeSize);
-      if (cells.every(row => row.slice(x, x + badgeSize).every(type => type === QrCodeDataType.Data))) {
-        best = { x, y, distance };
-        if (distance === 0) return best;
-      }
-    }
+// QArt uses a numeric segment to give the image independent bits to vary.
+// See https://research.swtch.com/qart for the encoding technique.
+function encodeArtworkData(url) {
+  const target = new URL(url);
+  const suffix = target.hash;
+  target.hash = "";
+  target.searchParams.delete("qart");
+  const prefix = target.href + (target.search ? "&" : "?") + "qart=";
+
+  const capacity = getNumDataCodewords(version, correction) * 8;
+  const bits = [];
+  const addBytes = (text) => {
+    const bytes = new TextEncoder().encode(text);
+    appendBits(4, 4, bits);
+    appendBits(bytes.length, 16, bits);
+    for (const byte of bytes) appendBits(byte, 8, bits);
+  };
+
+  addBytes(prefix);
+  const suffixLength = new TextEncoder().encode(suffix).length;
+  const groupCount = Math.floor((capacity - bits.length - 16 - 20 - 8 * suffixLength - 4) / 10);
+  if (groupCount < 1 || groupCount * 3 >= 4096) throw new Error("QR link is outside the artwork capacity");
+  appendBits(1, 4, bits);
+  appendBits(groupCount * 3, 12, bits);
+
+  const freeBits = [];
+  let seed = 1;
+  for (const char of url) seed = (Math.imul(seed, 31) + char.charCodeAt(0)) >>> 0;
+  for (let group = 0; group < groupCount; group++) {
+    for (let bit = 0; bit < 10; bit++) freeBits.push(bits.length + bit);
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    appendBits((seed >>> 16) % 1000, 10, bits);
   }
-  return best;
+  addBytes(suffix);
+  appendBits(0, 4, bits);
+  appendBits(0, (8 - bits.length % 8) % 8, bits);
+  for (let pad = 236; bits.length < capacity; pad ^= 236 ^ 17) appendBits(pad, 8, bits);
+
+  const bytes = Array(capacity / 8).fill(0);
+  bits.forEach((bit, index) => { bytes[index >>> 3] |= bit << (7 - (index & 7)); });
+  return { bytes, freeBits };
 }
 
-export function masterPassQR(url) {
-  const code = encode(url, { ecc: "H", minVersion: 5, border: quietZone });
-  const { size, data, types } = code;
-  const logo = logoPosition(code);
-  const inBadge = (x, y) => x >= logo.x && x < logo.x + badgeSize && y >= logo.y && y < logo.y + badgeSize;
-  const contrast = "#111";
-  const marks = data.flatMap((row, y) => row.map((marked, x) => {
-    if (!marked || types[y][x] === QrCodeDataType.Position || inBadge(x, y)) return "";
-    return `M${x} ${y}h1v1h-1z`;
-  })).join("");
-  const far = size - quietZone - 7;
-  const finders = [[quietZone, quietZone], [far, quietZone], [quietZone, far]].map(([x, y]) => `
-    <g transform="translate(${x} ${y})">
-      <rect width="7" height="7" rx="1"/>
-      <rect x="1" y="1" width="5" height="5" rx=".58" fill="white"/>
-      <rect x="2" y="2" width="3" height="3" rx=".4"/>
-    </g>`).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
-    <rect width="${size}" height="${size}" fill="white"/>
-    <path fill="${contrast}" shape-rendering="crispEdges" d="${marks}"/>
-    <g fill="${contrast}">${finders}</g>
-  </svg>`;
-  return {
-    image: "data:image/svg+xml," + encodeURIComponent(svg),
-    logo: { left: 100 * logo.x / size, top: 100 * logo.y / size, width: 100 * badgeSize / size },
-  };
+function constraintsFor(code, pixels, words) {
+  const constraints = [];
+  for (let row = 0; row < artworkHeight; row++) {
+    for (let col = 0; col < artworkWidth; col++) {
+      const x = artworkLeft + col, y = artworkTop + row;
+      if (code.types[y][x]) continue;
+      const darkness = pixels[row * artworkWidth + col];
+      constraints.push({
+        x, y,
+        priority: darkness > 127 ? 256 + darkness : 127 - darkness,
+        differs: code.modules[y][x] !== (darkness > 127) ? 1 : 0,
+        coefficients: new Uint32Array(words),
+      });
+    }
+  }
+  return constraints.sort((a, b) => b.priority - a.priority);
+}
+
+function solvePixels(constraints, variableCount, fixed) {
+  const words = Math.ceil(variableCount / 32);
+  const pivots = new Array(variableCount);
+  for (const [variable, value] of fixed) {
+    const row = new Uint32Array(words);
+    row[variable >>> 5] = 1 << (variable & 31);
+    pivots[variable] = { row, value };
+  }
+  for (const constraint of constraints) {
+    const row = constraint.coefficients.slice();
+    let value = constraint.differs;
+    for (let word = 0; word < row.length && word * 32 < variableCount; word++) {
+      while (row[word]) {
+        const pivot = word * 32 + 31 - Math.clz32(row[word] & -row[word]);
+        const previous = pivots[pivot];
+        if (!previous) {
+          pivots[pivot] = { row, value };
+          break;
+        }
+        for (let i = word; i < row.length; i++) row[i] ^= previous.row[i];
+        value ^= previous.value;
+      }
+      if (row[word]) break;
+    }
+  }
+
+  const solution = new Uint32Array(Math.ceil(variableCount / 32));
+  for (let pivot = variableCount - 1; pivot >= 0; pivot--) {
+    const constraint = pivots[pivot];
+    if (!constraint) continue;
+    const start = pivot >>> 5;
+    let parity = 0;
+    for (let word = start; word < solution.length; word++) parity ^= constraint.row[word] & solution[word];
+    parity ^= parity >>> 16;
+    parity ^= parity >>> 8;
+    parity ^= parity >>> 4;
+    parity ^= parity >>> 2;
+    parity ^= parity >>> 1;
+    if ((parity & 1) !== constraint.value) solution[start] |= 1 << (pivot & 31);
+  }
+  return solution;
+}
+
+function drawArtwork(url, pixels) {
+  const { bytes, freeBits } = encodeArtworkData(url);
+  const base = new QrCode(version, correction, bytes, -1);
+  const constraints = constraintsFor(base, pixels, Math.ceil(freeBits.length / 32));
+  freeBits.forEach((position, variable) => {
+    const byte = position >>> 3, mask = 1 << (7 - (position & 7));
+    bytes[byte] ^= mask;
+    const variant = new QrCode(version, correction, bytes, base.mask);
+    bytes[byte] ^= mask;
+    for (const cell of constraints) {
+      if (variant.modules[cell.y][cell.x] !== base.modules[cell.y][cell.x])
+        cell.coefficients[variable >>> 5] |= 1 << (variable & 31);
+    }
+  });
+  // Values 1000–1023 cannot be encoded as three decimal digits. For each
+  // such group, lock one of its leading bits to zero and solve again.
+  const bitAt = (data, position) => (data[position >>> 3] >>> (7 - (position & 7))) & 1;
+  const fixed = new Map();
+  let result;
+  for (let attempt = 0; ; attempt++) {
+    if (attempt === 8) {
+      for (let group = 0; group < freeBits.length; group += 10)
+        fixed.set(group, bitAt(bytes, freeBits[group]));
+    }
+    const solution = solvePixels(constraints, freeBits.length, fixed);
+    result = bytes.slice();
+    freeBits.forEach((position, variable) => {
+      if (solution[variable >>> 5] & (1 << (variable & 31)))
+        result[position >>> 3] ^= 1 << (7 - (position & 7));
+    });
+    let invalid = false;
+    for (let group = 0; group < freeBits.length; group += 10) {
+      let value = 0;
+      for (let bit = 0; bit < 10; bit++) value = (value << 1) | bitAt(result, freeBits[group + bit]);
+      if (value < 1000) continue;
+      invalid = true;
+      const variable = group + (group / 10) % 5;
+      fixed.set(variable, bitAt(bytes, freeBits[variable]));
+    }
+    if (!invalid) break;
+  }
+  const qr = new QrCode(version, correction, result, base.mask);
+  const dark = [], gray = [];
+  qr.modules.forEach((row, y) => row.forEach((bit, x) => {
+    if (!bit) return;
+    const col = x - artworkLeft, rowIndex = y - artworkTop;
+    const inside = col >= 0 && col < artworkWidth && rowIndex >= 0 && rowIndex < artworkHeight;
+    const background = inside && !qr.types[y][x] && pixels[rowIndex * artworkWidth + col] < 105;
+    (background ? gray : dark).push(`M${x + quietZone} ${y + quietZone}h1v1h-1z`);
+  }));
+  const imageSize = size + 2 * quietZone;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${imageSize} ${imageSize}" shape-rendering="crispEdges"><path fill="white" d="M0 0h${imageSize}v${imageSize}H0z"/><path fill="#111" d="${dark.join("")}"/><path fill="#626262" d="${gray.join("")}"/></svg>`;
+}
+
+async function readLogo(source) {
+  const image = new Image();
+  image.src = source;
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = artworkWidth;
+  canvas.height = artworkHeight;
+  const ctx = canvas.getContext("2d");
+  const scale = Math.min(artworkWidth / image.naturalWidth, artworkHeight / image.naturalHeight);
+  const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, artworkWidth, artworkHeight);
+  ctx.drawImage(image, (artworkWidth - width) / 2, (artworkHeight - height) / 2, width, height);
+  const { data } = ctx.getImageData(0, 0, artworkWidth, artworkHeight);
+  return Uint8Array.from({ length: artworkWidth * artworkHeight }, (_, i) => 255 - data[i * 4]);
+}
+
+export async function masterPassQR(url, logoSource) {
+  let svg;
+  try {
+    svg = drawArtwork(url, await readLogo(logoSource));
+  } catch {
+    svg = renderSVG(url, { border: quietZone });
+  }
+  return "data:image/svg+xml," + encodeURIComponent(svg);
 }

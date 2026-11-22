@@ -1290,6 +1290,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 .master-profile__facts {display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;color:var(--ink-2);font-size:14px;}
 .master-profile__facts .master__city {grid-column:1/-1;margin:0;}
+.master-profile__facts:has(> :not(:empty)) {border-top:1px solid var(--panel-edge);padding-top:8px;margin-top:4px;}
 @media (min-width:701px) {
   .master-profile .master__bio {margin-top:10px;}
 }
@@ -1306,6 +1307,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
     line-height:1.4;
     overflow-wrap:anywhere;
   }
+  .master-profile__facts:has(> :not(:empty)) {margin-top:0;}
   .master-profile__facts .master__city {font-size:inherit;}
   .master-profile__facts .master__city:empty {display:none;}
   .master-profile__facts .master__exp {width:100%;}
@@ -1481,14 +1483,16 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
 .master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel);color:var(--ink);}
 .master-pass__button svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
-#dialog.master-pass-qr-dialog {
+:root #dialog.master-pass-qr-dialog {
   box-sizing:border-box;
-  width:min(344px,calc(100vw - 28px));
+  width:min(378px,calc(100vw - 28px));
   padding:0;
   border:1px solid #484848;
   border-radius:24px;
   color:#fff;
   background:linear-gradient(165deg,#333,#171717 65%);
+  box-shadow:0 16px 44px #0006;
+  background-clip:padding-box;
 }
 #dialog.master-pass-qr-dialog .close {
   top:12px;
@@ -1515,13 +1519,12 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 }
 .master-pass-qr__symbol {
   position:relative;
-  width:min(100%,238px);
+  width:min(100%,290px);
   overflow:hidden;
   border-radius:16px;
   background:#fff;
 }
-.master-pass-qr__code {display:block;width:100%;height:auto;aspect-ratio:1;}
-.master-pass-qr__logo {position:absolute;aspect-ratio:1;box-sizing:border-box;padding:1.5%;pointer-events:none;}
+#dialog-content .master-pass-qr__code {display:block;width:100%;height:auto;max-height:none;aspect-ratio:1;}
 .master-pass-qr__link {
   display:inline-flex;
   align-items:center;
@@ -1536,7 +1539,14 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   font-weight:500;
 }
 .master-pass-qr__link span {overflow-wrap:anywhere;}
-.master-pass-qr__link svg {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.65;}
+.master-pass-qr__link svg {width:16px;height:16px;flex:none;fill:none;stroke:currentColor;}
+.master-pass .master-pass__button .master-pass-link-icon,.master-pass-qr__link .master-pass-link-icon {
+  stroke-width:1.35;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.master-pass [data-copy-master-pass] .master-pass-link-icon {color:var(--ink-3);}
+.master-pass-qr__link .master-pass-link-icon {color:#b0b0b0;}
 .master-pass-qr__link:hover,.master-pass-qr__link:focus-visible {color:#fff;background:#ffffff18;}
 .master-pass-qr__hint {max-width:100%;min-height:1.3em;margin:-10px 0 0;color:#c4c4c4;font-size:12px;}
 .pass-editor__status {min-height:1.4em;}

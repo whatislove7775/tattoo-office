@@ -26,7 +26,7 @@
     return '#/master/' + encodeURIComponent(master.username || master.id);
   }
 
-  var passLinkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l4.2-4.2a4 4 0 0 0-5.7-5.7l-2.4 2.4"/><path d="M14 11a4 4 0 0 0-5.7 0l-4.2 4.2a4 4 0 0 0 5.7 5.7l2.4-2.4"/></svg>';
+  var passLinkIcon = '<svg class="master-pass-link-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 7.2 12 4.7a5.1 5.1 0 0 1 7.3 7.2l-2.5 2.5M14.5 16.8 12 19.3a5.1 5.1 0 0 1-7.3-7.2l2.5-2.5M8.8 15.2l6.4-6.4"/></svg>';
 
   function masterPassHTML(master, editable) {
     var username = master.username || (/^[\w-]{1,32}$/.test(master.id) ? master.id : '');
@@ -68,11 +68,12 @@
         var dialog = document.getElementById('dialog');
         var content = document.getElementById('dialog-content');
         if (dialog.open) return;
-        var { image, logo } = masterPassQR(link.href);
+        var logoSource = document.querySelector('.brand__logo img')?.getAttribute('src') || 'assets/logo-v3.svg';
+        var image = await masterPassQR(link.href, logoSource);
+        if (!qrButton.isConnected || dialog.open) return;
         content.innerHTML = '<section class="master-pass-qr">' +
           '<h2 id="master-pass-qr-title">Tattoo Office Pass</h2>' +
-          '<div class="master-pass-qr__symbol"><img class="master-pass-qr__code" src="' + esc(image) + '" alt="QR-код ссылки на профиль">' +
-          '<img class="master-pass-qr__logo" src="assets/resident-mark.svg?v=clean-2" alt="" style="left:' + logo.left + '%;top:' + logo.top + '%;width:' + logo.width + '%"></div>' +
+          '<div class="master-pass-qr__symbol"><img class="master-pass-qr__code" src="' + esc(image) + '" alt="QR-код ссылки на профиль с логотипом Tattoo Office"></div>' +
           '<a class="master-pass-qr__link" href="' + esc(link.href) + '" title="Скопировать ссылку на профиль"><span>' + esc(link.textContent) + '</span>' + passLinkIcon + '</a>' +
           '<p class="master-pass-qr__hint" role="status">Отсканируйте, чтобы открыть профиль</p></section>';
         var hint = content.querySelector('.master-pass-qr__hint');
