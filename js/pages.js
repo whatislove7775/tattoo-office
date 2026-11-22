@@ -28,15 +28,15 @@
 
   function masterPassHTML(master, editable) {
     var username = master.username || (/^[\w-]{1,32}$/.test(master.id) ? master.id : '');
+    var label = username ? '@' + username : 'Ссылка на профиль';
     return '<div class="master-pass">' +
       '<span class="master-pass__label">Tattoo Office Pass</span>' +
-      '<div class="master-pass__row">' +
-        '<a class="master-pass__link" href="' + esc(masterProfilePath(master)) + '">' + esc(username ? '@' + username : 'Ссылка на профиль') + '</a>' +
-        '<button class="master-pass__button" type="button" data-copy-master-pass aria-label="Скопировать ссылку на профиль" title="Скопировать ссылку на профиль">' +
-          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>' +
-        (editable ? '<button class="master-pass__button" type="button" data-edit-master-pass aria-label="Изменить юзернейм" title="Изменить юзернейм">' +
-          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20zM14.5 6l3.5 3.5"/></svg></button>' : '') +
-      '</div></div>';
+      '<a class="master-pass__link" title="' + esc(label) + '" href="' + esc(masterProfilePath(master)) + '">' + esc(label) + '</a>' +
+      '<button class="master-pass__button" type="button" data-copy-master-pass aria-label="Скопировать ссылку на профиль" title="Скопировать ссылку на профиль">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l4.2-4.2a4 4 0 0 0-5.7-5.7l-2.4 2.4"/><path d="M14 11a4 4 0 0 0-5.7 0l-4.2 4.2a4 4 0 0 0 5.7 5.7l2.4-2.4"/></svg></button>' +
+      (editable ? '<button class="master-pass__button" type="button" data-edit-master-pass aria-label="Изменить юзернейм" title="Изменить юзернейм">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20zM14.5 6l3.5 3.5"/></svg></button>' : '') +
+      '</div>';
   }
 
   function mountMasterPass(root, notify) {
