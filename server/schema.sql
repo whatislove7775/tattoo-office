@@ -55,6 +55,8 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_test boolean;
 
 -- Keep booking and payment records when removing an account from the admin list.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username text;
+CREATE UNIQUE INDEX IF NOT EXISTS users_public_username_idx ON users (lower(username)) WHERE username IS NOT NULL AND deleted_at IS NULL;
 
 -- Admin automation: reminders chain, waitlist, promo codes, stock history,
 -- per-place hours and feedback replies.

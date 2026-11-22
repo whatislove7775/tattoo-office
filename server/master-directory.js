@@ -13,7 +13,7 @@ export function safeAvatar(value) {return typeof value==='string' && value.lengt
 const localized=v=>typeof v==='object'?v?.ru||'':v||'';
 export async function masterDirectory(db,{period='all',includeInactive=false}={}) {
   const [{rows:users},{rows:content},{rows:links},{rows:media}]=await Promise.all([
-    db.query(`SELECT u.id,u.name,u.role,u.active,u.profile,
+    db.query(`SELECT u.id,u.name,u.role,u.active,u.profile,u.username,
       COUNT(b.id) FILTER (WHERE b.status IN ('confirmed','invoiced','completed') AND ($1='all' OR (b.starts_at >= (date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'Europe/Moscow') AND b.starts_at < ((date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') + interval '1 month') AT TIME ZONE 'Europe/Moscow'))))::int AS bookings,
       COUNT(b.id) FILTER (WHERE b.status='completed' AND ($1='all' OR (b.starts_at >= (date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'Europe/Moscow') AND b.starts_at < ((date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') + interval '1 month') AT TIME ZONE 'Europe/Moscow'))))::int AS completed
       FROM users u LEFT JOIN bookings b ON b.user_id=u.id WHERE u.deleted_at IS NULL AND u.account_type='master' AND u.role IN ('guest','resident') GROUP BY u.id`,[period]),
@@ -26,7 +26,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
   const fromUser=(u,base={})=>{
     const p=u.profile||{},resident=u.role==='resident',archived=p.archived===true||base.archived===true;
     // В архиве: мастер скрыт с сайта (главная, рейтинг, личная страница), но виден в админке.
-    const master={...base,id:base.id||u.id,name:u.name,resident,active:u.active&&!archived,archived,registered:true,
+    const master={...base,id:base.id||u.id,name:u.name,username:u.username||base.username||null,resident,active:u.active&&!archived,archived,registered:true,
       city:['Москва','СПБ'].includes(p.city)?p.city:(base.city||''),avatar:safeAvatar(p.avatar)||base.avatar||'',
       bio:p.bio===undefined?base.bio||'':text(p.bio),specialty:p.specialty===undefined?base.specialty||'':text(p.specialty,100),
       status:text(p.status,160),
@@ -42,7 +42,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
   const linked=new Set(links.map(l=>l.user_id));
   const result=catalog.map(m=>{
     const c=byContent.get(m.contentId)||{};
-    const base={id:m.id,name:c.title||localized(m.name),city:localized(m.city),age:m.age,exp:localized(m.exp),avatar:m.photo,
+    const base={id:m.id,name:c.title||localized(m.name),username:m.id,city:localized(m.city),age:m.age,exp:localized(m.exp),avatar:m.photo,
       bio:c.body||localized(m.bio),specialty:c.specialty||'',resident:typeof c.resident==='boolean'?c.resident:m.resident===true,active:c.archived!==true,archived:c.archived===true,registered:false,featured:c.featured!==false,rankingVisible:true,
       mainChoice:typeof c.mainCard==='boolean'?c.mainCard:undefined,featuredFlag:c.featured!==false,onMain:c.archived===true?false:typeof c.mainCard==='boolean'?c.mainCard:c.featured!==false&&(typeof c.resident==='boolean'?c.resident:m.resident===true),
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,

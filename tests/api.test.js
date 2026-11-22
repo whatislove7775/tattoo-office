@@ -68,6 +68,24 @@ after(async () => {
   await new Promise((r) => server.close(r));
   await db.close();
 });
+test("Tattoo Office Pass reserves a case-insensitive username while keeping original profile links", async () => {
+  const save = (username, cookie = resident) => request("/me/username", "PATCH", { username }, cookie);
+  const { id } = (await request("/me", "GET", null, resident)).data.user;
+  assert.equal((await save("bad-name")).status, 400);
+  assert.equal((await save("ZINAIDA")).status, 409);
+  assert.equal((await save("OfficeInk", admin)).status, 403);
+  assert.equal((await save("@OfficeInk")).data.username, "OfficeInk");
+  assert.equal((await request("/me", "GET", null, resident)).data.user.username, "OfficeInk");
+  assert.equal((await request("/me/username?username=officeink", "GET", null, other)).data.available, false);
+  assert.equal((await save("ofFiCeInK", other)).status, 409);
+  assert.equal((await request("/masters/officeink")).data.master.id, id);
+  assert.equal((await request("/masters/" + id)).data.master.username, "OfficeInk");
+  assert.equal((await save("NewOfficeInk")).status, 200);
+  assert.equal((await request("/masters/OfficeInk")).status, 404);
+  assert.equal((await request("/masters/NEWOFFICEINK")).data.master.id, id);
+  assert.equal((await save("")).data.username, null);
+  assert.equal((await request("/masters/" + id)).status, 200);
+});
 test("auth: hashes passwords, requires consent, prevents role escalation and cross-origin mutation", async () => {
   const u = (
     await db.query("SELECT * FROM users WHERE email='resident@test.invalid'")

@@ -22,8 +22,35 @@
     return age+' '+({one:'год',few:'года',many:'лет',other:'лет'}[new Intl.PluralRules('ru').select(age)]);
   }
 
-  function masterPassUrl(id) {
-    return 'https://tattoo-office.com/#/master/' + encodeURIComponent(id);
+  function masterProfilePath(master) {
+    return '#/master/' + encodeURIComponent(master.username || master.id);
+  }
+
+  function masterPassHTML(master, editable) {
+    var username = master.username || (/^[\w-]{1,32}$/.test(master.id) ? master.id : '');
+    return '<div class="master-pass">' +
+      '<span class="master-pass__label">Tattoo Office Pass</span>' +
+      '<div class="master-pass__row">' +
+        '<a class="master-pass__link" href="' + esc(masterProfilePath(master)) + '">' + esc(username ? '@' + username : 'Ссылка на профиль') + '</a>' +
+        '<button class="master-pass__button" type="button" data-copy-master-pass aria-label="Скопировать ссылку на профиль" title="Скопировать ссылку на профиль">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>' +
+        (editable ? '<button class="master-pass__button" type="button" data-edit-master-pass aria-label="Изменить юзернейм" title="Изменить юзернейм">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20zM14.5 6l3.5 3.5"/></svg></button>' : '') +
+      '</div></div>';
+  }
+
+  function mountMasterPass(root, notify) {
+    var button = root.querySelector('[data-copy-master-pass]');
+    if (!button) return;
+    var link = root.querySelector('.master-pass__link');
+    button.onclick = async function () {
+      try {
+        await navigator.clipboard.writeText(link.href);
+        notify('Ссылка на профиль скопирована');
+      } catch (_) {
+        notify('Не удалось скопировать. Скопируйте адрес через меню ссылки.');
+      }
+    };
   }
 
   /* ------------------------------ хелперы --------------------------------- */
@@ -126,8 +153,8 @@
              '<div class="master">' +
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
-                 '<div class="master__name"><span>' + esc(name) + (m.resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : '') + '</span><button class="master-share" type="button" aria-label="Поделиться профилем мастера" title="Поделиться профилем"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg></button></div>' +
-                 '<div class="master-pass"><span>Tattoo Office Pass</span><a href="' + esc(masterPassUrl(m.id)) + '" title="Постоянная ссылка на профиль">' + esc('tattoo-office.com/#/master/' + m.id) + '</a></div>' +
+                 '<div class="master-profile__identity"><div class="master__name"><span>' + esc(name) + (m.resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : '') + '</span></div>' +
+                 masterPassHTML(m) + '</div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +
                    (m.age ? '<span class="master__age">' + esc(ageLabel(m.age)) + '</span>' : '') +
@@ -143,17 +170,7 @@
     mount: function (root, params) {
       var m = global.DATA.masterById(params.id);
       if (!m) return;
-      root.querySelector('.master-share').onclick = async function () {
-        var url = new URL(location.href); url.hash = '#/master/' + m.id;
-        try {
-          if (navigator.share) await navigator.share({title: pick(m.name) + ' · Tattoo Office', url: url.href});
-          else { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
-        } catch (error) {
-          if (error.name === 'AbortError') return;
-          try { await navigator.clipboard.writeText(url.href); global.TO.toast('Ссылка на профиль скопирована'); }
-          catch (_) { global.TO.toast('Не удалось скопировать ссылку. Скопируйте адрес страницы.'); }
-        }
-      };
+      mountMasterPass(root, global.TO.toast);
       var pane = root.querySelector('#worksPane');
 
       function render(tab) {
@@ -699,6 +716,9 @@
 
   global.Pages = {
     esc: esc,
+    masterProfilePath: masterProfilePath,
+    masterPassHTML: masterPassHTML,
+    mountMasterPass: mountMasterPass,
     img: img,
     head: head,
     masters: Masters,

@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+
+const source = readFileSync(new URL('../js/pages.js', import.meta.url), 'utf8');
+
+function setup(writeText) {
+  const window = {}, button = {}, messages = [];
+  const link = { href: 'https://office.test/#/master/OfficeInk' };
+  const root = { querySelector: selector => selector === '.master-pass__link' ? link : button };
+  runInNewContext(source, { window, navigator: { clipboard: { writeText } } });
+  window.Pages.mountMasterPass(root, message => messages.push(message));
+  return { button, messages, pages: window.Pages };
+}
+
+test('Tattoo Office Pass displays a handle and copies its profile URL', async () => {
+  let copied;
+  const { button, messages, pages } = setup(async value => { copied = value; });
+  const master = { id: 'account-id', username: 'OfficeInk' };
+  assert.match(pages.masterPassHTML(master), /href="#\/master\/OfficeInk">@OfficeInk/);
+  assert.equal(pages.masterProfilePath({ id: master.id }), '#/master/account-id');
+  await button.onclick();
+  assert.equal(copied, 'https://office.test/#/master/OfficeInk');
+  assert.equal(messages[0], 'Ссылка на профиль скопирована');
+});
+
+test('clipboard denial explains how to copy the link', async () => {
+  const { button, messages } = setup(async () => { throw Error('denied'); });
+  await button.onclick();
+  assert.match(messages[0], /Скопируйте адрес через меню ссылки/);
+});

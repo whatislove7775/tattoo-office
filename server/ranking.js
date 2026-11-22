@@ -9,7 +9,8 @@ export async function masterRanking(db,{period='all'}={}) {
 export async function registeredMasterProfile(db,id) {
   if(!/^[\w-]{1,50}$/.test(id))return null;
   const masters=await masterDirectory(db);
-  const direct=masters.find(m=>m.id===id);
+  const key=id.toLowerCase();
+  const direct=masters.find(m=>m.id===key || m.username?.toLowerCase()===key);
   if(direct)return direct;
   if(!/^[0-9a-f-]{36}$/i.test(id))return null;
   const {rows}=await db.query('SELECT master_id FROM master_links WHERE user_id=$1',[id]);

@@ -37,9 +37,9 @@ try{
   await page.waitForURL('**/#/cabinet');await page.locator('.cabinet-public-profile').waitFor();
   const ownId=(await (await context.request.get(base+'/api/me')).json()).user.publicProfileId;
   const ownUrl=base+'/#/master/'+ownId;
-  assert.equal(await page.locator('#public-profile-link').inputValue(),ownUrl);
+  assert.equal(await page.locator('.master-pass__link').getAttribute('href'),'#/master/'+ownId);
   await context.grantPermissions(['clipboard-read','clipboard-write'],{origin:base});
-  await page.locator('#copy-public-profile').click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),ownUrl);
+  await page.locator('[data-copy-master-pass]').click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),ownUrl);
   const [ownPreview]=await Promise.all([page.waitForEvent('popup'),page.getByRole('link',{name:/Посмотреть профиль/}).click()]);
   await ownPreview.locator('.master__name').waitFor();assert.match(await ownPreview.locator('.master__name').innerText(),/Тестовый Мастер/);await ownPreview.close();
   await page.locator('[data-cabtab=profile]').click();await page.locator('#profile-form').waitFor();

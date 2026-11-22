@@ -262,8 +262,10 @@
     contacts: CONTACTS,
     placeholder: placeholder,
     masterById: function (id) {
-      for (var i = 0; i < MASTERS.length; i++) if (MASTERS[i].id === id) return MASTERS[i];
-      return null;
+      var key = String(id || '').toLowerCase();
+      return MASTERS.find(function (master) {
+        return master.id === key || master.username?.toLowerCase() === key;
+      }) || null;
     }
   };
 })(window);

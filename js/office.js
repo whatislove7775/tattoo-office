@@ -902,13 +902,13 @@ new MutationObserver(()=>{
 
 async function rankingPage() {
   const data = await api("/ranking?period=all");
-  data.masters=data.masters.map(m=>({...m,profileUrl:"#/master/"+encodeURIComponent(m.id)}));
+  data.masters=data.masters.map(m=>({...m,profileUrl:window.Pages.masterProfilePath(m)}));
   const podiumCrown = rank => {
     if (![1,2,3].includes(rank)) return "";
     const fill={1:"#e6b422",2:"#aeb8c4",3:"#c9854b"}[rank];
     return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M11.2 3.6Q12 2.1 12.8 3.6l3.3 5.3q.55.85 1.3.3l3.2-2.4q1.5-1.1 1.15.85l-1.9 9.3q-.2 1-1.2 1H5.6q-1 0-1.2-1L2.25 7.45q-.35-1.95 1.15-.85l3.2 2.4q.75.55 1.3-.3ZM6 19h12a1.2 1.2 0 0 1 0 2.4H6a1.2 1.2 0 0 1 0-2.4Z"/></svg>`;
   };
-  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-username="${esc(m.username?.toLowerCase() || "")}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
 }
 // Форма личного дела мастера: во вкладке «Личное дело» и в окне «Редактировать профиль».
 function profileFormHTML() {
@@ -924,22 +924,23 @@ function ownAge(birthDate) {
   return age + " " + ({ one: "год", few: "года", many: "лет", other: "лет" }[new Intl.PluralRules("ru").select(age)]);
 }
 // Профиль мастера в кабинете — та же вёрстка, что на публичной странице и в карточке на главной, но с редактированием.
-function ownProfileHTML(publicProfileId, publicProfileUrl) {
+function ownProfileHTML(publicProfileId) {
   const dm = (window.DATA.masters || []).find((m) => m.id === publicProfileId) || {};
   const p = me.profile || {}, resident = me.role === "resident", photo = p.avatar || dm.photo || "";
   const age = ownAge(p.birthDate), pick = (v) => (typeof v === "object" ? v?.ru || "" : v || "");
   const booking = pick(dm.bookingLink) || dm.bookingLink || "";
-  const share = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2"/></svg>';
+  const pass = { id: publicProfileId, username: me.username || dm.username };
   const pane = profileTab === "about"
     ? `<section class="master-about own-about"><div class="own-about__head"><h3>О себе</h3><button type="button" class="chrome" data-own-edit="bio">Изменить</button></div>${p.status ? `<p class="master-about__status">${esc(p.status)}</p>` : ""}<p class="master-about__bio">${esc(p.bio || "Расскажите о себе — нажмите «Изменить».")}</p>${p.specialty ? `<dl><div><dt>Стиль</dt><dd>${esc(p.specialty)}</dd></div></dl>` : ""}</section>`
     : `<section id="profile-gallery" class="profile-gallery profile-gallery--tab"><h3>${profileTab === "drafts" ? "Эскизы" : "Работы"}</h3><p class="small muted" role="status">Загрузка фотографий…</p></section>`;
   return `<section class="cabinet-public-profile own-profile" aria-label="Ваш публичный профиль">
-    <div class="own-profile__bar"><span class="eyebrow">ВАШ ПРОФИЛЬ · ТАК ЕГО ВИДЯТ ВСЕ</span><div class="own-profile__actions"><a class="chrome" href="${esc("#/master/" + encodeURIComponent(publicProfileId))}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button type="button" class="chrome pro-primary" data-own-edit="all">Редактировать</button><button id="logout" class="small cabinet-action">Выйти</button></div></div>
+    <div class="own-profile__bar"><span class="eyebrow">ВАШ ПРОФИЛЬ · ТАК ЕГО ВИДЯТ ВСЕ</span><div class="own-profile__actions"><a class="chrome" href="${esc(window.Pages.masterProfilePath(pass))}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button type="button" class="chrome pro-primary" data-own-edit="all">Редактировать</button><button id="logout" class="small cabinet-action">Выйти</button></div></div>
     <div class="master own-profile__master"><div class="master-profile">
       <button type="button" class="own-photo" data-own-edit="photo" aria-label="Изменить фото">${photo ? `<img class="master__photo" src="${esc(photo)}" alt="${esc(me.name)}">` : `<span class="master__photo own-photo__empty">${esc(me.name.slice(0, 1))}</span>`}<span class="own-photo__hint">Изменить фото</span></button>
       <div class="master-profile__copy">
-        <div class="master__name"><span>${esc(me.name)}${resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><button class="master-share" type="button" id="share-public-profile" aria-label="Поделиться профилем" title="Поделиться профилем">${share}</button></div>
-        <div class="master-pass own-pass"><span>Tattoo Office Pass</span><span class="own-pass__row"><input id="public-profile-link" type="text" value="${esc(publicProfileUrl)}" readonly spellcheck="false" aria-label="Ссылка на ваш публичный профиль"><button class="cabinet-action" type="button" id="copy-public-profile">Скопировать</button></span></div>
+        <div class="master-profile__identity"><div class="master__name"><span>${esc(me.name)}${resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span></div>
+          ${window.Pages.masterPassHTML(pass, true)}
+        </div>
         <div class="master-profile__facts">${p.city ? `<span class="master__city">${esc(p.city)}</span>` : ""}${age ? `<span class="master__age">${esc(age)}</span>` : ""}${p.experience ? `<span class="master__exp">Стаж ${esc(p.experience)}</span>` : ""}${!p.city && !age && !p.experience ? '<button type="button" class="own-empty" data-own-edit="all">+ Город, возраст и стаж</button>' : ""}</div>
         <div class="master__bio">${p.bio ? esc(p.bio) : '<button type="button" class="own-empty" data-own-edit="bio">+ Добавьте описание — его увидят на вашей странице</button>'}</div>
         ${resident ? `<p class="master-profile__action">${booking ? `<a class="btn btn--primary" href="${esc(booking)}" target="_blank" rel="noopener noreferrer">Записаться</a>` : '<button class="btn btn--primary" type="button" disabled>Записаться</button><small class="muted">Контакт для записи добавит администратор</small>'}</p>` : ""}
@@ -961,9 +962,6 @@ async function cabinetPage() {
   if (me.accountType === "master" && ["portfolio", "drafts"].includes(cabTab)) { profileTab = cabTab; cabTab = "bookings"; }
   const personalPoints=cabTab==="profile"&&me.accountType==="master"?await api("/me/ranking"):null;
   const publicProfileId = me.publicProfileId || me.id;
-  const publicProfilePath = "#/master/" + encodeURIComponent(publicProfileId);
-  const publicProfileUrl = new URL(publicProfilePath, location.href).href;
-  const publicProfileCard = me.accountType === "master" ? `<section class="cabinet-public-profile" aria-labelledby="cabinet-public-profile-title"><div class="cabinet-public-profile__head"><div><span class="eyebrow">ПУБЛИЧНЫЙ ПРОФИЛЬ</span><h3 id="cabinet-public-profile-title">Так вас видят клиенты</h3></div><div class="cabinet-public-profile__actions"><a class="chrome" href="${esc(publicProfilePath)}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button class="cabinet-action" type="button" id="share-public-profile">Поделиться</button></div></div><label class="cabinet-public-profile__link" for="public-profile-link"><span>Ссылка на ваш профиль</span><span class="cabinet-public-profile__link-row"><input id="public-profile-link" type="text" value="${esc(publicProfileUrl)}" readonly spellcheck="false" aria-label="Ссылка на ваш публичный профиль"><button class="cabinet-action" type="button" id="copy-public-profile">Скопировать</button></span></label></section>` : "";
   const next=active.filter(b=>new Date(b.ends_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
   // Записи от администратора, которые ждут ответа мастера: «Подтвердить» или «Связаться с админом».
   const awaiting = active.filter((b) => b.policy?.masterConfirm === "awaiting");
@@ -997,7 +995,7 @@ async function cabinetPage() {
   const accent = '';
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId, publicProfileUrl)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}${publicProfileCard}`}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}`}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -1065,6 +1063,46 @@ function mountProfileForm(onSaved) {
     onSaved();
   });
 }
+function editMasterPass() {
+  modal(`<h2>Юзернейм Tattoo Office Pass</h2>
+    <form id="master-pass-form">
+      ${field("username", "Публичный юзернейм", me.username || "", "text", 'maxlength="33" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="my_tattoo" aria-describedby="pass-rules pass-status"')}
+      <p class="small muted" id="pass-rules">От 5 до 32 символов: латинские буквы, цифры и нижнее подчёркивание. Чтобы убрать юзернейм, оставьте поле пустым.</p>
+      <p class="pass-editor__status small muted" id="pass-status" role="status"></p>
+      <button type="submit" class="chrome">Сохранить</button>
+    </form>`);
+  const form = $("#master-pass-form");
+  const input = form.elements.username;
+  const status = $("#pass-status");
+  let timer;
+  let revision = 0;
+  input.oninput = () => {
+    clearTimeout(timer);
+    const request = ++revision;
+    const username = input.value.trim().replace(/^@/, "");
+    status.textContent = "";
+    if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) return;
+    timer = setTimeout(async () => {
+      try {
+        const { available } = await api("/me/username?username=" + encodeURIComponent(username));
+        if (revision === request && form.isConnected)
+          status.textContent = available ? "Юзернейм свободен" : "Юзернейм уже занят";
+      } catch {
+        if (revision === request && form.isConnected)
+          status.textContent = "Проверим юзернейм при сохранении";
+      }
+    }, 300);
+  };
+  $("#dialog").addEventListener("close", () => { clearTimeout(timer); revision++; }, { once: true });
+  onForm("#master-pass-form", async (data) => {
+    await api("/me/username", "PATCH", { username: data.username });
+    $("#dialog").close();
+    await refresh();
+    await render();
+    notify("Tattoo Office Pass обновлён");
+  });
+  input.focus();
+}
 function mountCabinet() {
   if (!me) {
     mountAuth(false);
@@ -1075,24 +1113,9 @@ function mountCabinet() {
     try { await api(`/bookings/${b.dataset.masterConfirm}/master-confirm`, "POST", {}); notify("Запись подтверждена"); await render(); }
     catch (error) { b.disabled = false; notify(error.message); }
   }));
-  const profileLink = $("#public-profile-link");
-  if (profileLink) {
-    profileLink.addEventListener("focus", () => profileLink.select());
-    profileLink.addEventListener("click", () => profileLink.select());
-    const copyProfile = async () => {
-      try {
-        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(profileLink.value);
-        else { profileLink.select(); if (!document.execCommand("copy")) throw new Error("copy failed"); }
-        notify("Ссылка на профиль скопирована");
-      } catch { profileLink.select(); notify("Выделите ссылку и скопируйте вручную."); }
-    };
-    $("#copy-public-profile").onclick = copyProfile;
-    $("#share-public-profile").onclick = async () => {
-      if (!navigator.share) return copyProfile();
-      try { await navigator.share({title:me.name + " · Tattoo Office", url:profileLink.value}); }
-      catch (error) { if (error.name !== "AbortError") await copyProfile(); }
-    };
-  }
+  window.Pages.mountMasterPass(document, notify);
+  const editPass = $("[data-edit-master-pass]");
+  if (editPass) editPass.onclick = editMasterPass;
   if ($("#loyalty-gift")) $("#loyalty-gift").onclick = () => modal(`<h2>20-е посещение — бесплатно</h2><p>После 19 завершённых посещений следующая аренда места бесплатна по выбранному тарифу.</p><p>Расходники и дополнительные услуги оплачиваются отдельно. Отменённые брони не считаются.</p>`);
   $$("[data-cabtab]").forEach(
     (b) =>
@@ -2087,7 +2110,7 @@ async function render() {
         html = await rankingPage();
         mount=()=>{
           const filter=()=>{let count=0;const query=$('#ranking-search').value.trim().toLocaleLowerCase('ru');
-            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query);if(!row.hidden)count++;});
+            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query) && !row.dataset.rankingUsername.includes(query.replace(/^@/, ''));if(!row.hidden)count++;});
             if($('#ranking-empty'))$('#ranking-empty').hidden=count>0;
           };
           $('#ranking-search').oninput=()=>{residentInfoCleanup();filter();mountResidentInfo();};
@@ -2102,7 +2125,7 @@ async function render() {
         break;
       case "master":
         // Мастер, добавленный только что в админке, может ещё не быть в загруженном каталоге.
-        if (!window.DATA.masters.some((m) => String(m.id) === path[1]) && !window.OFFICE_PUBLIC_ONLY) await refresh();
+        if (!window.DATA.masterById(path[1]) && !window.OFFICE_PUBLIC_ONLY) await refresh();
         html = masterPage(path[1]);
         mount = () => mountMaster(path[1]);
         break;
@@ -2316,7 +2339,7 @@ if (DEMO) demoBar();
 // Профиль мастера, которого только что добавили в админке: подгружаем свежий каталог и открываем страницу.
 window.addEventListener("hashchange", async () => {
   const m = location.hash.match(/^#\/master\/([^/?#]+)/);
-  if (!m || window.OFFICE_PUBLIC_ONLY || window.DATA.masters.some((x) => String(x.id) === m[1])) return;
+  if (!m || window.OFFICE_PUBLIC_ONLY || window.DATA.masterById(m[1])) return;
   await refresh();
   if (location.hash.startsWith("#/master/" + m[1])) window.TO?.go(location.hash);
 });

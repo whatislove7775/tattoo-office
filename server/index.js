@@ -364,8 +364,38 @@ export async function createApp(db) {
     const user = safe(req.user);
     if (user?.accountType === "master") {
       user.publicProfileId = (await one(db, "SELECT master_id FROM master_links WHERE user_id=$1", [user.id]))?.master_id || user.id;
+      user.username = req.user.username;
     }
     res.json({ user });
+  });
+  const masterUsername = (req, value) => {
+    if (req.user.account_type !== "master" || req.user.role === "admin")
+      fail("Юзернейм доступен только мастерам", 403);
+    if (typeof value !== "string") fail("Укажите юзернейм");
+    const username = value.trim().replace(/^@/, "");
+    if (username && !/^[a-zA-Z0-9_]{5,32}$/.test(username))
+      fail("Используйте от 5 до 32 символов: латинские буквы, цифры и нижнее подчёркивание");
+    return username || null;
+  };
+  app.get("/api/me/username", auth, async (req, res) => {
+    const username = masterUsername(req, req.query.username);
+    const key = username?.toLowerCase();
+    const taken = key && (catalogIds.has(key) || await one(db,
+      "SELECT 1 FROM users WHERE lower(username)=$1 AND deleted_at IS NULL AND id<>$2",
+      [key, req.user.id],
+    ));
+    res.set("Cache-Control", "no-store").json({ available: !taken });
+  });
+  app.patch("/api/me/username", auth, async (req, res) => {
+    const username = masterUsername(req, req.body.username);
+    if (username && catalogIds.has(username.toLowerCase())) fail("Этот юзернейм уже занят", 409);
+    try {
+      await db.query("UPDATE users SET username=$1 WHERE id=$2 AND deleted_at IS NULL", [username, req.user.id]);
+    } catch (error) {
+      if (error.code === "23505") fail("Этот юзернейм уже занят", 409);
+      throw error;
+    }
+    res.json({ username });
   });
   const loginLimit = rateLimit({ windowMs: 900000, limit: 25 });
   app.post("/api/auth/register", loginLimit, async (req, res) => {
