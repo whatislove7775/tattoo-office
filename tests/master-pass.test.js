@@ -8,7 +8,8 @@ const source = readFileSync(new URL('../js/pages.js', import.meta.url), 'utf8');
 function setup(writeText) {
   const window = {}, button = {}, messages = [];
   const link = { href: 'https://office.test/#/master/OfficeInk' };
-  const root = { querySelector: selector => selector === '.master-pass__link' ? link : button };
+  const elements = { '.master-pass__link': link, '[data-copy-master-pass]': button };
+  const root = { querySelector: selector => elements[selector] || null };
   runInNewContext(source, { window, navigator: { clipboard: { writeText } } });
   window.Pages.mountMasterPass(root, message => messages.push(message));
   return { button, messages, pages: window.Pages };

@@ -1467,24 +1467,27 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 @media (min-width:1367px) {
   .master-profile__identity .master__name {margin-top:12px;}
 }
-.master-pass {display:flex;align-items:center;gap:5px;min-width:0;margin:2px 0 8px;white-space:nowrap;}
-.master-pass__label {flex:none;color:var(--ink-2);font-size:11px;line-height:1.25;}
-.master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:13px;font-weight:500;line-height:1.35;text-decoration:none;}
+.master-pass {display:flex;align-items:center;justify-content:space-between;gap:8px;box-sizing:border-box;width:min(100%,320px);min-width:0;margin:7px 0 10px;padding:6px 7px 6px 10px;border:1px solid var(--panel-edge);border-radius:12px;background:var(--panel-2);}
+.master-pass__profile {display:grid;gap:2px;min-width:0;}
+.master-pass__label {color:var(--ink-2);font-size:11px;line-height:1.25;white-space:nowrap;}
+.master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:14px;font-weight:500;line-height:1.3;text-decoration:none;white-space:nowrap;}
 .master-pass__link:hover,.master-pass__link:focus-visible {text-decoration:underline;text-underline-offset:2px;}
-.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:6px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
-.master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel-2);color:var(--ink);}
-.master-pass__button svg {display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
+.master-pass__actions {display:flex;gap:2px;flex:none;}
+.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:28px;height:30px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
+.master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel);color:var(--ink);}
+.master-pass__button svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.master-pass-qr {display:grid;justify-items:center;gap:12px;}
+#dialog-content .master-pass-qr h2 {margin:0;padding:0;font-size:20px;}
+.master-pass-qr img {display:block;width:min(100%,220px);height:auto;border-radius:8px;}
+.master-pass-qr a {max-width:100%;overflow-wrap:anywhere;}
 .pass-editor__status {min-height:1.4em;}
-@media (max-width:1100px) {
-  .master-pass {gap:4px;}
-  .master-pass__label {font-size:10px;}
-}
 @media (max-width:700px) {
   .ranking-launch {left:14px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 86px);font-size:12px;padding:10px 12px;}
   .ranking-row {padding:14px 10px;gap:8px;grid-template-columns:24px minmax(0,1fr) 52px;}
   .ranking-name {font-size:16px;}
-  .master-pass {margin-bottom:0;}
-  .master-pass .master-pass__button {height:28px;}
+  .master-pass {gap:4px;margin:5px 0 0;padding-inline:7px 3px;}
+  .master-pass__label {font-size:10px;}
+  .master-pass__link {font-size:13px;}
 }
 @media (max-width:420px) {
   .master-profile {grid-template-rows:auto;}

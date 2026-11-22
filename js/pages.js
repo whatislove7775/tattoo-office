@@ -30,13 +30,16 @@
     var username = master.username || (/^[\w-]{1,32}$/.test(master.id) ? master.id : '');
     var label = username ? '@' + username : 'Ссылка на профиль';
     return '<div class="master-pass">' +
-      '<span class="master-pass__label">Tattoo Office Pass</span>' +
-      '<a class="master-pass__link" title="' + esc(label) + '" href="' + esc(masterProfilePath(master)) + '">' + esc(label) + '</a>' +
+      '<div class="master-pass__profile"><span class="master-pass__label">Tattoo Office Pass</span>' +
+      '<a class="master-pass__link" title="' + esc(label) + '" href="' + esc(masterProfilePath(master)) + '">' + esc(label) + '</a></div>' +
+      '<div class="master-pass__actions">' +
+      '<button class="master-pass__button" type="button" data-qr-master-pass aria-label="Показать QR-код профиля" title="QR-код профиля">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path d="M14 14h3v3h4m0-3v1m-7 5v1m4 0h3M6.5 6.5h.01m11 0h.01m-11 11h.01"/></svg></button>' +
       '<button class="master-pass__button" type="button" data-copy-master-pass aria-label="Скопировать ссылку на профиль" title="Скопировать ссылку на профиль">' +
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l4.2-4.2a4 4 0 0 0-5.7-5.7l-2.4 2.4"/><path d="M14 11a4 4 0 0 0-5.7 0l-4.2 4.2a4 4 0 0 0 5.7 5.7l2.4-2.4"/></svg></button>' +
       (editable ? '<button class="master-pass__button" type="button" data-edit-master-pass aria-label="Изменить юзернейм" title="Изменить юзернейм">' +
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20zM14.5 6l3.5 3.5"/></svg></button>' : '') +
-      '</div>';
+      '</div></div>';
   }
 
   function mountMasterPass(root, notify) {
@@ -49,6 +52,32 @@
         notify('Ссылка на профиль скопирована');
       } catch (_) {
         notify('Не удалось скопировать. Скопируйте адрес через меню ссылки.');
+      }
+    };
+    var qrButton = root.querySelector('[data-qr-master-pass]');
+    if (qrButton) qrButton.onclick = async function () {
+      qrButton.disabled = true;
+      try {
+        var { renderSVG } = await import('./vendor/uqr/index.js');
+        if (!qrButton.isConnected) return;
+        var dialog = document.getElementById('dialog');
+        var content = document.getElementById('dialog-content');
+        if (dialog.open) return;
+        var image = 'data:image/svg+xml,' + encodeURIComponent(renderSVG(link.href, { border: 4 }));
+        content.innerHTML = '<section class="master-pass-qr"><h2 id="master-pass-qr-title">QR-код профиля</h2>' +
+          '<img src="' + esc(image) + '" alt="QR-код ссылки на профиль">' +
+          '<a href="' + esc(link.href) + '">' + esc(link.textContent) + '</a></section>';
+        var previousLabel = dialog.getAttribute('aria-labelledby');
+        dialog.setAttribute('aria-labelledby', 'master-pass-qr-title');
+        dialog.addEventListener('close', function () {
+          if (previousLabel === null) dialog.removeAttribute('aria-labelledby');
+          else dialog.setAttribute('aria-labelledby', previousLabel);
+        }, { once: true });
+        dialog.showModal();
+      } catch (_) {
+        notify('Не удалось открыть QR-код. Ссылку можно скопировать.');
+      } finally {
+        qrButton.disabled = false;
       }
     };
   }
