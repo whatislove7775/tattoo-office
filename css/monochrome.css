@@ -427,7 +427,7 @@ body[data-page="masters"] .site-bottom .rent-slider { transform:translateY(calc(
 }
 /* Profile, forms and navigation share a restrained mobile layout. */
 .master__photo { display:block;padding:0;border:0;border-radius:16px;background:none;box-shadow:none; }
-.master-profile__action { margin:24px 0 0; }
+.master-profile__action { margin:16px 0 0; }
 .master-profile__action .btn--primary { display:flex;justify-content:center;width:100%;background:var(--action-fill);border-color:#333;color:#fff;box-shadow:0 3px 8px #0002; }
 .office-feature .club-rates { padding:0;border:0;background:none;box-shadow:none; }
 body[data-page="booking"] .site-bottom .rent-slider { display:none; }
@@ -758,7 +758,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
   .rail .login.login--user .who__name {font-size:clamp(15px,1.35vw,19px);}
   .rail .login--user .who .menu-logout {width:24px;height:24px;}
 }
-.master-profile__action small {display:block;margin-top:10px;font-size:12px;}
+.master-profile__action small {display:block;margin-top:6px;font-size:12px;}
 .login__master {display:block;width:100%;white-space:nowrap;text-align:center;text-decoration:none;font-size:15px;line-height:1.4;color:var(--ink);}
 @media (min-width:701px) {
   .rail .login.login--guest {width:calc(var(--rail-width) * .68);margin-left:auto;align-self:flex-end;padding:12px;min-height:58px;display:flex;align-items:center;}
@@ -1281,8 +1281,11 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   body:has(.photo-viewer[open])::after {display:none;}
 }
 
-.master-profile__facts {display:grid;grid-template-columns:max-content 1fr;column-gap:22px;color:var(--ink-2);font-size:15px;}
-.master-profile__facts .master__city {grid-column:1/-1;}
+.master-profile__facts {display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;color:var(--ink-2);font-size:14px;}
+.master-profile__facts .master__city {grid-column:1/-1;margin:0;}
+@media (min-width:701px) {
+  .master-profile .master__bio {margin-top:10px;}
+}
 @media (max-width:700px) {
   .master-profile {position:relative;min-height:200px;}
   .master-profile__facts {position:absolute;left:0;top:154px;width:108px;display:grid;grid-template-columns:max-content max-content;gap:3px 6px;font-size:12px;line-height:1.5;}
@@ -1294,7 +1297,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 
 /* Share the lower profile row: facts under the photo, booking beside them. */
 @media (max-width:700px) {
-  .master-profile {grid-template-rows:max-content minmax(0,1fr) auto;row-gap:10px;min-height:0;}
+  .master-profile {grid-template-rows:max-content minmax(0,1fr) auto;row-gap:8px;min-height:0;}
   .master-profile__copy {display:contents;}
   .master-profile .master__photo,.master-profile > .own-photo {grid-column:1;grid-row:1/3;}
   .master-profile__identity {grid-column:2;grid-row:1;}
@@ -1460,27 +1463,28 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
 .master__name {display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .master__name>span {min-width:0;}
 .master-profile__identity {min-width:0;}
-.master-profile__identity .master__name {overflow-wrap:anywhere;}
-.master-pass {display:flex;align-items:center;gap:6px;min-width:0;margin:8px 0 14px;white-space:nowrap;}
-.master-pass__label {flex:none;color:var(--ink-3);font-size:10px;font-weight:600;letter-spacing:.06em;line-height:1.25;text-transform:uppercase;}
-.master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2);font-size:15px;line-height:1.35;text-decoration:underline;text-decoration-color:var(--panel-edge);text-underline-offset:2px;}
-.master-pass__link:hover,.master-pass__link:focus-visible {color:var(--ink);text-decoration-color:currentColor;}
-.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:30px;height:30px;min-height:0;padding:0;border:0;border-radius:8px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
+.master-profile__identity .master__name {margin-bottom:0;overflow-wrap:anywhere;}
+@media (min-width:1367px) {
+  .master-profile__identity .master__name {margin-top:12px;}
+}
+.master-pass {display:flex;align-items:center;gap:5px;min-width:0;margin:2px 0 8px;white-space:nowrap;}
+.master-pass__label {flex:none;color:var(--ink-2);font-size:11px;line-height:1.25;}
+.master-pass__link {min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-size:13px;font-weight:500;line-height:1.35;text-decoration:none;}
+.master-pass__link:hover,.master-pass__link:focus-visible {text-decoration:underline;text-underline-offset:2px;}
+.master-pass .master-pass__button {display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:6px;background:transparent;color:var(--ink-2);box-shadow:none;cursor:pointer;}
 .master-pass .master-pass__button:hover,.master-pass .master-pass__button:focus-visible {background:var(--panel-2);color:var(--ink);}
-.master-pass__button svg {display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.master-pass__button svg {display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
 .pass-editor__status {min-height:1.4em;}
 @media (max-width:1100px) {
   .master-pass {gap:4px;}
-  .master-pass__label {font-size:9px;letter-spacing:.035em;}
-  .master-pass__link {font-size:13px;}
-  .master-pass .master-pass__button {width:28px;}
+  .master-pass__label {font-size:10px;}
 }
 @media (max-width:700px) {
   .ranking-launch {left:14px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 86px);font-size:12px;padding:10px 12px;}
   .ranking-row {padding:14px 10px;gap:8px;grid-template-columns:24px minmax(0,1fr) 52px;}
   .ranking-name {font-size:16px;}
-  .master-pass {margin:5px 0 0;}
-  .master-pass .master-pass__button {height:32px;}
+  .master-pass {margin-bottom:0;}
+  .master-pass .master-pass__button {height:28px;}
 }
 @media (max-width:420px) {
   .master-profile {grid-template-rows:auto;}
