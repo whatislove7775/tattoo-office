@@ -90,7 +90,7 @@ function filteredPayments(a) {
   });
 }
 export function financeHTML(a, s) {
-  const { esc, money, dateLabel, statusName, select } = c, rows = filteredPayments(a);
+  const { esc, money, dateLabel, select } = c, rows = filteredPayments(a);
   const sum = (list) => list.reduce((t, p) => t + Number(p.amount), 0);
   const paid = rows.filter((p) => p.status === "paid"), pending = rows.filter((p) => p.status === "pending");
   const byMethod = Object.keys(METHOD).map((m) => [m, sum(paid.filter((p) => paymentMethod(p, a) === m))]);
@@ -98,7 +98,7 @@ export function financeHTML(a, s) {
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
   <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${statusName[p.status] || esc(p.status)}</td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}</td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -282,7 +282,7 @@ export function mount(tab) {
     ff.onchange = () => { Object.assign(financeFilter, Object.fromEntries(new FormData(ff))); render(); };
     $$("[data-finance-range]").forEach((b) => (b.onclick = () => { const t = c.today(); financeFilter = { ...financeFilter, from: b.dataset.financeRange === "month" ? t.slice(0, 8) + "01" : "", to: b.dataset.financeRange === "month" ? t : "" }; render(); }));
     $("#finance-csv").onclick = () => {
-      const rows = filteredPayments(a).map((p) => { const b = a.bookings.find((x) => x.id === p.booking_id); return [mskDay(p.created_at), p.id, b?.user_name || "", c.paymentLabels[p.kind], METHOD[paymentMethod(p, a)], (p.amount / 100).toFixed(2).replace(".", ","), c.statusName[p.status] || p.status]; });
+      const rows = filteredPayments(a).map((p) => { const b = a.bookings.find((x) => x.id === p.booking_id); return [mskDay(p.created_at), p.id, b?.user_name || "", c.paymentLabels[p.kind], METHOD[paymentMethod(p, a)], (p.amount / 100).toFixed(2).replace(".", ","), c.paymentStatus(p)]; });
       downloadCSV(`tattoo-office-payments-${c.today()}.csv`, ["Дата", "Платёж", "Мастер", "Назначение", "Способ", "Сумма, ₽", "Статус"], rows);
     };
   }

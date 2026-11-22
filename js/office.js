@@ -834,6 +834,9 @@ const paymentLabels = {
   final: "Итоговый счёт за сеанс",
   expense: "Счёт за расходы",
 };
+function paymentStatus(p) {
+  return p.status === "pending" && p.kind !== "deposit" ? "Ожидает оплаты" : statusName[p.status] || p.status;
+}
 function expenseLines(items) {
   if (!items?.length) return "";
   return `<ul class="invoice-items">${items.map((x) => `<li><span>${esc(x.name)} × ${Number(x.qty)}</span><strong>${money(x.price * x.qty)}</strong></li>`).join("")}</ul>`;
@@ -858,7 +861,7 @@ async function paymentPage(id) {
     : "";
   return win(
     "Оплата",
-    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div>
+    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${paymentStatus(p)}</span></div>
     <div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${paymentLabels[p.kind]}</p></div>
     <dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city] || p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl>
     ${breakdown}${expenseLines(items)}
@@ -2333,7 +2336,7 @@ async function render() {
   }
 }
 const adminContext = {
-  api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity, paymentLabels,
+  api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity, paymentLabels, paymentStatus,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
   cityRatesOf, roleName, cityTabs, cityInfo,
   promosHTML: (a) => AP.promosHTML(a),
