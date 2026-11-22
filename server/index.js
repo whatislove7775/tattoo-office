@@ -8,6 +8,7 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
+import {addBookingExpenses} from "./booking-expenses.js";
 import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswordFree,shiftAdminEmail,hideShiftEmail} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
@@ -930,7 +931,9 @@ export async function createApp(db) {
               COALESCE(u.profile->>'avatar','')<>'' AS has_avatar,
               (SELECT count(*) FROM bookings b WHERE b.user_id=u.id AND b.status='completed')::int AS completed,
               (SELECT max(b.starts_at) FROM bookings b WHERE b.user_id=u.id AND b.status IN ('confirmed','invoiced','completed')) AS last_booking,
-              EXISTS(SELECT 1 FROM bookings b WHERE b.user_id=u.id AND b.status='invoiced') AS unpaid,
+              EXISTS(SELECT 1 FROM bookings b WHERE b.user_id=u.id AND (b.status='invoiced' OR EXISTS(
+                SELECT 1 FROM payments p WHERE p.booking_id=b.id AND p.kind='expense' AND p.status='pending'
+              ))) AS unpaid,
               (SELECT count(*) FROM bookings b WHERE b.user_id=u.id AND b.status='no_show' AND b.starts_at>now()-interval '90 days')::int AS no_shows
               FROM users u WHERE u.deleted_at IS NULL ORDER BY u.created_at DESC`,
           )
@@ -955,7 +958,14 @@ export async function createApp(db) {
         settingsLog: (await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='settings.update' ORDER BY a.created_at DESC LIMIT 30")).rows,
       });
       result.users = result.users.map((u) => ({ ...u, email: hideShiftEmail(u.email) }));
-      if (!isOwner(req.user)) { result.payments = []; result.promos = []; result.users = result.users.filter((u) => u.role !== "admin" && u.account_type === "master").map((u) => ({ ...u, balance: null })); }
+      if (!isOwner(req.user)) {
+        const cashBookings = new Set(result.bookings.filter(b => b.policy?.paymentMethod === "cash").map(b => b.id));
+        result.payments = result.payments
+          .filter(p => p.kind === "expense" || (p.status === "pending" && p.kind === "final" && cashBookings.has(p.booking_id)))
+          .map(({ id, booking_id, kind, amount, status, items }) => ({ id, booking_id, kind, amount, status, items }));
+        result.promos = [];
+        result.users = result.users.filter((u) => u.role !== "admin" && u.account_type === "master").map((u) => ({ ...u, balance: null }));
+      }
     }
     if (role === "admin") {
       const pointLinks=(await db.query("SELECT master_id,user_id FROM master_links")).rows;
@@ -1413,6 +1423,13 @@ export async function createApp(db) {
     });
     res.json({ ok: true });
   });
+  app.post("/api/admin/bookings/:id/expenses", staff, async (req, res) => {
+    const result = await db.transaction(async (q) => {
+      await lock(q);
+      return addBookingExpenses(q, req.params.id.toLowerCase(), req.user.id, req.body);
+    });
+    res.status(201).json(result);
+  });
   app.post("/api/admin/bookings/:id/invoice", staff, async (req, res) => {
     const result = await db.transaction(async (q) => {
       await lock(q);
@@ -1543,7 +1560,7 @@ export async function createApp(db) {
       [provider, p.id, provider.startsWith("test-") || (provider.startsWith("yookassa:") && yookassaTest())],
     );
     if (p.kind === "deposit") await confirmed(q, b);
-    else
+    else if (p.kind === "final")
       await q.query("UPDATE bookings SET status='completed' WHERE id=$1", [
         b.id,
       ]);
@@ -1588,7 +1605,7 @@ export async function createApp(db) {
     await db.transaction(async q => {
       await lock(q);
       const p = await one(q, "SELECT p.*,b.policy,b.starts_at FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 FOR UPDATE OF p", [req.params.id]);
-      if (!p || p.kind !== "final" || p.policy.paymentMethod !== "cash" || new Date(p.starts_at) > new Date()) fail("Наличный расчёт недоступен", 409);
+      if (!p || !["final", "expense"].includes(p.kind) || p.policy.paymentMethod !== "cash" || new Date(p.starts_at) > new Date()) fail("Наличный расчёт недоступен", 409);
       if (p.status === "paid") return;
       await settle(q, p.id, "cash:" + p.id);
       await audit(q, req.user.id, "payment.cash", { paymentId: p.id, amount: p.amount });
@@ -1624,7 +1641,7 @@ export async function createApp(db) {
             amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
             capture: true,
             confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
-            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : "Tattoo Office — итоговый счёт за сеанс",
+            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
             metadata: { payment_id: p.id, booking_id: p.booking_id },
           }, p.id + "-" + p.amount);
       verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
@@ -1635,11 +1652,12 @@ export async function createApp(db) {
     res.json(result);
   });
   app.get("/api/payments/:id", auth, async (req, res) => {
-    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
+    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.rate,b.deposit,b.extras AS booking_extras,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
     await syncYookassa(p);
     p = { ...p, ...(await one(db, "SELECT * FROM payments WHERE id=$1", [p.id])) };
-    res.json({ payment: p, mode: (await settings()).mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() ? "yookassa" : null, test: yookassaTest() });
+    const mode = (await settings()).mode;
+    res.json({ payment: p, mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() && yookassaTest() ? "yookassa" : null, test: yookassaTest(), testPaymentAvailable: mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
   });
   app.post("/api/webhooks/yookassa", async (req, res) => {
     const id = req.body?.object?.id;

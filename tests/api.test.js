@@ -632,3 +632,72 @@ test('admin can assign a Telegram booking link when creating a master', async()=
   const stored=(await db.query('SELECT profile FROM users WHERE id=$1',[created.data.id])).rows[0].profile;assert.equal(stored.adminBookingLink,body.bookingLink);
   assert.equal((await request('/me','PATCH',{name:'Resident',profile:{bookingLink:body.bookingLink}},resident)).status,403);
 });
+
+test("staff expenses update an open invoice, preserve a settled invoice and deduct stock once", async () => {
+  const cookie = await register("expenses@test.invalid");
+  const { id: masterId } = (await db.query("SELECT id FROM users WHERE email='expenses@test.invalid'")).rows[0];
+  const { id: shiftId } = (await db.query("SELECT id FROM users WHERE email='admin@test.invalid'")).rows[0];
+  const id = randomUUID(), productId = randomUUID(), serviceId = randomUUID();
+  await db.query("INSERT INTO catalog(id,name,kind,price,stock) VALUES($1,'Кола','product',15000,5),($2,'Подготовка','service',50000,0)", [productId, serviceId]);
+  await db.query(`INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status,policy)
+    VALUES($1,$2,$3,now()-interval '2 days',now()-interval '2 days'+interval '3 hours',3,320000,320000,'confirmed','{"paymentMethod":"cash"}')`,
+    [id, masterId, pub.resources[0].id]);
+  const expenses = "/admin/bookings/" + id + "/expenses";
+  const order = (catalogId, qty) => ({ requestId: randomUUID(), items: [{ id: catalogId, qty }] });
+  const cola = order(productId, 2);
+  assert.equal((await request(expenses, "POST", cola, cookie)).status, 403);
+  assert.equal((await request(expenses, "POST", order(productId, 6), admin)).status, 409);
+  const original = await request(expenses, "POST", cola, admin);
+  assert.equal(original.status, 201);
+  assert.deepEqual(original.data, { paymentId: null, separate: false, amount: 30000 });
+  assert.equal((await request("/admin/bookings/" + id + "/no-show", "POST", {}, admin)).status, 409);
+  assert.deepEqual((await request(expenses, "POST", cola, admin)).data, original.data);
+  assert.equal((await request(expenses, "POST", { ...cola, items: [{ id: productId, qty: 1 }] }, admin)).status, 409);
+  assert.equal((await db.query("SELECT stock FROM catalog WHERE id=$1", [productId])).rows[0].stock, 3);
+
+  const final = await request("/admin/bookings/" + id + "/invoice", "POST", { duration: 3 }, admin);
+  assert.equal(final.status, 200);
+  const finalId = final.data.paymentId;
+  assert.equal((await request(expenses, "POST", order(serviceId, 1), admin)).data.paymentId, finalId);
+  const finalPayment = await request("/payments/" + finalId, "GET", null, cookie);
+  assert.equal(finalPayment.data.payment.amount, 400000);
+  assert.equal(finalPayment.data.payment.booking_extras.length, 2);
+  assert.equal((await request("/admin/payments/" + finalId + "/cash", "POST", {}, admin)).status, 200);
+
+  // A shift administrator can post an expense, while editing the catalogue stays owner-only.
+  await db.query("UPDATE users SET profile=profile||'{\"staffLevel\":\"shift\"}'::jsonb WHERE id=$1", [shiftId]);
+  let separate;
+  try {
+    assert.equal((await request("/admin/catalog", "POST", {}, admin)).status, 403);
+    const added = await request(expenses, "POST", order(productId, 1), admin);
+    assert.equal(added.status, 201);
+    separate = added.data.paymentId;
+    assert.equal(added.data.separate, true);
+    assert.equal((await request(expenses, "POST", order(serviceId, 1), admin)).data.paymentId, separate);
+    const overview = await request("/admin/overview", "GET", null, admin);
+    assert.ok(overview.data.attention.expenseInvoices.some((p) => p.payment_id === separate));
+  } finally {
+    await db.query("UPDATE users SET profile=profile-'staffLevel' WHERE id=$1", [shiftId]);
+  }
+  const invoice = await request("/payments/" + separate, "GET", null, cookie);
+  assert.equal(invoice.data.payment.amount, 65000);
+  assert.deepEqual(invoice.data.payment.items.map((x) => x.name).sort(), ["Кола", "Подготовка"]);
+  assert.equal((await request("/payments/" + separate, "GET", null, resident)).status, 404);
+  const before = (await request("/me/ranking", "GET", null, cookie)).data;
+  assert.equal(before.breakdown.bookings, 70);
+  assert.equal((await request("/admin/payments/" + separate + "/cash", "POST", {}, admin)).status, 200);
+  const after = (await request("/me/ranking", "GET", null, cookie)).data;
+  assert.equal(after.breakdown.bookings, before.breakdown.bookings);
+  assert.equal(after.breakdown.services, before.breakdown.services + 20);
+  const history = (await request("/bookings", "GET", null, cookie)).data;
+  assert.equal(history.payments.find((p) => p.id === finalId).amount, 400000);
+  assert.equal(history.payments.find((p) => p.id === separate).status, "paid");
+  assert.equal(history.bookings.find((b) => b.id === id).status, "completed");
+  const checkout = (await request(expenses, "POST", order(productId, 1), admin)).data.paymentId;
+  await db.query("UPDATE payments SET checkout_id='test-checkout-locked' WHERE id=$1", [checkout]);
+  const fresh = (await request(expenses, "POST", order(serviceId, 1), admin)).data.paymentId;
+  assert.notEqual(fresh, checkout);
+  assert.equal((await db.query("SELECT amount FROM payments WHERE id=$1", [checkout])).rows[0].amount, 15000);
+  const notes = (await request("/notifications", "GET", null, cookie)).data.notifications;
+  assert.ok(notes.some((n) => n.message.includes("Кола × 1")));
+});

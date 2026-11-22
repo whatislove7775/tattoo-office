@@ -216,39 +216,105 @@ export function mountTimeline({ onBook, onClose }) {
 }
 
 // ---------- Панель брони ----------
+function bookingExpensesForm(booking, catalog) {
+  const { api, dialogForm, esc, field, money, select } = c;
+  const choices = catalog.filter((x) => x.active && x.price > 0 && (x.kind === "service" || x.stock > 0));
+  const options = [["", "Выберите позицию"], ...choices.map((x) => [x.id, `${x.name} · ${money(x.price)}${x.kind === "product" ? ` · ${x.stock} шт.` : ""}`])];
+  const requestId = crypto.randomUUID();
+  const row = (index) => `<div class="expense-form__row">${select(`item${index}`, "Товар или услуга", options, "").replace("<select ", "<select required ")}${field(`qty${index}`, "Количество", 1, "number", 'required min="1" max="100" step="1" data-plain-number="true"')}</div>`;
+  if (!choices.length) {
+    $("#dialog").close();
+    return c.notify("В каталоге нет позиций с ценой и доступным остатком");
+  }
+  dialogForm("Добавить расходы", `<p>${esc(booking.user_name)} · ${fullDate(booking.starts_at)}</p>
+    <p class="small muted">Товары спишутся со склада. Мастер увидит позиции и сумму в кабинете.</p>
+    <div id="expense-rows">${row(0)}</div>
+    <button type="button" class="small" id="expense-more"><u>+ Ещё позиция</u></button>
+    <p class="expense-form__total">К начислению <output id="expense-total" aria-live="polite">${money(0)}</output></p>
+    <p class="small muted">Расходы добавляются к открытому счёту. Если оплата уже начата или прошла, будет отдельный счёт.</p>`, (data) => {
+    const items = Object.keys(data).filter((key) => key.startsWith("item")).map((key) => ({
+      id: data[key],
+      qty: Number(data[`qty${key.slice(4)}`]),
+    }));
+    return api(`/admin/bookings/${booking.id}/expenses`, "POST", { requestId, items });
+  });
+  const rows = $("#expense-rows");
+  const button = $("#expense-more");
+  const total = $("#expense-total");
+  const prices = new Map(choices.map((x) => [x.id, x.price]));
+  const updateTotal = () => {
+    const amount = [...rows.children].reduce((sum, item) => {
+      const select = item.querySelector("select");
+      const qty = item.querySelector('input[type="number"]');
+      return sum + (prices.get(select.value) || 0) * (qty.validity.valid ? Number(qty.value) : 0);
+    }, 0);
+    total.value = money(amount);
+  };
+  rows.addEventListener("input", updateTotal);
+  rows.addEventListener("change", updateTotal);
+  $("#dialog-form button[type=submit]").textContent = "Начислить расходы";
+  let index = 1;
+  button.onclick = () => {
+    rows.insertAdjacentHTML("beforeend", row(index++));
+    enhanceSelects(rows.lastElementChild);
+    const added = rows.lastElementChild;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "small expense-form__remove";
+    remove.textContent = "Убрать позицию";
+    remove.onclick = () => {
+      added.remove();
+      button.disabled = false;
+      updateTotal();
+    };
+    added.append(remove);
+    added.querySelector("select").focus();
+    button.disabled = rows.children.length >= 10;
+  };
+}
 export function bookingPanel(id) {
   const { esc, money, api, modal, notify, dialogForm, select, field, CITY_LABELS, resourceCity } = c;
   const a = c.state().adminData, b = a.bookings.find((x) => x.id === id);
   if (!b) return notify("Бронь не найдена. Обновите страницу.");
   const r = a.resources.find((x) => x.id === b.resource_id), pays = a.payments.filter((p) => p.booking_id === b.id);
   const started = new Date(b.starts_at) <= Date.now(), future = !started;
-  const finalPay = pays.find((p) => p.kind === "final" && p.status === "pending");
+  const cashPayments = b.policy?.paymentMethod === "cash" && started
+    ? pays.filter((p) => p.status === "pending" && (p.kind === "expense" || p.kind === "final"))
+    : [];
   const act = (key, label, primary) => `<button type="button" class="${primary ? "chrome pro-primary" : "chrome"}" data-panel-act="${key}">${label}</button>`;
   const actions = [
     b.status === "confirmed" && started && act("invoice", "Выставить итоговый счёт", true),
-    b.status === "invoiced" && finalPay && b.policy?.paymentMethod === "cash" && act("cash", "Наличные получены", true),
+    started && ["confirmed", "invoiced", "completed"].includes(b.status) && act("expenses", "Добавить расходы"),
+    ...cashPayments.map((p) => act(p.id, `Наличные · ${p.kind === "expense" ? "расходы" : "сеанс"} · ${money(p.amount)}`, true)),
     b.status === "cancel_requested" && act("resolve", "Решить отмену", true),
     b.policy?.masterConfirm === "awaiting" && act("skipconfirm", "Подтвердить без мастера", true),
     ["pending", "confirmed"].includes(b.status) && future && act("move", "Перенести"),
-    b.status === "confirmed" && started && act("noshow", "Неявка"),
+    b.status === "confirmed" && started && !b.extras?.some((item) => item.addedOnSite) && act("noshow", "Неявка"),
     ["pending", "confirmed"].includes(b.status) && future && act("cancel", "Отменить бронь"),
   ].filter(Boolean).join("");
   modal(`<div class="pro-panel"><p class="pro-panel__eyebrow">Бронь № ${b.session_no || b.id.slice(0, 6)} · ${bookingBadge(b)}</p><h2>${fullDate(b.starts_at)}<br><span>${range(b)} · до ${b.tariff} ч</span></h2>
-  <dl class="pro-panel__facts"><div><dt>Мастер</dt><dd><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button></dd></div><div><dt>Место</dt><dd>${esc(CITY_LABELS[resourceCity(r)] || "")} · ${esc(b.resource_name)}</dd></div><div><dt>Стоимость</dt><dd>${money(b.total)}${b.policy?.pricePercent ? ` <small class="muted">(${b.policy.pricePercent > 0 ? "+" : ""}${b.policy.pricePercent}% за время)</small>` : ""}${b.policy?.promo ? ` <small class="muted">промокод ${esc(b.policy.promo.code)} −${money(b.policy.promo.discount)}</small>` : ""}</dd></div><div><dt>Предоплата</dt><dd>${b.deposit ? money(b.deposit) : "без предоплаты"}${b.policy?.paymentMethod === "cash" ? " · расчёт наличными" : ""}</dd></div>${b.extras?.length ? `<div><dt>Дополнительно</dt><dd>${b.extras.map((x) => `${esc(x.name || "")} × ${x.qty}`).join(", ")}</dd></div>` : ""}${pays.length ? `<div><dt>Платежи</dt><dd>${pays.map((p) => `${p.kind === "deposit" ? "предоплата" : "итоговый счёт"} ${money(p.amount)} — ${(c.statusName[p.status] || p.status).toLowerCase()}`).join("<br>")}</dd></div>` : ""}</dl>
+  <dl class="pro-panel__facts"><div><dt>Мастер</dt><dd><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button></dd></div><div><dt>Место</dt><dd>${esc(CITY_LABELS[resourceCity(r)] || "")} · ${esc(b.resource_name)}</dd></div><div><dt>Стоимость</dt><dd>${money(b.total)}${b.policy?.pricePercent ? ` <small class="muted">(${b.policy.pricePercent > 0 ? "+" : ""}${b.policy.pricePercent}% за время)</small>` : ""}${b.policy?.promo ? ` <small class="muted">промокод ${esc(b.policy.promo.code)} −${money(b.policy.promo.discount)}</small>` : ""}</dd></div><div><dt>Предоплата</dt><dd>${b.deposit ? money(b.deposit) : "без предоплаты"}${b.policy?.paymentMethod === "cash" ? " · расчёт наличными" : ""}</dd></div>${b.extras?.length ? `<div><dt>Дополнительно</dt><dd>${b.extras.map((x) => `${esc(x.name || "")} × ${x.qty}`).join(", ")}</dd></div>` : ""}${pays.length ? `<div><dt>Платежи</dt><dd>${pays.map((p) => `${c.paymentLabels[p.kind]} ${money(p.amount)} · ${(c.statusName[p.status] || p.status).toLowerCase()}${p.items?.length ? `<small class="muted"> (${p.items.map((x) => `${esc(x.name)} × ${x.qty}`).join(", ")})</small>` : ""}`).join("<br>")}</dd></div>` : ""}</dl>
   ${actions ? `<div class="pro-panel__actions">${actions}</div>` : '<p class="small muted">Действий с этой бронью нет.</p>'}</div>`);
   $("#dialog").classList.add("is-panel");
   $("#dialog").addEventListener("close", () => $("#dialog").classList.remove("is-panel"), { once: true });
   $$("[data-user-card]", $("#dialog")).forEach((x) => (x.onclick = () => { $("#dialog").close(); c.openUserCard(x.dataset.userCard); }));
   const run = {
     invoice: () => dialogForm("Итоговый счёт", `${select("duration", "Тариф после сеанса", [3, 6, 12].filter((h) => h >= b.tariff).map((h) => [h, `До ${h} часов`]), b.tariff)}<p class="small muted">Предоплата ${money(b.deposit)} будет вычтена. Счёт появится в кабинете мастера.</p>`, (d) => api(`/admin/bookings/${b.id}/invoice`, "POST", { duration: Number(d.duration) })),
-    cash: () => dialogForm("Наличные получены", "<p>Отметьте оплату только после получения наличных. Запись закроется как оплаченная.</p>", () => api(`/admin/payments/${finalPay.id}/cash`, "POST", {})),
+    expenses: () => bookingExpensesForm(b, a.catalog),
     resolve: () => dialogForm("Решение по отмене", select("credit", "Предоплата", [["yes", "Вернуть на внутренний баланс"], ["no", "Удержать по регламенту"]], "yes"), (d) => api(`/admin/bookings/${b.id}/resolve-cancel`, "POST", { credit: d.credit === "yes" })),
     move: () => dialogForm("Перенести запись", `${field("date", "Новая дата", mskDay(b.starts_at), "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), mskHour(b.starts_at))}${select("resourceId", "Место", a.resources.filter((x) => x.active).map((x) => [x.id, CITY_LABELS[resourceCity(x)] + " · " + x.name]), b.resource_id)}${b.policy?.adminCreated ? '<label class="check"><input type="checkbox" name="skipConfirm"><span>Перенести без подтверждения мастера</span></label>' : ""}<p class="small muted">${b.policy?.adminCreated ? "Мастер получит уведомление и подтвердит новое время в кабинете." : "Мастер получит уведомление."} Тариф и оплата сохраняются.</p>`, (d) => api(`/admin/bookings/${b.id}/move`, "POST", { date: d.date, resourceId: d.resourceId, hour: Number(d.hour), skipConfirm: d.skipConfirm === "on" })),
     skipconfirm: () => dialogForm("Подтвердить без мастера", "<p>Запись станет подтверждённой, не дожидаясь ответа мастера. Мастер увидит её в кабинете как обычную запись.</p>", () => api(`/admin/bookings/${b.id}/master-confirm`, "POST", {})),
     noshow: () => dialogForm("Отметить неявку", "<p>Мастер не пришёл. Предоплата остаётся у студии, запись закроется.</p>", () => api(`/admin/bookings/${b.id}/no-show`, "POST", {})),
     cancel: () => dialogForm("Отменить бронь", "<p>Бронь будет отменена по правилам студии: при ранней отмене предоплата вернётся мастеру на баланс, при поздней — по регламенту.</p>", () => api(`/bookings/${b.id}/cancel`, "POST", {})),
   };
-  $$("[data-panel-act]").forEach((x) => (x.onclick = () => { $("#dialog").classList.remove("is-panel"); run[x.dataset.panelAct](); }));
+  $$("[data-panel-act]").forEach((x) => (x.onclick = () => {
+    $("#dialog").classList.remove("is-panel");
+    const key = x.dataset.panelAct;
+    const payment = cashPayments.find((p) => p.id === key);
+    if (payment) {
+      dialogForm("Подтвердить наличный расчёт", `<p>${c.paymentLabels[payment.kind]} · ${money(payment.amount)}</p><p class="small muted">Подтвердите после получения наличных.</p>`, () => api(`/admin/payments/${payment.id}/cash`, "POST", {}));
+    } else run[key]();
+  }));
 }
 
 // ---------- Цены и промокоды ----------

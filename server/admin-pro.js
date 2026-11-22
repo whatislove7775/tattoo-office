@@ -42,12 +42,15 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
   app.get("/api/admin/overview", staff, async (req, res) => {
     const s = await settings();
     const rule = { sessions: 8, days: 60, inactiveDays: 90, ...(s.residentRule || {}) };
-    const [today, freeNow, money, invoices, cancels, feedback, lowStock, incomplete, candidates, inactive, risky, waitlist, failed, places] = await Promise.all([
+    const [today, freeNow, money, invoices, expenseInvoices, cancels, feedback, lowStock, incomplete, candidates, inactive, risky, waitlist, failed, places] = await Promise.all([
       db.query(`SELECT b.id,b.starts_at,b.ends_at,b.status,b.total,b.deposit,u.name AS user_name,u.id AS user_id,r.name AS resource_name,r.city FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id WHERE b.starts_at>=${MSK_DAY} AND b.starts_at<${MSK_DAY}+interval '1 day' AND b.status NOT IN ('cancelled','expired') ORDER BY b.starts_at`),
       db.query(`SELECT r.id,r.name,r.city FROM resources r WHERE r.active AND NOT r.deleted AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.resource_id=r.id AND b.status IN ('pending','confirmed','invoiced','cancel_requested') AND b.starts_at<=now() AND b.ends_at>now()) AND NOT EXISTS(SELECT 1 FROM blocks k WHERE (k.resource_id=r.id OR k.resource_id IS NULL) AND k.starts_at<=now() AND k.ends_at>now()) ORDER BY r.city,r.name`),
       db.query(`SELECT (SELECT COALESCE(sum(total),0) FROM bookings WHERE starts_at>=${MSK_DAY} AND starts_at<${MSK_DAY}+interval '1 day' AND status IN ('pending','confirmed','invoiced','completed','cancel_requested'))::bigint AS expected,
         (SELECT COALESCE(sum(amount),0) FROM payments WHERE status='paid' AND created_at>=${MSK_DAY})::bigint AS received`),
       db.query(`SELECT b.id,b.starts_at,b.total,b.deposit,u.name AS user_name,p.id AS payment_id,p.amount FROM bookings b JOIN users u ON u.id=b.user_id LEFT JOIN payments p ON p.booking_id=b.id AND p.kind='final' AND p.status='pending' WHERE b.status='invoiced' ORDER BY b.starts_at`),
+      db.query(`SELECT b.id,u.name AS user_name,p.id AS payment_id,p.amount FROM payments p
+        JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id
+        WHERE p.kind='expense' AND p.status='pending' ORDER BY p.created_at`),
       db.query(`SELECT b.id,b.starts_at,u.name AS user_name FROM bookings b JOIN users u ON u.id=b.user_id WHERE b.status='cancel_requested' ORDER BY b.starts_at`),
       db.query("SELECT count(*)::int AS n FROM feedback WHERE status='new'"),
       db.query("SELECT id,name,stock,min_stock FROM catalog WHERE active AND kind='product' AND stock<=min_stock ORDER BY stock"),
@@ -62,7 +65,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
     const owner = isOwner(req.user);
     res.json({
       today: { bookings: today.rows, freeNow: freeNow.rows, expected: owner ? Number(money.rows[0].expected) : null, received: owner ? Number(money.rows[0].received) : null },
-      attention: { invoices: invoices.rows, cancelRequests: cancels.rows, newFeedback: feedback.rows[0].n, lowStock: lowStock.rows, incompleteProfiles: incomplete.rows, residentCandidates: candidates.rows, inactiveResidents: inactive.rows, risky: risky.rows, waitlist: waitlist.rows, failedJobs: failed.rows[0].n },
+      attention: { invoices: invoices.rows, expenseInvoices: expenseInvoices.rows, cancelRequests: cancels.rows, newFeedback: feedback.rows[0].n, lowStock: lowStock.rows, incompleteProfiles: incomplete.rows, residentCandidates: candidates.rows, inactiveResidents: inactive.rows, risky: risky.rows, waitlist: waitlist.rows, failedJobs: failed.rows[0].n },
       stats: owner ? { week: await periodStats(db, 7, 0), prevWeek: await periodStats(db, 7, 7), month: await periodStats(db, 30, 0), prevMonth: await periodStats(db, 30, 30) } : null,
       places: places.rows.map((r) => ({ id: r.id, name: r.name, city: r.city, utilization: Math.round((r.hours / (24 * 30)) * 1000) / 10 })),
       residentRule: rule,
@@ -110,6 +113,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       await lock(q);
       const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [req.params.id]);
       if (!b || b.status !== "confirmed") fail("Неявку можно отметить у подтверждённой записи", 409);
+      if (b.extras.some((item) => item.addedOnSite)) fail("К записи уже добавлены расходы на месте", 409);
       if (new Date(b.starts_at) > new Date()) fail("Сеанс ещё не начался", 409);
       await q.query("UPDATE bookings SET status='no_show' WHERE id=$1", [b.id]);
       await enqueue(q, "booking.no_show", { bookingId: b.id });

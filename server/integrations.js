@@ -127,38 +127,28 @@ export async function sendEmail(to, subject, text, id) {
 export function receiptPayload(booking, payment, user, settings) {
   const deposit = payment.kind === "deposit",
     vat = deposit && settings.vat ? settings.vat + 100 : settings.vat;
-  const items = deposit
-    ? [
-        {
-          Label: "Предоплата рабочего места",
-          Price: payment.amount / 100,
-          Quantity: 1,
-          Amount: payment.amount / 100,
-          Vat: vat,
-          Method: 2,
-          Object: 4,
-        },
-      ]
-    : [
-        {
-          Label: `Рабочее место, до ${booking.tariff} часов`,
-          Price: booking.rate / 100,
-          Quantity: 1,
-          Amount: booking.rate / 100,
-          Vat: vat,
-          Method: 4,
-          Object: 4,
-        },
-        ...booking.extras.map((x) => ({
-          Label: x.name,
-          Price: x.price / 100,
-          Quantity: x.qty,
-          Amount: (x.price * x.qty) / 100,
-          Vat: vat,
-          Method: 4,
-          Object: x.kind === "product" ? 1 : 4,
-        })),
-      ];
+  const expense = payment.kind === "expense";
+  const items = (expense ? payment.items : deposit ? [] : booking.extras).map((x) => ({
+    Label: x.name,
+    Price: x.price / 100,
+    Quantity: x.qty,
+    Amount: (x.price * x.qty) / 100,
+    Vat: vat,
+    Method: 4,
+    Object: x.kind === "product" ? 1 : 4,
+  }));
+  if (!expense) {
+    const price = (deposit ? payment.amount : booking.rate) / 100;
+    items.unshift({
+      Label: deposit ? "Предоплата рабочего места" : `Рабочее место, до ${booking.tariff} часов`,
+      Price: price,
+      Quantity: 1,
+      Amount: price,
+      Vat: vat,
+      Method: deposit ? 2 : 4,
+      Object: 4,
+    });
+  }
   return {
     Inn: settings.inn,
     Type: "Income",
@@ -170,7 +160,7 @@ export function receiptPayload(booking, payment, user, settings) {
       Email: user.email,
       Amounts: {
         Electronic: payment.amount / 100,
-        AdvancePayment: deposit ? 0 : booking.deposit / 100,
+        AdvancePayment: payment.kind === "final" ? booking.deposit / 100 : 0,
       },
       CalculationPlace: process.env.APP_ORIGIN || "local test",
     },

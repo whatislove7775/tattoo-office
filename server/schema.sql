@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS calendar_busy(id uuid PRIMARY KEY,resource_id uuid NO
 CREATE INDEX IF NOT EXISTS calendar_busy_slots ON calendar_busy(resource_id,starts_at,ends_at);
 CREATE TABLE IF NOT EXISTS ledger(id uuid PRIMARY KEY,user_id uuid REFERENCES users(id),booking_id uuid REFERENCES bookings(id),amount integer NOT NULL,description text NOT NULL,created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS payments(id uuid PRIMARY KEY,booking_id uuid REFERENCES bookings(id),kind text NOT NULL,amount integer NOT NULL CHECK(amount>0),status text NOT NULL DEFAULT 'pending',provider_id text UNIQUE,created_at timestamptz DEFAULT now());
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS items jsonb NOT NULL DEFAULT '[]';
 CREATE TABLE IF NOT EXISTS outbox(id uuid PRIMARY KEY,kind text NOT NULL,payload jsonb NOT NULL,status text NOT NULL DEFAULT 'pending',attempts integer NOT NULL DEFAULT 0,next_at timestamptz DEFAULT now(),last_error text,created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS audit(id uuid PRIMARY KEY,actor uuid REFERENCES users(id),action text NOT NULL,details jsonb NOT NULL DEFAULT '{}',created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS feedback(id uuid PRIMARY KEY,user_id uuid REFERENCES users(id),message text NOT NULL,status text NOT NULL DEFAULT 'new',created_at timestamptz DEFAULT now());

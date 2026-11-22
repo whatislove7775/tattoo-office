@@ -1467,3 +1467,64 @@ dialog img {
 }
 
 }
+
+/* Расшифровка счёта в кабинете и на странице оплаты. */
+.cabinet-expenses {
+  display: grid;
+  gap: .75rem;
+  margin-block: 1.25rem;
+}
+.cabinet-expenses h3,
+.cabinet-expenses .note-paper {
+  margin: 0;
+}
+.cabinet-expenses__head,
+.invoice-items li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.cabinet-expenses__head strong,
+.invoice-items strong {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.invoice-items {
+  list-style: none;
+  padding: 0;
+  margin: .75rem 0;
+  font-size: .9em;
+}
+.invoice-items li {
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  padding-block: .45em;
+}
+.invoice-items li > span {
+  overflow-wrap: anywhere;
+}
+.expense-form__row {
+  display: grid;
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) 6.5rem;
+  gap: .35rem .8rem;
+  margin-block: .8rem;
+}
+.expense-form__row .field {
+  margin: 0;
+  min-width: 0;
+}
+.expense-form__remove {
+  grid-column: 1 / -1;
+  justify-self: start;
+  text-decoration: underline;
+}
+.expense-form__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.expense-form__total output {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

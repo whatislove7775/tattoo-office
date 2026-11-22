@@ -829,22 +829,49 @@ async function mountBooking() {
     }
   };
 }
+const paymentLabels = {
+  deposit: "Предоплата рабочего места",
+  final: "Итоговый счёт за сеанс",
+  expense: "Счёт за расходы",
+};
+function expenseLines(items) {
+  if (!items?.length) return "";
+  return `<ul class="invoice-items">${items.map((x) => `<li><span>${esc(x.name)} × ${Number(x.qty)}</span><strong>${money(x.price * x.qty)}</strong></li>`).join("")}</ul>`;
+}
 async function paymentPage(id) {
-  const { payment: p, mode, provider, test } = await api("/payments/" + id);
+  const { payment: p, provider, testPaymentAvailable } = await api("/payments/" + id);
+  let actions = '<a class="chrome" href="#/cabinet">В личный кабинет →</a>';
+  if (p.status === "pending") {
+    if (provider === "cash") {
+      actions = '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>';
+    } else if (provider === "yookassa") {
+      actions = '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p><button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>';
+    } else if (testPaymentAvailable) {
+      actions = '<div class="note-paper">Тестовая касса. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>';
+    } else {
+      actions = `<p class="note-paper">Онлайн-оплата пока недоступна. <a href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer"><u>Связаться с администратором</u></a></p>`;
+    }
+  }
+  const items = p.kind === "expense" ? p.items : p.kind === "final" ? p.booking_extras : [];
+  const breakdown = p.kind === "final" && items?.length
+    ? `<p class="small muted">Аренда ${money(p.rate)}${p.deposit ? ` · зачтено ${money(p.deposit)} предоплаты` : ""}</p>`
+    : "";
   return win(
     "Оплата",
-    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div><div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${p.kind === "deposit" ? "Предоплата рабочего места" : "Итоговый счёт за сеанс"}</p></div><dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city]||p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl><div class="payment-sheet__actions">${p.status === "pending" ? `${provider === "cash" ? '<p class="note-paper">Расчёт наличными в студии. Администратор отметит оплату после получения денег.</p>' : provider === "yookassa" ? `${test ? '<p class="small muted">Тестовая оплата ЮKassa. Деньги не списываются.</p>' : ""}<button class="chrome payment-primary" id="card-pay">Оплатить через ЮKassa →</button><button class="chrome payment-refresh" id="payment-refresh">Проверить статус оплаты</button>` : mode === "test" ? '<div class="note-paper">Тестовая касса.<br>Банковская карта не нужна. Денежного списания и фискального чека не будет.</div><button class="chrome" id="test-pay">Проверить успешную оплату →</button>' : '<button class="chrome payment-primary" id="card-pay">Оплатить картой →</button>'}` : '<a class="chrome" href="#/cabinet">В личный кабинет →</a>'}${
+    `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${statusName[p.status] || p.status}</span></div>
+    <div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${paymentLabels[p.kind]}</p></div>
+    <dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city] || p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl>
+    ${breakdown}${expenseLines(items)}
+    <div class="payment-sheet__actions">${actions}${
       p.kind === "final" && p.status === "pending"
         ? `<div style="margin-top:25px">${select(
             "upgrade",
             "Если сеанс занял больше времени",
-            [3, 6, 12]
-              .filter((h) => h >= p.tariff)
-              .map((h) => [h, "До " + h + " часов"]),
+            [3, 6, 12].filter((h) => h >= p.tariff).map((h) => [h, "До " + h + " часов"]),
             p.tariff,
           )}<button class="chrome" id="upgrade-invoice" data-booking="${p.booking_id}">Пересчитать счёт</button></div>`
         : ""
-    }</div>${p.kind === "deposit" && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до "+timeLabel(p.expires_at)+" (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
+    }</div>${p.kind === "deposit" && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до " + timeLabel(p.expires_at) + " (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
     "cabinet",
   );
 }
@@ -966,6 +993,11 @@ async function cabinetPage() {
   // Записи от администратора, которые ждут ответа мастера: «Подтвердить» или «Связаться с админом».
   const awaiting = active.filter((b) => b.policy?.masterConfirm === "awaiting");
   const awaitingBlock = awaiting.length ? `<section class="cabinet-confirm" aria-label="Записи ждут вашего подтверждения"><span class="eyebrow">НУЖНО ВАШЕ ПОДТВЕРЖДЕНИЕ</span>${awaiting.map((b) => `<article class="cabinet-confirm__item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p class="small muted">${esc(b.resource_name)} · до ${b.tariff} ч · без предоплаты. Администратор ${b.policy?.adminCreated && b.policy?.moved ? "перенёс" : "создал"} для вас эту запись.</p></div><div class="row"><button type="button" class="chrome pro-primary" data-master-confirm="${b.id}">Подтвердить</button><a class="chrome" href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer">Связаться с админом</a></div></article>`).join("")}</section>` : "";
+  const pendingExpenses = data.payments.filter((p) => p.kind === "expense" && p.status === "pending");
+  const expenseBlock = pendingExpenses.length ? `<section class="cabinet-expenses"><h3>Счета за расходы</h3>${pendingExpenses.map((p) => {
+    const b = data.bookings.find((x) => x.id === p.booking_id);
+    return `<article class="note-paper"><div class="cabinet-expenses__head"><span>${b ? dateLabel(b.starts_at) + " · " + esc(b.resource_name) : "Расходы по записи"}</span><strong>${money(p.amount)}</strong></div>${expenseLines(p.items)}<a class="chrome" href="#/payment/${p.id}">Открыть счёт</a></article>`;
+  }).join("")}</section>` : "";
   let body = "";
   if (cabTab === "bookings")
     body = active.length
@@ -995,7 +1027,7 @@ async function cabinetPage() {
   const accent = '';
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}`}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}`}${expenseBlock}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">Ближайшая запись</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -1029,14 +1061,17 @@ function notificationItem(n, data) {
   const code = text.join(" ").match(/Запись ([a-f0-9]{8})\b/i)?.[1];
   const matches = code ? data.bookings.filter(b=>b.id.startsWith(code)) : [];
   const booking = matches.length === 1 ? matches[0] : null;
+  const expenseNotice = text[0] === "Выставлен счёт за расходы" || text[0] === "К записи добавлены расходы";
+  const expenseDetails = text.slice(1).filter((line) => !/^Запись [a-f0-9]{8}$/i.test(line));
   const payments = booking ? data.payments.filter(p=>p.booking_id===booking.id&&p.status==='paid') : [];
-  return `<article class="note-paper cabinet-notification ${booking?"cabinet-notification--booking":""}">${booking?`<img class="notification-photo" src="${placePhoto(booking)}" alt="${esc(booking.resource_name)}" loading="lazy">`:""}<div class="notification-summary"><span class="eyebrow">${dateLabel(n.created_at)}</span><h3>${esc(text[0] || "Уведомление")}</h3>${booking?`<p class="notification-place">${esc(booking.resource_name)}</p></div><div class="notification-details"><p>${dateLabel(booking.starts_at)} · ${timeLabel(booking.starts_at)}—${timeLabel(booking.ends_at)} (МСК)</p><p>До ${booking.tariff} ч · ${money(booking.total)}${booking.policy?.loyaltyFree?" · бесплатная аренда":""}</p>${payments.map(p=>`<button type="button" class="receipt-link" data-payment-document="${p.id}">${icon("receipt")} ${p.kind==='deposit'?"Предоплата":"Оплата места"} ${money(p.amount)} · ${pub.settings.mode==='test'?'Чек (тест)':'Чек'}</button>`).join("")}`:text.slice(1).map((line)=>`<p>${esc(line)}</p>`).join("")}</div></article>`;
+  return `<article class="note-paper cabinet-notification ${booking?"cabinet-notification--booking":""}">${booking?`<img class="notification-photo" src="${placePhoto(booking)}" alt="${esc(booking.resource_name)}" loading="lazy">`:""}<div class="notification-summary"><span class="eyebrow">${dateLabel(n.created_at)}</span><h3>${esc(text[0] || "Уведомление")}</h3>${booking?`<p class="notification-place">${esc(booking.resource_name)}</p></div><div class="notification-details"><p>${dateLabel(booking.starts_at)} · ${timeLabel(booking.starts_at)}—${timeLabel(booking.ends_at)} (МСК)</p><p>До ${booking.tariff} ч · ${money(booking.total)}${booking.policy?.loyaltyFree?" · бесплатная аренда":""}</p>${expenseNotice ? expenseDetails.map(line => `<p>${esc(line)}</p>`).join("") : ""}${payments.map(p=>`<button type="button" class="receipt-link" data-payment-document="${p.id}">${icon("receipt")} ${paymentLabels[p.kind]} ${money(p.amount)} · ${pub.settings.mode==='test'?'Чек (тест)':'Чек'}</button>`).join("")}`:text.slice(1).map((line)=>`<p>${esc(line)}</p>`).join("")}</div></article>`;
 }
 function bookingItem(b, payments) {
   const payment = payments.find(
-    (p) => p.booking_id === b.id && p.status === "pending",
+    (p) => p.booking_id === b.id && p.kind !== "expense" && p.status === "pending",
   );
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p>${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+  const paidExpenses = payments.filter((p) => p.booking_id === b.id && p.kind === "expense" && p.status === "paid");
+  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)} · предоплата ${money(b.deposit)}</p>${expenseLines(b.extras)}${paidExpenses.map((p) => `<p><a href="#/payment/${p.id}"><u>Расходы · ${money(p.amount)} · оплачено</u></a></p>`).join("")}${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">Оплатить ${money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 // Фото и сохранение личного дела — и во вкладке, и в окне «Редактировать профиль».
 function mountProfileForm(onSaved) {
@@ -1127,7 +1162,7 @@ function mountCabinet() {
   $$("[data-payment-document]").forEach(button=>button.onclick=async()=>{
     const {payment:p, test:remoteTest, mode, provider} = await api("/payments/"+button.dataset.paymentDocument);
     const test = remoteTest || mode === "test";
-    modal(`<h2>${test?"Тестовая оплата":"Подтверждение оплаты"}</h2><p>${provider==='yookassa'?"ЮKassa":"Tattoo Office"} · ${money(p.amount)}</p><p>${p.kind==='deposit'?"Предоплата рабочего места":"Оплата рабочего места"}</p><p class="small muted">№ ${esc(p.checkout_id||p.id)}</p><p>${test?"Тестовая операция: деньги не списывались. Фискальный чек не сформирован.":"Фискальный чек пока недоступен на сайте. После регистрации касса отправит его на электронную почту плательщика."}</p>`);
+    modal(`<h2>${test?"Тестовая оплата":"Подтверждение оплаты"}</h2><p>${provider==='yookassa'?"ЮKassa":"Tattoo Office"} · ${money(p.amount)}</p><p>${paymentLabels[p.kind]}</p><p class="small muted">№ ${esc(p.checkout_id||p.id)}</p><p>${test?"Тестовая операция: деньги не списывались. Фискальный чек не сформирован.":"Фискальный чек пока недоступен на сайте. После регистрации касса отправит его на электронную почту плательщика."}</p>`);
   });
   $("#logout").onclick = async () => {
     await api("/auth/logout", "POST");
@@ -1256,7 +1291,7 @@ async function adminPage() {
       ["users", "Users"],
       ["schedule", "Calendar"],
       ["workspaces", "Рабочие места"],
-      ["catalog", "Склад и услуги"],
+      ["catalog", "Товары и услуги"],
       ["finance", "Платежи"],
       ["pricing", "Цены и промокоды"],
       ["settings", "Настройки"],
@@ -1290,7 +1325,7 @@ async function adminPage() {
     const icon = (name) => `<svg class="ui-icon" aria-hidden="true"><use href="#ui-${name}"></use></svg>`;
     const pencil = '<svg class="admin-shortcut__pencil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17.6V20h2.4l9.1-9.1-2.4-2.4L5 17.6zm13.7-8.9a.9.9 0 0 0 0-1.3l-1.1-1.1a.9.9 0 0 0-1.3 0l-1 1 2.4 2.4 1-1z"/><rect x="3" y="21.2" width="18" height="1.6" rx=".8"/></svg>';
     const calendar = '<svg class="admin-shortcut__calendar" viewBox="0 0 28 28" aria-hidden="true"><defs><linearGradient id="calBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdfd"/><stop offset="1" stop-color="#dcdcdc"/></linearGradient><linearGradient id="calTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bdbdbd"/><stop offset="1" stop-color="#8f8f8f"/></linearGradient></defs><rect x="3" y="5" width="22" height="21" rx="3" fill="url(#calBody)" stroke="#9a9a9a"/><path d="M3 8a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v2H3z" fill="url(#calTop)"/><g fill="#6f6f6f">' + [7, 11, 15, 19].map((x) => `<rect x="${x}" y="2" width="1.6" height="6" rx=".8"/>`).join("") + '</g><g stroke="#d0d0d0" stroke-width=".7">' + [15, 19, 23].map((y) => `<path d="M4 ${y}h20"/>`).join("") + '</g></svg>';
-    homeHead = `<div class="admin-home admin-home--head"><div class="admin-home__titlebar"><h2 class="admin-main-title"><svg class="admin-main-title__icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mainPerson" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="1" stop-color="#8e8e8e"/></linearGradient></defs><circle cx="16" cy="10" r="6.5" fill="url(#mainPerson)"/><path d="M3.5 29c0-6.6 5.6-11 12.5-11s12.5 4.4 12.5 11z" fill="url(#mainPerson)"/></svg><u>Admin panel</u></h2>${cityTabs()}</div><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button></div></div>`;
+    homeHead = `<div class="admin-home admin-home--head"><div class="admin-home__titlebar"><h2 class="admin-main-title"><svg class="admin-main-title__icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mainPerson" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c9c9"/><stop offset="1" stop-color="#8e8e8e"/></linearGradient></defs><circle cx="16" cy="10" r="6.5" fill="url(#mainPerson)"/><path d="M3.5 29c0-6.6 5.6-11 12.5-11s12.5 4.4 12.5 11z" fill="url(#mainPerson)"/></svg><u>Admin panel</u></h2>${cityTabs()}</div><div class="admin-shortcuts" data-keep-case><button class="admin-shortcut" id="manual-booking"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new booking</u></button><button class="admin-shortcut" id="add-user"><span class="admin-shortcut__plus" aria-hidden="true">+</span><u>new user</u></button><button class="admin-shortcut" data-admintab="${AP.isShift() ? "settings" : "pricing"}">${pencil}<u>edit plans</u></button><button class="admin-shortcut" data-admintab="schedule">${calendar}<u>Calendar</u></button><button class="admin-shortcut" data-admintab="bookings">${icon("history")}<u>Booking history</u></button><button class="admin-shortcut" data-admintab="catalog"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8 7 4h10l3 4v12H4zM4 8h16m-10 4h4"/></svg><u>Товары и услуги</u></button></div></div>`;
     body = `<div class="admin-home">${await api("/admin/overview").then(AP.overviewHTML, () => "")}</div>`;
   }
   if (adminTab === "profile") body = `<div class="admin-profile"><div class="admin-profile__top"><p class="small muted"><span>${AP.isShift() ? "Админ смены" : "Администратор"}</span><span class="admin-profile__email">${esc(me.email || "вход по паролю")}</span></p><button type="button" class="chrome admin-back" data-admintab="home"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>Назад</button></div><form id="admin-profile-form"><h3>Личные данные</h3>${field("name","Имя",me.name,"text",'required maxlength="100"')}<button type="submit" class="chrome">Сохранить профиль</button></form>${AP.isShift() ? '<div class="admin-shift-note"><h3>Безопасность</h3><p class="small muted">Пароль для входа админа смены задаёт владелец студии. Чтобы сменить пароль, обратитесь к нему.</p></div>' : `<form id="admin-password-form"><h3>Безопасность</h3>${field("current","Текущий пароль","","password",'required autocomplete="current-password"')}${field("password","Новый пароль","","password",'required minlength="12" maxlength="128" autocomplete="new-password"')}<button type="submit" class="chrome">Изменить пароль</button></form>`}</div>`;
@@ -1383,11 +1418,11 @@ async function adminPage() {
     )}</div>`}</div>`;
   }
   if (adminTab === "catalog")
-    body = `<div class="admin-tools">${AP.isShift() ? "" : '<button class="chrome" id="add-catalog">+ Товар или услуга</button>'}</div>${table(
+    body = `<div class="admin-tools">${AP.isShift() ? '<p class="small muted">На смене доступны приход и списание. Названия и цены редактирует владелец студии.</p>' : '<button class="chrome" id="add-catalog">+ Товар или услуга</button>'}</div>${table(
       ["Позиция", "Тип", "Цена", "Остаток", ""],
       a.catalog.map(
         (x) =>
-          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Расходник" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? `<span class="${x.stock <= (x.min_stock ?? 5) ? "pro-low" : ""}">${x.stock}</span> <small class="muted">мин. ${x.min_stock ?? 5}</small>` : "—"}</td><td>${x.kind === "product" ? `<button data-stock="${x.id}">Приход / списание</button> ` : ""}${AP.isShift() ? "" : `<button data-edit-catalog="${x.id}">Изменить</button>`}</td></tr>`,
+          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Товар" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? `<span class="${x.stock <= (x.min_stock ?? 5) ? "pro-low" : ""}">${x.stock}</span> <small class="muted">мин. ${x.min_stock ?? 5}</small>` : "—"}</td><td>${x.kind === "product" ? `<button data-stock="${x.id}">Приход / списание</button> ` : ""}${AP.isShift() ? "" : `<button data-edit-catalog="${x.id}">Изменить</button>`}</td></tr>`,
       ),
     )}${AP.catalogExtrasHTML(a)}`;
   if (adminTab === "finance") body = AP.financeHTML(a, s);
@@ -1688,11 +1723,11 @@ function mountAdmin() {
         "kind",
         "Тип",
         [
-          ["product", "Расходник"],
+          ["product", "Товар"],
           ["service", "Услуга"],
         ],
         x?.kind || "product",
-      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}${field("minStock", "Минимальный остаток (предупреждение)", x?.min_stock ?? 5, "number", 'required min="0" step="1" data-plain-number="true"')}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Показывать при записи</label>`,
+      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}${field("minStock", "Минимальный остаток (предупреждение)", x?.min_stock ?? 5, "number", 'required min="0" step="1" data-plain-number="true"')}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Активна для записи и начисления расходов</label>`,
       (d) =>
         api("/admin/catalog", "POST", {
           ...d,
@@ -2298,7 +2333,7 @@ async function render() {
   }
 }
 const adminContext = {
-  api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity,
+  api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity, paymentLabels,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
   cityRatesOf, roleName, cityTabs, cityInfo,
   promosHTML: (a) => AP.promosHTML(a),
