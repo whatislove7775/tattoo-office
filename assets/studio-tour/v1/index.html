@@ -1,9 +1,27 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Tattoo Office SPB · просмотр</title>
-  <script type="module" crossorigin src="./assets/site-view-BS-jPvIE.js"></script>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Интерьер · Tattoo Office</title>
+  <script type="module" crossorigin src="./assets/site-view-Cp1t2XXk.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three.core-DqMGOMUf.js">
-  <link rel="stylesheet" crossorigin href="./assets/site-view-GjTobc-0.css">
-</head><body data-site-tour>
-<main id="viewport" aria-label="Трёхмерная модель тату-офиса"></main>
-
-<nav aria-label="Просмотр модели"><label>Помещение<select id="room" disabled><option value="1">Загрузка…</option></select></label><button id="overview" disabled>Весь офис</button><button id="top" disabled>План</button><button id="walk" disabled>Прогулка</button><button id="balcony" disabled>Балкон</button><button id="cutaway" disabled aria-pressed="true" title="Ближние стены и потолок скрываются при повороте камеры; в прогулке комнаты целые">Кукольный домик: вкл.</button></nav>
-<footer><p id="status" role="status">Открываю модель…</p><button id="retry" hidden>Повторить загрузку</button><p id="help">Поворот — одним пальцем или мышью. Масштаб — двумя пальцами или колёсиком.</p><details><summary>О модели</summary><label class="effect-option"><input id="contact-shadows" type="checkbox"> Контактные тени в комнате</label><p>Добавляют объём и требуют больше ресурсов.</p><p>Редактируемая реконструкция по сканам и фотографиям. Формы и привязки частично восстановлены; это не точный обмерный план. Глубина балкона остаётся приблизительной: замер 115 см не считался точным.</p><p>Помещения загружаются по мере просмотра. Исходные модели и фотографии сохранены отдельно.</p><p>Сканы одежды — Sircher, Neilson и elaughli (CC BY 4.0). Геометрия упрощена, цвет и размеры подогнаны. <a href="./web/garment-library.json">Источники и лицензии одежды</a> · <a href="./web/downloaded-models-sources.json">Другие модели</a></p><output id="metrics"></output><button id="capture">Сохранить вид PNG</button></details></footer></body></html>
+  <link rel="stylesheet" crossorigin href="./assets/site-view-DmKgqZGJ.css">
+</head>
+<body data-site-tour>
+  <main id="viewport" aria-label="Интерактивная карта студии"></main>
+  <footer>
+    <nav aria-label="Управление картой">
+      <select id="room" aria-label="Выбрать пространство" disabled><option>Загрузка…</option></select>
+      <div class="views" role="group" aria-label="Вид карты">
+        <button id="orbit" aria-pressed="true" disabled>Объём</button>
+        <button id="top" aria-pressed="false" disabled>План</button>
+        <button id="walk" aria-pressed="false" disabled>Прогулка</button>
+      </div>
+      <a class="expand" href="./tour.html" target="_blank" rel="noopener" aria-label="Открыть карту в отдельной вкладке" title="В отдельной вкладке">↗</a>
+    </nav>
+    <div class="caption"><span id="status" role="status">Открываю карту…</span><button id="retry" hidden>Повторить</button>
+      <details><summary>О карте</summary><div class="info"><p id="help">Потяните, чтобы повернуть. Масштаб — колёсиком или двумя пальцами.</p>
+      <a href="./web/garment-library.json" target="_blank" rel="noopener">Авторы и лицензии одежды</a> · <a href="./web/downloaded-models-sources.json" target="_blank" rel="noopener">Другие модели</a></div></details>
+    </div>
+  </footer>
+</body></html>

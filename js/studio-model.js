@@ -10,7 +10,6 @@ window.StudioModel = {
       frame.src = launch.href;
       frame.allowFullscreen = true;
       launch.replaceWith(frame);
-      container.querySelector(".studio-tour__expand").hidden = false;
       frame.focus();
     });
   },
