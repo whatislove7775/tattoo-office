@@ -4,14 +4,14 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Интерьер · Tattoo Office</title>
   <link rel="author" href="./web/garment-library.json">
-  <link rel="preload" href="./web/overview.glb" as="fetch" crossorigin>
-  <script type="module" crossorigin src="./assets/site-view-By8ogMbD.js"></script>
+  <link rel="preload" href="./web/overview-cutaway.glb" as="fetch" crossorigin>
+  <script type="module" crossorigin src="./assets/site-view-Cs91WIKF.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three.core-DqMGOMUf.js">
-  <link rel="stylesheet" crossorigin href="./assets/site-view-Dveo6nfd.css">
+  <link rel="stylesheet" crossorigin href="./assets/site-view-DLrf49fd.css">
 </head>
 <body data-site-tour>
   <main id="viewport" aria-label="Интерактивная карта студии">
-    <img id="preview" src="./preview.jpg" alt="Общий вид студии">
+    <img id="preview" src="./preview-dollhouse.webp" alt="Общий вид студии">
     <div id="room-points" aria-label="Помещения студии"></div>
   </main>
   <footer>
@@ -21,10 +21,20 @@
         <button id="orbit" aria-pressed="true" disabled>Объём</button>
         <button id="top" aria-pressed="false" disabled>План</button>
         <button id="explode" aria-pressed="false" disabled>Разобрать</button>
-        <button id="walk" aria-pressed="false" hidden disabled>Прогулка</button>
       </div>
       <button id="retry" hidden>Повторить</button>
+      <button id="walk" class="inspect" aria-pressed="false" aria-label="Осмотреться" title="Осмотреться" hidden disabled>
+        <svg class="inspect-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3.5 9V5A1.5 1.5 0 0 1 5 3.5H9m6 0h4A1.5 1.5 0 0 1 20.5 5v4m0 6v4a1.5 1.5 0 0 1-1.5 1.5h-4m-6 0H5A1.5 1.5 0 0 1 3.5 19v-4"/>
+          <path d="M6.5 12s2-3.1 5.5-3.1 5.5 3.1 5.5 3.1-2 3.1-5.5 3.1S6.5 12 6.5 12Z"/><circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"/>
+        </svg>
+        <svg class="exit-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
     </nav>
+    <p id="inspection-instructions" hidden>
+      <span class="desktop-controls">Двигайте мышь для обзора. Escape вернёт курсор. WASD или стрелки — идти.</span>
+      <span class="touch-controls">Проведите по правой стороне для обзора. Слева потяните в сторону движения.</span>
+    </p>
     <div class="caption" role="status"><strong id="room-title" hidden></strong><span id="status">Открываю карту…</span></div>
   </footer>
 </body></html>
