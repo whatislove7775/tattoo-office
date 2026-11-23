@@ -8,6 +8,7 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
+import { fiscalDrafts, fiscalExample } from "./fiscal-drafts.js";
 import {addBookingExpenses} from "./booking-expenses.js";
 import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswordFree,shiftAdminEmail,hideShiftEmail} from "./admin-pro.js";
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
@@ -1601,6 +1602,16 @@ export async function createApp(db) {
       await audit(q, req.user.id, "invoice.upgrade", { id: b.id, duration: h });
     });
     res.json({ ok: true });
+  });
+  app.get("/api/admin/fiscal-example", ownerOnly, (req, res) => res.json(fiscalExample()));
+  app.get("/api/admin/payments/:id/fiscal-draft", ownerOnly, async (req, res) => {
+    if (!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(req.params.id)) fail("Платёж не найден", 404);
+    const row = await one(db, `SELECT p.*, to_jsonb(b) AS booking,
+      (SELECT d.amount FROM payments d WHERE d.booking_id=b.id AND d.kind='deposit' AND d.status='paid'
+       ORDER BY created_at DESC LIMIT 1) AS paid_deposit
+      FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1`, [req.params.id]);
+    if (!row) fail("Платёж не найден", 404);
+    res.json(fiscalDrafts(row.booking, row, { amount: row.paid_deposit }));
   });
   app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
     await db.transaction(async q => {

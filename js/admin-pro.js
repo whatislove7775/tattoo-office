@@ -89,6 +89,16 @@ function filteredPayments(a) {
     return (!f.from || d >= f.from) && (!f.to || d <= f.to) && (f.method === "all" || paymentMethod(p, a) === f.method) && (f.kind === "all" || p.kind === f.kind);
   });
 }
+function fiscalDraftHTML({ drafts, review, requestExamples }, { esc, money }) {
+  const modes = { partial_prepayment: "Частичная предоплата", full_prepayment: "Полная предоплата", full_payment: "Полный расчёт" };
+  const types = { cashless: "Безналичный расчёт", cash: "Наличные", prepayment: "Зачёт предоплаты" };
+  return `<h2>Предпросмотр чеков</h2><p class="small muted">Черновики для сверки. Касса их не получила.</p>
+    ${drafts.map((draft) => `<section class="note-paper"><h3>${modes[draft.mode]} · ${money(draft.total)}</h3>
+      <ul>${draft.items.map((item) => `<li>${esc(item.description)} · ${item.quantity} × ${money(item.unitPrice)}</li>`).join("")}</ul>
+      <ul>${draft.settlements.map((part) => `<li>${types[part.type]} · ${money(part.amount)}</li>`).join("")}</ul></section>`).join("")}
+    ${review.map((note) => `<p class="small muted">${esc(note)}</p>`).join("")}
+    ${requestExamples ? `<details><summary>Примеры данных для ЮKassa</summary><pre style="overflow:auto">${esc(JSON.stringify(requestExamples, null, 2))}</pre></details>` : ""}`;
+}
 export function financeHTML(a, s) {
   const { esc, money, dateLabel, select } = c, rows = filteredPayments(a);
   const sum = (list) => list.reduce((t, p) => t + Number(p.amount), 0);
@@ -96,9 +106,9 @@ export function financeHTML(a, s) {
   const byMethod = Object.keys(METHOD).map((m) => [m, sum(paid.filter((p) => paymentMethod(p, a) === m))]);
   const userOf = (p) => a.bookings.find((b) => b.id === p.booking_id);
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
-  <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button></div></form>
+  <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button><button type="button" class="chrome" data-fiscal-example>Пример чеков</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}</td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Черновик чека</button></td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -277,6 +287,18 @@ export function mount(tab) {
   if (ff) {
     ff.onchange = () => { Object.assign(financeFilter, Object.fromEntries(new FormData(ff))); render(); };
     $$("[data-finance-range]").forEach((b) => (b.onclick = () => { const t = c.today(); financeFilter = { ...financeFilter, from: b.dataset.financeRange === "month" ? t.slice(0, 8) + "01" : "", to: b.dataset.financeRange === "month" ? t : "" }; render(); }));
+    $$("[data-fiscal-payment],[data-fiscal-example]").forEach((button) => (button.onclick = async () => {
+      button.disabled = true;
+      try {
+        const id = button.dataset.fiscalPayment;
+        const data = await api(id ? `/admin/payments/${id}/fiscal-draft` : "/admin/fiscal-example");
+        c.modal(fiscalDraftHTML(data, c));
+      } catch (error) {
+        notify(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }));
     $("#finance-csv").onclick = () => {
       const rows = filteredPayments(a).map((p) => { const b = a.bookings.find((x) => x.id === p.booking_id); return [mskDay(p.created_at), p.id, b?.user_name || "", c.paymentLabels[p.kind], METHOD[paymentMethod(p, a)], (p.amount / 100).toFixed(2).replace(".", ","), c.paymentStatus(p)]; });
       downloadCSV(`tattoo-office-payments-${c.today()}.csv`, ["Дата", "Платёж", "Мастер", "Назначение", "Способ", "Сумма, ₽", "Статус"], rows);

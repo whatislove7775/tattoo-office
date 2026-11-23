@@ -444,6 +444,31 @@
     thumb.style.top = 2 + ratio * Math.max(room, 0) + "px";
   }
 
+  function scrollStageFromOutside(event) {
+    if (global.isMobileLayout() || event.defaultPrevented || !event.cancelable ||
+        event.ctrlKey || event.metaKey || event.shiftKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX) ||
+        !(event.target instanceof Element) || stageInner.contains(event.target) ||
+        document.querySelector("dialog[open],.modal:not([hidden]),[popover]:popover-open")) return;
+
+    function canScroll(element) {
+      if (!/^(auto|scroll|overlay)$/.test(getComputedStyle(element).overflowY)) return false;
+      const remaining = element.scrollHeight - element.clientHeight;
+      return remaining > 1 && (event.deltaY < 0 ? element.scrollTop > 0 : element.scrollTop < remaining - 1);
+    }
+
+    for (let element = event.target; element; element = element.parentElement) {
+      if (canScroll(element)) return;
+    }
+
+    const destination = [stageInner, ...stageInner.querySelectorAll(
+      ".admin-content,.admin-content > .pro-scroll,.admin-content .tl-scroll",
+    )].find(canScroll);
+    if (!destination) return;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? destination.clientHeight : 1;
+    event.preventDefault();
+    destination.scrollTop += event.deltaY * unit;
+  }
+
   /* ------------------------------ окно/модалка ---------------------------- */
   var modal = document.getElementById("modal");
 
@@ -543,6 +568,7 @@
     });
 
     stageInner.addEventListener("scroll", updateThumb, { passive: true });
+    global.addEventListener("wheel", scrollStageFromOutside, { passive: false });
     if (global.visualViewport) global.visualViewport.addEventListener("resize", updateBrowserEdgeGeometry);
     global.addEventListener("resize", updateThumb);
     var scrollObserver = new ResizeObserver(updateThumb);
