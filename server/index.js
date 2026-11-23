@@ -148,6 +148,7 @@ export async function createApp(db) {
         directives: {
           "script-src": ["'self'", "https://widget.cloudpayments.ru"],
           "frame-src": [
+            "'self'",
             "https://widget.cloudpayments.ru",
             "https://checkout.cloudpayments.ru",
           ],
@@ -1727,6 +1728,15 @@ export async function createApp(db) {
   app.use("/api", (req, res) =>
     res.status(404).json({ error: "Метод API не найден" }),
   );
+  app.get(["/interior", "/interior/"], (req, res) => res.redirect("/#/interior"));
+  app.use("/assets/studio-tour", helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"], scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
+      connectSrc: ["'self'", "blob:"], workerSrc: ["'self'", "blob:"], imgSrc: ["'self'", "data:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'"], frameAncestors: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === "production" ? [] : null,
+    },
+  }));
   app.use("/assets", express.static(root + "assets", { maxAge: "1d" }));
   app.use("/css", express.static(root + "css"));
   app.use("/js", express.static(root + "js"));

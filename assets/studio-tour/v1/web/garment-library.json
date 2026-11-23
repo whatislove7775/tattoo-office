@@ -1,0 +1,100 @@
+{
+  "assets": {
+    "jacket": {
+      "source": "https://grab3d.com/models/props/jacket/",
+      "license": "CC0 1.0",
+      "sha256": "72389c302cddebb1bbec3cb039880e6f7fb01146652dae039616571d30037c25",
+      "triangles": 13911
+    },
+    "hoodie": {
+      "source": "https://grab3d.com/models/props/hoodie/",
+      "license": "CC0 1.0",
+      "sha256": "4c2a2ece7e58b8bee55a3e140b9ff54d7852daf377cf2f52eda796c3a34fb91e",
+      "triangles": 9580
+    },
+    "jersey": {
+      "source": "https://grab3d.com/models/sports/sports-jersey/",
+      "license": "CC0 1.0",
+      "sha256": "0b960c84976ceb37e5062d1da33c261340fab4e0078d97869daaa9afd3773c9d",
+      "triangles": 13483
+    },
+    "coat": {
+      "source": "https://3dassets.dev/assets/clothing-rail-and-wardrobe-coat-on-hanger-b22d8dff",
+      "license": "CC0 1.0",
+      "sha256": "8d398915e83128e1cd69869264045536af5f836ddc9b92b8e175d501223ab249",
+      "triangles": 808
+    },
+    "shell": {
+      "source": "https://3dassets.dev/packs/clothing-rail-and-wardrobe",
+      "license": "CC0 1.0",
+      "sha256": "cbace7dfe0583f5f360bfa886730704eee212374f5b6a03c4d665c2bc196a131",
+      "triangles": 612
+    },
+    "tee": {
+      "source": "https://plaggy.sellfy.store/p/cc0-shirtonhanger-3d/",
+      "license": "CC0 1.0",
+      "sha256": "71b35bc16dbef4968fe7459a14e3358790c0e5a6b1ee38543ec93cc07c1e13d2",
+      "triangles": 1854,
+      "author": "plaggy",
+      "download": "https://rigmodels.com/model.php?view=CC0---Shirt-On-Hanger-3d-model__846d8f285fcb426498033ae67aee2d10"
+    },
+    "shirt": {
+      "source": "https://3dassets.dev/packs/clothing-rail-and-wardrobe",
+      "license": "CC0 1.0",
+      "sha256": "0cb829abe2b0a8549dc15e26b1f60ba2ae374376303fab8a3b43266484db3e0a",
+      "triangles": 936
+    },
+    "sneaker": {
+      "source": "https://grab3d.com/models/props/sneaker/",
+      "license": "CC0 1.0",
+      "sha256": "64a3cc3d2ff77aa4f77d7bd38d54ac91cb4bed0eae888f7cc253e3fe7545fdb6",
+      "triangles": 9919
+    },
+    "denim": {
+      "source": "https://sketchfab.com/models/4348be24475c45dd9a5bdf6e62ba7ebc",
+      "license": "CC BY 4.0",
+      "sha256": "7c6c9651013166e0d6b6fea2ff28f40bf88f15e34465e78591433ea6ef52e918",
+      "triangles": 10000,
+      "title": "Jeans Jacket #AgisoftClothesChallenge",
+      "author": "Sircher",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Reduced geometry, resized and tinted source texture, fitted to studio hanger."
+    },
+    "tailored": {
+      "source": "https://sketchfab.com/models/689530f9cd484d3683b6b2fe917c1ad1",
+      "license": "CC BY 4.0",
+      "sha256": "7fbfdbd40d7bba18e49e0560b5a9f429ca3425d9507f8c67e72ce3cecef00fb1",
+      "triangles": 9993,
+      "title": "Karen Millen Jacket #AgisoftClothesChallenge",
+      "author": "Sircher",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Reduced geometry, resized and tinted source texture, fitted to studio hanger."
+    },
+    "arcteryx": {
+      "title": "My Morning Jacket",
+      "author": "Neilson",
+      "source": "https://sketchfab.com/models/5250de2f67ce47a89d7147c91e029623",
+      "license": "CC BY 4.0",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "sha256": "cff555e7ac5a2840932983d21d9aedb7a7508db774039dc79cbef6b95d295675",
+      "triangles": 12500,
+      "changes": "Reduced scan, fitted to hanger and tinted vertex colours."
+    },
+    "vans": {
+      "title": "Vans jacket",
+      "author": "elaughli",
+      "source": "https://sketchfab.com/models/ff68310fa29c4b278c50edcea8f6de50",
+      "license": "CC BY 4.0",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "sha256": "881e0b692811c6a3afd3f92b865f200203253302066517027974067bf2028beb",
+      "triangles": 12500,
+      "changes": "Reduced scan, fitted to hanger and tinted vertex colours."
+    }
+  },
+  "changes": [
+    "Removed original stands and hangers. Isolated the straight sneaker for fitted left and right variants.",
+    "Preserved draped source shapes, original atlas UVs and the T-shirt fold normals. Neutralized albedo atlases for scene tinting.",
+    "Room colours, sizes and garment placement approximated from available captures.",
+    "Shared geometry is bundled locally. Clothing does not request external network resources."
+  ]
+}
