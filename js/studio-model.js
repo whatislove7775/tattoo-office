@@ -1,16 +1,11 @@
 window.StudioModel = {
   mount(container) {
-    if (!container) return;
-    const launch = container.querySelector(".studio-tour__launch");
-    launch.addEventListener("click", (event) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      const frame = document.createElement("iframe");
-      frame.title = "Интерактивная 3D-карта Tattoo Office в Санкт-Петербурге";
-      frame.src = launch.href;
-      frame.allowFullscreen = true;
-      launch.replaceWith(frame);
-      frame.focus();
+    const toggle = container?.querySelector(".studio-tour__expand");
+    if (!toggle) return;
+    toggle.addEventListener("click", () => {
+      const expanded = container.classList.toggle("is-expanded");
+      toggle.setAttribute("aria-pressed", String(expanded));
+      toggle.textContent = expanded ? "↙ Свернуть" : "↗ Расширить";
     });
   },
 };
