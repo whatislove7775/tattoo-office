@@ -120,12 +120,24 @@ body[data-page="interior"] #stage:has(.is-studio-inspection)>.stage__inner{paddi
 .window.is-studio-inspection .interior-showcase{display:block;height:100%}
 .office-feature .window.is-studio-inspection #studio-model.studio-tour{height:100%;border:0;border-radius:0}
 @media(min-width:701px){
+  body[data-page="interior"] #stage:has(.is-studio-inspection){
+    border:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:hidden;
+  }
+  body[data-page="interior"] #stage:has(.is-studio-inspection)::before{display:none}
   .office-feature .window.is-studio-inspection #studio-model.studio-tour{
-    height:calc(100dvh - var(--desktop-stage-top,100px) - 26px);
+    height:calc(100dvh - var(--desktop-stage-top,100px) - 24px);
   }
 }
 @media(max-width:700px){
-  .office-feature .window.is-studio-inspection #studio-model.studio-tour{height:max(360px,calc(100dvh - 64px))}
+  body[data-page="interior"] #stage:has(.is-studio-inspection)>.stage__inner{
+    padding-top:var(--inspection-mobile-gap,44px)!important;
+  }
+  .office-feature .window.is-studio-inspection #studio-model.studio-tour{
+    height:max(320px,calc(100dvh - var(--inspection-mobile-top,98px) - 12px));
+  }
 }
 body[data-page="interior"]:has(.studio-tour) #cookieNotice{top:max(12px,env(safe-area-inset-top));bottom:auto}
 body[data-page="interior"]:has(.is-studio-inspection) #cookieNotice{display:none}
