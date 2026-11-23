@@ -1,5 +1,6 @@
 import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
+import { updateStudioWorkspaces } from "./studio-workspaces.js";
 import {updateOperatorDetails} from "./operator-details.js";
 import {updateLegalDocuments} from "./legal-migration.js";
 import {ageFromBirthDate} from "./profile-age.js";
@@ -65,6 +66,7 @@ export async function createApp(db) {
     let updated = updateLegalDocuments(updateOperatorDetails(row.data));
     if (!updated.website) updated = {...updated,website:"https://tattoo-office.com"};
     if (updated.rulesContentVersion !== studioRulesVersion) updated = {...updated, rules:studioRules, rulesVersion:studioRulesVersion, rulesContentVersion:studioRulesVersion};
+    updated = await updateStudioWorkspaces(q, updated);
     if (updated !== row.data) await q.query("UPDATE settings SET data=$1 WHERE id=1", [JSON.stringify(updated)]);
   });
   const one = async (q, s, p = []) => (await q.query(s, p)).rows[0];
@@ -96,19 +98,6 @@ export async function createApp(db) {
       description,
     ]);
   };
-  // Стартовые места создаются один раз: если администратор удалит все места,
-  // они не появятся снова после перезапуска.
-  if ((await one(db, "SELECT data->>'resourcesSeeded' AS v FROM settings WHERE id=1")).v !== "true") {
-    if (!(await one(db, "SELECT id FROM resources LIMIT 1")))
-      for (const [name, photo] of [
-        ["01 — у окна", "assets/interior/1.jpg"],
-        ["02 — большой зал", "assets/interior/4.jpg"],
-        ["03 — тихая комната", "assets/interior/4.jpg"],
-        ["04 — у стены", "assets/interior/2.jpg"],
-      ])
-        await db.query("INSERT INTO resources(id,name,photo) VALUES($1,$2,$3)", [uuid(), name, photo]);
-    await db.query("UPDATE settings SET data=jsonb_set(data,'{resourcesSeeded}','true') WHERE id=1");
-  }
   if (!(await one(db, "SELECT id FROM catalog LIMIT 1")))
     for (const [name, kind, price, stock] of [
       ["Сборка места", "service", 30000, 0],

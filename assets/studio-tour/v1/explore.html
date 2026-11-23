@@ -4,16 +4,19 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Интерьер · Tattoo Office</title>
   <link rel="author" href="./web/garment-library.json">
-  <link rel="preload" href="./web/overview-cutaway.glb" as="fetch" crossorigin>
-  <script type="module" crossorigin src="./assets/site-view-CfEj46jq.js"></script>
+  <script type="module" crossorigin src="./assets/site-view-DN2Vwkxt.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three.core-DJbUGl97.js">
-  <link rel="stylesheet" crossorigin href="./assets/site-view-Du1frNC_.css">
+  <link rel="stylesheet" crossorigin href="./assets/site-view-YpUk0rlD.css">
 </head>
-<body data-site-tour>
+<body data-site-tour data-loading>
   <main id="viewport" aria-label="Интерактивная карта студии">
-    <img id="preview" src="./preview-dollhouse.webp" alt="Общий вид студии">
-    <div id="room-points" aria-label="Помещения студии"></div>
+    <div id="room-points" role="group" aria-label="Рабочие места и помещения студии"></div>
   </main>
+  <div id="model-loading">
+    <span class="loading-ring" aria-hidden="true"></span>
+    <span id="load-message" role="status">Загрузка модели…</span>
+    <button id="load-retry" hidden>Повторить</button>
+  </div>
   <footer>
     <nav aria-label="Управление картой">
       <button id="whole" hidden><span class="back-angle" aria-hidden="true"></span>Вся студия</button>
