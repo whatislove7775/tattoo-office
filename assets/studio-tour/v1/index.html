@@ -3,25 +3,28 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Интерьер · Tattoo Office</title>
-  <script type="module" crossorigin src="./assets/site-view-Cp1t2XXk.js"></script>
+  <link rel="author" href="./web/garment-library.json">
+  <link rel="preload" href="./web/overview.glb" as="fetch" crossorigin>
+  <script type="module" crossorigin src="./assets/site-view-By8ogMbD.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three.core-DqMGOMUf.js">
-  <link rel="stylesheet" crossorigin href="./assets/site-view-DmKgqZGJ.css">
+  <link rel="stylesheet" crossorigin href="./assets/site-view-Dveo6nfd.css">
 </head>
 <body data-site-tour>
-  <main id="viewport" aria-label="Интерактивная карта студии"></main>
+  <main id="viewport" aria-label="Интерактивная карта студии">
+    <img id="preview" src="./preview.jpg" alt="Общий вид студии">
+    <div id="room-points" aria-label="Помещения студии"></div>
+  </main>
   <footer>
     <nav aria-label="Управление картой">
-      <select id="room" aria-label="Выбрать пространство" disabled><option>Загрузка…</option></select>
+      <button id="whole" hidden>← Вся студия</button>
       <div class="views" role="group" aria-label="Вид карты">
         <button id="orbit" aria-pressed="true" disabled>Объём</button>
         <button id="top" aria-pressed="false" disabled>План</button>
-        <button id="walk" aria-pressed="false" disabled>Прогулка</button>
+        <button id="explode" aria-pressed="false" disabled>Разобрать</button>
+        <button id="walk" aria-pressed="false" hidden disabled>Прогулка</button>
       </div>
-      <a class="expand" href="./tour.html" target="_blank" rel="noopener" aria-label="Открыть карту в отдельной вкладке" title="В отдельной вкладке">↗</a>
+      <button id="retry" hidden>Повторить</button>
     </nav>
-    <div class="caption"><span id="status" role="status">Открываю карту…</span><button id="retry" hidden>Повторить</button>
-      <details><summary>О карте</summary><div class="info"><p id="help">Потяните, чтобы повернуть. Масштаб — колёсиком или двумя пальцами.</p>
-      <a href="./web/garment-library.json" target="_blank" rel="noopener">Авторы и лицензии одежды</a> · <a href="./web/downloaded-models-sources.json" target="_blank" rel="noopener">Другие модели</a></div></details>
-    </div>
+    <div class="caption" role="status"><strong id="room-title" hidden></strong><span id="status">Открываю карту…</span></div>
   </footer>
 </body></html>
