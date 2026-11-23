@@ -484,7 +484,7 @@ function interiorPage() {
     "Interior",
     `<div class="showcase-head"><div><h2>Пространство Tattoo Office</h2><p>${esc(description)}</p></div>${officePicker()}</div>
     <div class="interior-showcase"><section class="studio-tour" id="studio-model" aria-label="3D-карта студии в Санкт-Петербурге">
-      <iframe src="/assets/studio-tour/v1/explore.html?v=4" title="Интерактивная карта Tattoo Office в Санкт-Петербурге"></iframe>
+      <iframe src="/assets/studio-tour/v1/explore.html?v=5" title="Интерактивная карта Tattoo Office в Санкт-Петербурге"></iframe>
     </section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
     <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
