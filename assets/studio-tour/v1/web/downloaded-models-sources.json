@@ -1,0 +1,32 @@
+{
+  "ink-tank": {
+    "url": "https://www.innerscene.com/tools/library/3d-parts/color-tank-ink-tank-printer-bf25b3de",
+    "license": "CC0-1.0",
+    "sha256": "0a6860afeb14242da8d0e8b4a555d8cf1293279f1cb4e606e465e9d7059a9b9d",
+    "triangles": 3444,
+    "selectedParts": [
+      "Extended output shelf",
+      "Ink reservoir viewing window",
+      "Ink reservoir viewing window.001",
+      "Ink reservoir viewing window.002",
+      "Ink reservoir viewing window.003",
+      "Printer lower enclosure",
+      "Printer output throat",
+      "Scanner lid",
+      "Top printer button",
+      "Top printer button.001",
+      "Top printer button.002"
+    ],
+    "adaptation": "Recess cut into outlet and original lower enclosure for an actual paper opening."
+  },
+  "scarf": {
+    "url": "https://www.innerscene.com/tools/library/3d-parts/scarf-draped-fedf2823",
+    "license": "CC0-1.0",
+    "sha256": "37d46241c050f379d9bab793d2c247cdd434c1e1f1fe06094cd565a68fcba882",
+    "triangles": 8280,
+    "selectedParts": [
+      "Fringes",
+      "Scarf"
+    ]
+  }
+}

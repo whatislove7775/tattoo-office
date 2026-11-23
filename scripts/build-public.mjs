@@ -3,6 +3,8 @@ import {mkdir,cp,readFile,writeFile,rm} from 'node:fs/promises';
 import {defaults} from '../server/domain.js';
 await rm('dist',{recursive:true,force:true});await mkdir('dist');
 for(const folder of ['assets','css','js'])await cp(folder,`dist/${folder}`,{recursive:true});
+await mkdir('dist/interior');
+await writeFile('dist/interior/index.html','<!doctype html><html lang="ru"><meta charset="utf-8"><title>Interior · Tattoo Office</title><meta http-equiv="refresh" content="0;url=/#/interior"><a href="/#/interior">Открыть страницу Interior</a></html>');
 await responsiveImages();
 const html=(await readFile('index.html','utf8')).replace('<script src="js/pages.js">','<script src="js/image-sources.js"></script>\n<script src="js/pages.js">');
 await writeFile('dist/index.html',html.replace('<script src="js/sound.js">','<script src="public-mode.js"></script>\n<script src="js/sound.js">'));
