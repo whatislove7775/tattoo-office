@@ -139,5 +139,4 @@ body[data-page="interior"] #stage:has(.is-studio-inspection)>.stage__inner{paddi
     height:max(320px,calc(100dvh - var(--inspection-mobile-top,98px) - 12px));
   }
 }
-body[data-page="interior"]:has(.studio-tour) #cookieNotice{top:max(12px,env(safe-area-inset-top));bottom:auto}
 body[data-page="interior"]:has(.is-studio-inspection) #cookieNotice{display:none}
