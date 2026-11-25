@@ -1277,7 +1277,6 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .find-lead,.showcase-head {display:block;}
   .find-lead .office-select,.showcase-head .office-select {width:100%;max-width:100%;margin-top:16px;}
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:calc(var(--rail-width) * .68);}
-  .site-bottom .rent-slider__label {font-size:11px;}
   .site-bottom .foot {padding-right:42px;}
   .foot__links {grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:6px 10px;}
   .foot__links a {font-size:9px;white-space:normal;overflow-wrap:anywhere;}
@@ -1376,7 +1375,7 @@ dialog[open],.modal__body,.office-picker,.help-tooltip {overscroll-behavior:cont
   .rail .login.login--user,.rail .login.login--guest,
   body.admin-session .rail .login.login--user,
   .site-bottom .rent-slider,body[data-page="masters"] .site-bottom .rent-slider {width:var(--rail-width);}
-  .site-bottom .rent-slider__label {font-size:11px;}
+  .site-bottom .rent-slider__label {font-size:clamp(15px, 1.9vw, 18px);}
   .stage:not(.stage--bare)>.stage__inner {padding:24px;}
   .office-feature .window {padding:16px;}
 }
