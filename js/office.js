@@ -20,7 +20,8 @@ const money = (n) =>
   new Intl.NumberFormat("ru-RU", {
     style: "currency",
     currency: "RUB",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format((n || 0) / 100);
 const dateLabel = (d) =>
   new Intl.DateTimeFormat("ru-RU", {
@@ -59,6 +60,11 @@ const statusName = {
   cancelled: "Отменено",
   expired: "Резерв истёк",
   cancel_requested: "Отмена на рассмотрении",
+  awaiting_date: "Ожидает новую дату",
+  refund_pending: "Возврат оформляется",
+  refunded: "Возвращено",
+  refund_review: "Возврат на проверке",
+  void: "Резерв истёк",
   paid: "Оплачено",
   authorized: "Средства заблокированы",
   release_pending: "Снимаем блокировку",
@@ -526,7 +532,7 @@ function safetyPage() {
       <article class="rules-row"><span class="rules-symbol">${icon("sun")}</span><div><h3>До сеанса</h3><p>Подготовьте и обработайте рабочее место. Одноразовые расходники открывайте при клиенте.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("user")}</span><div><h3>Во время работы</h3><p>Уважайте личные границы клиента и работу соседних мастеров. Если планы меняются, предупредите команду заранее.</p></div></article>
       <article class="rules-row"><span class="rules-symbol">${icon("reset")}</span><div><h3>После сеанса</h3><p>Уберите и обработайте место, утилизируйте расходники по правилам студии. Сообщите администратору о завершении работы.</p></div></article>
-    </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3>${pub.bookingHold ? `<p>При записи по карте блокируем 500 ₽ до начала сеанса. За визит мастер платит в конце.</p><p>${holdTermsLink}</p>` : `<dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.</p>`}<a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
+    </div><aside class="rules-booking"><span class="rules-symbol">${icon("calendar")}</span><h3>Запись и отмена</h3>${pub.paidBooking ? `<p>Бронирование — ${money(pub.paidBooking.amount)}. В конце сеанса оплачиваются доступ и дополнительные позиции.</p><p>${bookingTermsLink}</p>` : pub.bookingHold ? `<p>При записи по карте блокируем 500 ₽ до начала сеанса. За визит мастер платит в конце.</p><p>${holdTermsLink}</p>` : `<dl><div><dt>Предоплата</dt><dd>${money(s.deposit)}</dd></div><div><dt>Отмена без потери предоплаты</dt><dd>За ${s.cancelHours} ч</dd></div></dl><p>При своевременной отмене предоплата возвращается на внутренний баланс.</p><p>При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.</p>`}<a class="chrome" href="#/booking">Выбрать время →</a></aside></div>
     <p class="manager-contact">Вопросы о студии и бронировании — ${managerLink()}.</p><details class="rules-full"><summary>Полные правила студии<svg class="rules-toggle-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 2v12M2 8h12"/></svg></summary><div class="rules-full__text legal-document">${documentSections(s.rules, [], "h3")}</div></details>
   </section>`);
 }
@@ -613,8 +619,15 @@ function mountAuth(signup) {
     storage.set("returnTo", "cabinet");
   });
 }
-const holdTermsLink = '<a href="#/legal/booking" target="_blank" rel="noopener">Условия бронирования</a>';
-const selectedHold = () => pub.bookingHold && !me?.loyalty?.freeNext && !me?.profile?.fullPrepay && !me?.depositWaived;
+const bookingTermsLink = '<a href="#/legal/booking-fee" target="_blank" rel="noopener">Условия бронирования</a>';
+const holdTermsLink = bookingTermsLink.replace("/booking-fee", "/booking-hold");
+const eligibleForOnlineBooking = () => !me?.loyalty?.freeNext && !me?.profile?.fullPrepay && !me?.depositWaived;
+const selectedFee = () => eligibleForOnlineBooking() && pub.paidBooking;
+const selectedHold = () => !selectedFee() && eligibleForOnlineBooking() && pub.bookingHold;
+const paidBooking = b => b.policy?.bookingPayment === "booking_fee";
+const trackedSession = b => paidBooking(b) || b.policy?.bookingPayment === "hold";
+const feeNotice = () => `Бронирование оплачивается сейчас. Доступ и дополнительные позиции — в конце сеанса. Перенести оплаченную бронь можно более чем за ${pub.paidBooking.transferHours} ч до начала.`;
+const bookingPayment = total => selectedFee() ? pub.paidBooking.amount : selectedHold() ? pub.bookingHold.amount : bookingDeposit(total);
 const holdNotice = () => `Заблокируем на карте ${money(pub.bookingHold.amount)}. Оплата сеанса целиком в конце. При отмене за ${pub.bookingHold.cancelHours} ч или раньше снимем блокировку автоматически.`;
 const bookingDeposit = (total) => me?.loyalty?.freeNext ? 0 : me?.role === "resident" && me.depositWaived ? 0 : me?.profile?.fullPrepay && total ? total : pub.settings.deposit;
 // Наценка за ночь или выходные из правил цен (сервер считает так же) и скидка промокода.
@@ -635,7 +648,7 @@ function receipt() {
       0,
     ),
     r = pub.resources.find((x) => x.id === draft.resourceId);
-  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Город</span><span>${esc(CITY_LABELS[draft.city] || "не выбран")}</span></div><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">предварительная стоимость</p><div class="line"><span>${selectedHold() ? "Блокировка на карте" : "Предоплата сейчас"}</span><b>${money(selectedHold() ? pub.bookingHold.amount : bookingDeposit(rate + extras))}</b></div><p class="small muted" style="margin-top:15px">${selectedHold() ? holdNotice() : me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extras)))}. Остаток — после сеанса.`}</p></aside>`;
+  return `<aside class="receipt"><h3>Ваша запись</h3><div class="line"><span>Город</span><span>${esc(CITY_LABELS[draft.city] || "не выбран")}</span></div><div class="line"><span>Дата</span><span>${dateLabel(draft.date + "T12:00:00+03:00")}</span></div><div class="line"><span>Время</span><span>${draft.hour === null ? "не выбрано" : draft.hour + ":00"} / ${draft.duration} ч</span></div><div class="line"><span>Место</span><span>${esc(r?.name || "не выбрано")}</span></div><div class="line"><span>${me?.loyalty?.freeNext ? "20-е посещение · аренда" : "Тариф"}</span><span>${money(rate)}</span></div><div class="line"><span>Дополнительно</span><span>${money(extras)}</span></div><div class="total">${money(rate + extras)}</div><p class="small muted">${selectedFee() ? "к оплате в конце сеанса" : "предварительная стоимость"}</p><div class="line"><span>${selectedFee() ? "Бронирование сейчас" : selectedHold() ? "Блокировка на карте" : "Предоплата сейчас"}</span><b>${money(bookingPayment(rate + extras))}</b></div><p class="small muted" style="margin-top:15px">${selectedFee() ? feeNotice() : selectedHold() ? holdNotice() : me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `Из неё с баланса: ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extras)))}. Остаток — после сеанса.`}</p></aside>`;
 }
 function calendarHTML() {
   const [y, m] = month.split("-").map(Number),
@@ -694,14 +707,14 @@ function bookingPage() {
       .join("")}</div>`;
   }
   if (draft.step === 2)
-    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
+    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.filter(x => !selectedFee() || x.onlineReceipt !== false).map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
   if (draft.step === 3) {
     const base = adjustedRate(), discount = promoDiscountOf(base), rate = base - discount,
       extra = draft.extras.reduce(
         (a, x) => a + pub.catalog.find((c) => c.id === x.id).price * x.qty,
         0,
       );
-    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${bookingTimeRange(draft.hour, draft.duration)}</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(base)}${slotPercent() ? ` <small class="muted">(${slotPercent() > 0 ? "наценка" : "скидка"} ${Math.abs(slotPercent())}% за ночь/выходной)</small>` : ""}</p>${discount ? `<p>Промокод ${esc(promoInfo.code)} · −${money(discount)}</p>` : ""}${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>Полная стоимость</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>${selectedHold() ? "Блокировка на карте" : me?.profile?.fullPrepay ? "Полная предоплата" : "Предоплата"}</span><strong>${money(selectedHold() ? pub.bookingHold.amount : bookingDeposit(rate + extra))}</strong></div><p class="booking-review__split"><small>${selectedHold() ? "Сумма временно недоступна на карте. Снимем блокировку при начале сеанса." : me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extra)))}, картой ${money(Math.max(0, bookingDeposit(rate + extra) - (me?.balance || 0)))}`}</small></p></div>${me && !me.loyalty?.freeNext ? `<form class="pro-promo" id="promo-form"><label class="field"><span>Промокод или сертификат</span><input name="code" value="${esc(promoInfo?.code || "")}" maxlength="32" autocomplete="off"></label><button type="submit" class="chrome">${promoInfo ? "Обновить" : "Применить"}</button>${promoInfo ? '<button type="button" class="chrome" id="promo-clear">Убрать</button>' : ""}</form>` : ""}<p class="small muted">${selectedHold() ? holdNotice() : me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : '<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank" rel="noopener">правила студии</a>, <a href="#/legal/booking" target="_blank" rel="noopener">условия бронирования</a> и <a href="#/legal/offer" target="_blank" rel="noopener">оферту</a></span></label>'}`;
+    body = `<h2>Всё верно?</h2><div class="note-paper booking-review"><h3>${dateLabel(draft.date + "T12:00:00+03:00")} · ${bookingTimeRange(draft.hour, draft.duration)}</h3><p>${esc(CITY_LABELS[draft.city])} · ${esc(pub.resources.find((r) => r.id === draft.resourceId)?.name)}</p><p>До ${draft.duration} часов · ${money(base)}${slotPercent() ? ` <small class="muted">(${slotPercent() > 0 ? "наценка" : "скидка"} ${Math.abs(slotPercent())}% за ночь/выходной)</small>` : ""}</p>${discount ? `<p>Промокод ${esc(promoInfo.code)} · −${money(discount)}</p>` : ""}${draft.extras.map((x) => `<p class="small">${esc(pub.catalog.find((c) => c.id === x.id).name)} × ${x.qty}</p>`).join("")}<div class="booking-review__total"><span>${selectedFee() ? "К оплате в конце сеанса" : "Полная стоимость"}</span><strong>${money(rate + extra)}</strong></div><div class="booking-review__payment"><span>${selectedFee() ? "Бронирование сейчас" : selectedHold() ? "Блокировка на карте" : me?.profile?.fullPrepay ? "Полная предоплата" : "Предоплата"}</span><strong>${money(bookingPayment(rate + extra))}</strong></div><p class="booking-review__split"><small>${selectedFee() ? `Всего по двум услугам ${money(rate + extra + pub.paidBooking.amount)}` : selectedHold() ? "Сумма временно недоступна на карте. Снимем блокировку при начале сеанса." : me?.depositWaived ? "Предоплата отключена. Расчёт наличными в студии." : `С баланса ${money(Math.min(me?.balance || 0, bookingDeposit(rate + extra)))}, картой ${money(Math.max(0, bookingDeposit(rate + extra) - (me?.balance || 0)))}`}</small></p></div>${me && !me.loyalty?.freeNext ? `<form class="pro-promo" id="promo-form"><label class="field"><span>Промокод или сертификат</span><input name="code" value="${esc(promoInfo?.code || "")}" maxlength="32" autocomplete="off"></label><button type="submit" class="chrome">${promoInfo ? "Обновить" : "Применить"}</button>${promoInfo ? '<button type="button" class="chrome" id="promo-clear">Убрать</button>' : ""}</form>` : ""}<p class="small muted">${selectedFee() ? feeNotice() : selectedHold() ? holdNotice() : me?.depositWaived ? `Отмените запись заранее, не менее чем за ${s.cancelHours} ч.` : `При отмене не менее чем за ${s.cancelHours} ч предоплата возвращается на внутренний баланс. При отмене менее чем за ${s.cancelHours} ч предоплата ${s.lateCancellation === "review" ? "возвращается только по решению администратора" : "не возвращается на баланс"}.`}</p>${!me ? '<p class="booking-login-action"><a class="chrome" href="#/login" id="booking-login">Войти, чтобы продолжить →</a></p>' : `<label class="check"><input id="booking-agree" type="checkbox"><span>Принимаю <a href="#/safety" target="_blank" rel="noopener">правила студии</a>, <a href="#/legal/${selectedFee() ? "booking-fee" : selectedHold() ? "booking-hold" : "booking"}" target="_blank" rel="noopener">условия бронирования</a> и <a href="#/legal/offer" target="_blank" rel="noopener">оферту</a></span></label>`}`;
   }
   return win(
     "Rent a workspace",
@@ -819,7 +832,7 @@ async function mountBooking() {
       if (draft.step === 3) {
         if (!$("#booking-agree")?.checked)
           throw Error("Подтвердите условия бронирования");
-        bookingResult = await api("/bookings", "POST", { ...draft, promo: promoInfo?.code || undefined, bookingTermsVersion: selectedHold() ? pub.bookingHold.version : undefined });
+        bookingResult = await api("/bookings", "POST", { ...draft, promo: promoInfo?.code || undefined, bookingTermsVersion: selectedFee()?.version || selectedHold()?.version });
         promoInfo = null;
         draft.step = 0;
         draft.resourceId = null;
@@ -845,6 +858,7 @@ async function mountBooking() {
 const paymentLabels = {
   deposit: "Предоплата рабочего места",
   hold: "Блокировка на карте для бронирования",
+  booking_fee: "Бронирование рабочего места",
   final: "Итоговый счёт за сеанс",
   expense: "Счёт за расходы",
 };
@@ -875,15 +889,15 @@ async function paymentPage(id) {
   const items = p.kind === "expense" ? p.items : p.kind === "final" ? p.booking_extras : [];
   const breakdown = p.kind === "final" && items?.length
     ? `<p class="small muted">Аренда ${money(p.rate)}${p.deposit ? ` · зачтено ${money(p.deposit)} предоплаты` : ""}</p>`
-    : "";
+    : p.kind === "final" && paidBooking(p) ? `<p class="small muted">Доступ к рабочему месту · ${p.tariff} ч</p>` : "";
   return win(
     "Оплата",
     `<div class="payment-sheet"><div class="payment-sheet__header"><span class="eyebrow">Платёж № ${p.id.slice(0, 8)}</span><span class="payment-status">${paymentStatus(p)}</span></div>
     <div class="payment-sheet__summary"><h2>${money(p.amount)}</h2><p>${paymentLabels[p.kind]}</p></div>
     <dl class="payment-booking"><div><dt>Студия</dt><dd>${esc(CITY_LABELS[p.city] || p.city)} · ${esc(p.resource_name)}</dd></div><div><dt>Сеанс</dt><dd>${dateLabel(p.starts_at)} · ${timeLabel(p.starts_at)}—${timeLabel(p.ends_at)} (МСК)</dd></div></dl>
-    ${p.kind === "hold" ? `<p>500 ₽ временно блокируются на карте. За сеанс вы заплатите отдельно в конце. ${holdTermsLink}</p>` : ""}${breakdown}${expenseLines(items)}
+    ${p.kind === "hold" ? `<p>500 ₽ временно блокируются на карте. За сеанс вы заплатите отдельно в конце. ${holdTermsLink}</p>` : ""}${p.kind === "booking_fee" ? `<p>Оплата закрепляет выбранное время. Доступ к месту оплачивается отдельно в конце сеанса. ${bookingTermsLink}</p>` : ""}${breakdown}${expenseLines(items)}
     <div class="payment-sheet__actions">${actions}${
-      p.kind === "final" && p.status === "pending" && p.policy?.bookingPayment !== "hold"
+      p.kind === "final" && p.status === "pending" && !trackedSession(p)
         ? `<div style="margin-top:25px">${select(
             "upgrade",
             "Если сеанс занял больше времени",
@@ -891,7 +905,7 @@ async function paymentPage(id) {
             p.tariff,
           )}<button class="chrome" id="upgrade-invoice" data-booking="${p.booking_id}">Пересчитать счёт</button></div>`
         : ""
-    }</div>${["deposit","hold"].includes(p.kind) && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до " + timeLabel(p.expires_at) + " (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
+    }</div>${["deposit","hold","booking_fee"].includes(p.kind) && p.status === "pending" ? `<p class="payment-sheet__note small muted">${p.expires_at ? "Резерв до " + timeLabel(p.expires_at) + " (МСК)." : "Место удерживается 15 минут с момента создания записи."}</p>` : ""}</div>`,
     "cabinet",
   );
 }
@@ -1001,7 +1015,7 @@ async function cabinetPage() {
   const data = await api("/bookings"),
     inbox = await api("/notifications"),
     active = data.bookings.filter((b) =>
-      ["pending", "confirmed", "invoiced", "cancel_requested"].includes(
+      ["pending", "confirmed", "invoiced", "cancel_requested", "awaiting_date"].includes(
         b.status,
       ),
     ),
@@ -1009,8 +1023,8 @@ async function cabinetPage() {
   if (me.accountType === "master" && ["portfolio", "drafts"].includes(cabTab)) { profileTab = cabTab; cabTab = "bookings"; }
   const personalPoints=cabTab==="profile"&&me.accountType==="master"?await api("/me/ranking"):null;
   const publicProfileId = me.publicProfileId || me.id;
-  const running = active.find(b=>b.policy?.bookingPayment === "hold" && b.started_at && !b.finished_at);
-  const next = running || active.filter(b=>new Date(b.ends_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
+  const running = active.find(b=>trackedSession(b) && b.started_at && !b.finished_at);
+  const next = running || active.filter(b=>b.status !== "awaiting_date" && new Date(b.ends_at)>new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
   // Записи от администратора, которые ждут ответа мастера: «Подтвердить» или «Связаться с админом».
   const awaiting = active.filter((b) => b.policy?.masterConfirm === "awaiting");
   const awaitingBlock = awaiting.length ? `<section class="cabinet-confirm" aria-label="Записи ждут вашего подтверждения"><span class="eyebrow">НУЖНО ВАШЕ ПОДТВЕРЖДЕНИЕ</span>${awaiting.map((b) => `<article class="cabinet-confirm__item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p class="small muted">${esc(b.resource_name)} · до ${b.tariff} ч · без предоплаты. Администратор ${b.policy?.adminCreated && b.policy?.moved ? "перенёс" : "создал"} для вас эту запись.</p></div><div class="row"><button type="button" class="chrome pro-primary" data-master-confirm="${b.id}">Подтвердить</button><a class="chrome" href="${ADMIN_TELEGRAM}" target="_blank" rel="noopener noreferrer">Связаться с админом</a></div></article>`).join("")}</section>` : "";
@@ -1022,7 +1036,7 @@ async function cabinetPage() {
   let body = "";
   if (cabTab === "bookings")
     body = active.length
-      ? active.filter(b => b !== next || b.policy?.bookingPayment !== "hold").map((b) => bookingItem(b, data.payments)).join("")
+      ? active.filter(b => b !== next || !trackedSession(b)).map((b) => bookingItem(b, data.payments)).join("")
       : '<div class="empty">В вашем календаре пока тихо.<br><br><a href="#/booking">Забронировать первое место →</a></div>';
   if (cabTab === "history")
     body =
@@ -1091,27 +1105,35 @@ function sessionDuration(start, end) {
   const minutes = Math.max(0, Math.floor((end - Date.parse(start)) / 60000));
   return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
 }
-function holdSession(b) {
+function bookingSession(b, fee) {
   const now = Date.now(), start = Date.parse(b.starts_at), end = Date.parse(b.ends_at);
   const running = b.status === "confirmed" && b.started_at && !b.finished_at;
-  const canStart = b.status === "confirmed" && b.hold_status === "authorized" && !b.started_at && now < end;
+  const canStart = b.status === "confirmed" && (fee?.status === "paid" || b.hold_status === "authorized") && !b.started_at && now < end;
   const intervals = b.segments?.length ? `<ul class="invoice-items"><li><span>${timeLabel(b.starts_at)}—${timeLabel(b.first_ends_at)}</span><strong>${esc(b.resource_name)}</strong></li>${b.segments.map(s => `<li><span>${timeLabel(s.startsAt)}—${timeLabel(s.endsAt)}</span><strong>${esc(s.resourceName)} · ${money(s.rate)}</strong></li>`).join("")}</ul>` : "";
-  const status = statusName[b.hold_status];
+  const status = fee ? "" : statusName[b.hold_status];
   return `${intervals}${status ? `<p class="small muted">${status} · 500 ₽</p>` : ""}
     ${running ? `<p>Сеанс идёт <strong data-session-elapsed="${esc(b.started_at)}">${sessionDuration(b.started_at,now)}</strong></p><p data-session-ended="${end}" ${now < end ? "hidden" : ""}>Забронированное время закончилось. Продлите сеанс, если место свободно, или завершите и оплатите.</p>` : ""}
     <div class="row">
       ${canStart ? `<button class="chrome" data-session-start="${b.id}" data-session-opens="${start}" data-session-closes="${end}" ${start > now ? "disabled" : ""}>Начать сеанс</button>` : ""}
       ${running && now < end + 15 * 60000 ? `<button class="chrome" data-session-extend="${b.id}">Продлить или сменить место</button>` : ""}
       ${running ? `<button class="chrome" data-session-expenses="${b.id}">Добавить расход</button><button class="chrome pro-primary" data-session-finish="${b.id}" data-total="${b.total}">Завершить и оплатить</button>` : ""}
-    </div><p class="small">${holdTermsLink}</p>`;
+    </div><p class="small">${fee ? bookingTermsLink : holdTermsLink}</p>`;
 }
 function bookingItem(b, payments) {
   const payment = payments.find(
     (p) => p.booking_id === b.id && p.kind !== "expense" && p.status === "pending",
   );
   const hold = b.policy?.bookingPayment === "hold";
+  const fee = payments.find(p => p.booking_id === b.id && p.kind === "booking_fee");
+  const city = b.policy?.city || resourceCity(pub.resources.find(r => r.id === b.resource_id));
+  const waiting = b.status === "awaiting_date";
+  const canRelease = fee?.status === "paid" && b.status === "confirmed" && Date.parse(b.starts_at) - Date.now() > 48 * 3600000;
+  const canCancel = paidBooking(b)
+    ? !b.started_at && ["confirmed","awaiting_date","no_show"].includes(b.status) ||
+      b.status === "pending" && new Date(b.starts_at) > new Date()
+    : ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date();
   const paidExpenses = payments.filter((p) => p.booking_id === b.id && p.kind === "expense" && p.status === "paid");
-  return `<article class="booking-item"><div><h3>${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}</h3><p>${esc(CITY_LABELS[b.policy?.city || resourceCity(pub.resources.find((r) => r.id === b.resource_id))])} · ${esc(b.resource_name)} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)}${hold ? " · стоимость сеанса" : " · предоплата " + money(b.deposit)}</p>${expenseLines(b.extras)}${hold ? holdSession(b) : ""}${paidExpenses.map((p) => `<p><a href="#/payment/${p.id}"><u>Расходы · ${money(p.amount)} · оплачено</u></a></p>`).join("")}${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">${payment.kind === "hold" ? "Подтвердить блокировку" : "Оплатить " + money(payment.amount)}</a>` : ""}${["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date() ? `<button class="small cabinet-action" data-cancel="${b.id}" data-hold="${hold}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${waiting ? "Выберите новую дату" : `${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}`}</h3><p>${esc(CITY_LABELS[city])}${waiting ? "" : ` · ${esc(b.resource_name)}`} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)}${trackedSession(b) ? " · стоимость сеанса" : " · предоплата " + money(b.deposit)}</p>${fee && fee.status !== "pending" ? `<p class="small"><a href="#/payment/${fee.id}">Бронирование ${money(fee.amount)} · ${paymentStatus(fee)}</a></p>` : ""}${expenseLines(b.extras)}${trackedSession(b) && !waiting ? bookingSession(b, fee) : ""}${paidExpenses.map((p) => `<p><a href="#/payment/${p.id}"><u>Расходы · ${money(p.amount)} · оплачено</u></a></p>`).join("")}${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">${payment.kind === "hold" ? "Подтвердить блокировку" : "Оплатить " + money(payment.amount)}</a>` : ""}${canRelease ? `<button type="button" class="chrome" data-release-slot="${b.id}">Перенести бронь</button>` : ""}${waiting ? `<button type="button" class="chrome" data-pick-slot="${b.id}" data-city="${esc(city)}" data-hours="${b.tariff}">Выбрать новую дату</button>` : ""}${canCancel ? `<button class="small cabinet-action" data-cancel="${b.id}" data-fee="${paidBooking(b) && b.status !== "pending"}" data-hold="${hold}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
 }
 // Фото и сохранение личного дела — и во вкладке, и в окне «Редактировать профиль».
 function mountProfileForm(onSaved) {
@@ -1176,7 +1198,48 @@ function editMasterPass() {
   });
   input.focus();
 }
-function mountHoldSessions() {
+function mountBookingTransfers() {
+  $$("[data-release-slot]").forEach(button => button.onclick = () =>
+    dialogForm("Перенести бронь", "<p>Текущее время освободится. Новую дату можно выбрать в личном кабинете в любое время. Повторная оплата за бронь не нужна.</p>",
+      () => api("/bookings/" + button.dataset.releaseSlot + "/transfer", "POST", {})));
+  $$("[data-pick-slot]").forEach(button => button.onclick = () => {
+    const { pickSlot, city, hours } = button.dataset;
+    modal(`<h2>Новая дата бронирования</h2><p>${hours} ч · ${esc(CITY_LABELS[city])} · время московское</p>${field("transfer-date","Дата",today(),"date",`min="${today()}" max="${addDate(today(),180)}"`)}<div id="transfer-slots" aria-live="polite"></div>`);
+    const date = $('[name="transfer-date"]'), results = $("#transfer-slots");
+    let version = 0;
+    async function update() {
+      const current = ++version;
+      results.textContent = "Проверяю свободное время…";
+      try {
+        const availability = await api("/availability?" + new URLSearchParams({date:date.value,duration:hours,city}));
+        if (current !== version || !results.isConnected) return;
+        const slots = availability.slots.filter(slot => slot.free.length);
+        if (!slots.length) { results.textContent = "На этот день свободных мест нет."; return; }
+        results.innerHTML = select("transfer-hour","Время",slots.map(slot => [slot.hour,bookingTimeRange(slot.hour,Number(hours))]),slots[0].hour) +
+          '<div id="transfer-place"></div><button type="button" class="chrome" id="confirm-transfer">Подтвердить перенос</button>';
+        const time = results.querySelector('[name="transfer-hour"]');
+        const showPlaces = () => {
+          const places = slots.find(slot => slot.hour === Number(time.value)).free.map(id => [id,pub.resources.find(r => r.id === id)?.name || "Рабочее место"]);
+          results.querySelector("#transfer-place").innerHTML = select("transfer-resource","Рабочее место",places,places[0][0]);
+        };
+        time.onchange = showPlaces;
+        showPlaces();
+        results.querySelector("#confirm-transfer").onclick = async ({currentTarget}) => {
+          currentTarget.disabled = true;
+          try {
+            await api("/bookings/" + pickSlot + "/transfer","POST",{date:date.value,hour:Number(time.value),resourceId:results.querySelector('[name="transfer-resource"]').value});
+            $("#dialog").close();
+            await render();
+            notify("Бронь перенесена");
+          } catch (error) { notify(error.message); await update(); }
+        };
+      } catch (error) { if (current === version) results.textContent = error.message; }
+    }
+    date.onchange = update;
+    update();
+  });
+}
+function mountBookingSessions() {
   $$("[data-session-start]").forEach(button => button.onclick = async () => {
     button.disabled = true;
     button.dataset.starting = "true";
@@ -1244,7 +1307,8 @@ setInterval(() => {
   });
 }, 10000);
 function mountCabinet() {
-  mountHoldSessions();
+  mountBookingSessions();
+  mountBookingTransfers();
   if (!me) {
     mountAuth(false);
     return;
@@ -1283,7 +1347,7 @@ function mountCabinet() {
           ? "Позднюю отмену рассмотрит администратор."
           : `При отмене менее чем за ${hours} часов предоплата не возвращается на баланс.`;
         modal(
-          `<h2>Отменить запись?</h2><p>${b.dataset.hold === "true" ? `За ${hours} ч или раньше ЮKassa получит запрос на снятие блокировки. Позднюю отмену рассмотрит администратор.` : `При отмене не менее чем за ${hours} часов предоплата вернётся на баланс. ${late}`}</p>${b.dataset.hold === "true" ? `<p>${holdTermsLink}</p>` : ""}<button class="chrome" id="confirm-cancel">Да, отменить</button>`,
+          `<h2>Отменить запись?</h2><p>${b.dataset.fee === "true" ? "Запись будет снята. Студия рассмотрит вопрос возврата и сообщит решение в личном кабинете." : b.dataset.hold === "true" ? `За ${hours} ч или раньше ЮKassa получит запрос на снятие блокировки. Позднюю отмену рассмотрит администратор.` : `При отмене не менее чем за ${hours} часов предоплата вернётся на баланс. ${late}`}</p>${b.dataset.hold === "true" ? `<p>${holdTermsLink}</p>` : ""}<button class="chrome" id="confirm-cancel">Да, отменить</button>`,
         );
         $("#confirm-cancel").onclick = async (e) => {
           e.currentTarget.disabled = true;
@@ -1451,8 +1515,8 @@ async function adminPage() {
       cityIds = new Set(cityResources.map((r) => r.id)),
       inactive = cityResources.filter((r) => !r.active),
       dayCount = a.bookings.filter((b) => cityIds.has(b.resource_id) && new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(b.starts_at)) === adminDate && !["cancelled", "expired"].includes(b.status)).length,
-      listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested"].includes(b.status) : b.status === listStatus)));
-    const statusOptions = [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]];
+      listed = a.bookings.filter((b) => cityIds.has(b.resource_id) && (listStatus === "all" || (listStatus === "active" ? ["pending", "confirmed", "invoiced", "cancel_requested", "awaiting_date"].includes(b.status) : b.status === listStatus)));
+    const statusOptions = [["all", "Все"], ["active", "Активные"], ["confirmed", "Подтверждено"], ["pending", "Ожидает предоплаты"], ["invoiced", "Выставлен счёт"], ["cancel_requested", "Отмена на рассмотрении"], ["awaiting_date", "Ожидает новую дату"], ["completed", "Завершено"], ["no_show", "Неявка"], ["cancelled", "Отменено"]];
     // Строка дня: слева календарь и список, по центру дата (или «Все бронирования»), справа ночь (или статус).
     const dayLine = `<div class="pro-dayline"><div class="pro-dayline__left">${scheduleView === "list" ? '<button type="button" class="date-open" data-schedule-view="day" aria-label="Календарь: расписание дня" title="Расписание дня"><svg class="ui-icon" aria-hidden="true"><use href="#ui-calendar"></use></svg></button>' : `<input id="admin-date" type="date" value="${adminDate}" aria-label="Дата расписания">`}<button type="button" class="date-open pro-listbtn" data-schedule-view="${scheduleView === "list" ? "day" : "list"}" aria-pressed="${scheduleView === "list"}" aria-label="${scheduleView === "list" ? "Вернуться к расписанию дня" : "Все бронирования"}" title="${scheduleView === "list" ? "Расписание дня" : "Все бронирования"}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></button></div><div class="pro-dayline__center">${scheduleView === "list" ? '<strong class="pro-daynav__label">Все бронирования</strong>' : `<span class="pro-dayswitch"><button type="button" class="pro-dayarrow" data-day-shift="-1" aria-label="Предыдущий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><strong class="pro-daynav__label">${UX.fullDate(adminDate + "T12:00:00+03:00")}</strong><button type="button" class="pro-dayarrow" data-day-shift="1" aria-label="Следующий день"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></span>`}</div><div class="pro-dayline__right">${scheduleView === "list" ? `<div class="pro-dayline__filters">${select("listStatus", "Статус", statusOptions, listStatus)}</div>` : UX.nightToggle(s)}</div></div>`;
     body = `${dayLine}${manualPick && scheduleView === "day" ? `<div class="pro-pick-hint" role="status"><span><b>Выделите ячейки</b> нужного места и времени и нажмите «+ Запись» — форма откроется с этим местом, датой и временем.</span><button type="button" class="chrome" id="manual-pick-cancel">Отмена</button></div>` : ""}${scheduleView === "day" ? `${inactive.length ? `<p class="small muted pro-meta">Не принимают записи: ${inactive.map((r) => `${esc(r.name)} <button class="small" data-edit-resource="${r.id}"><u>изменить</u></button>`).join(", ")}</p>` : ""}${UX.scheduleTimeline(a, s, adminDate, adminCity)}` : `<div class="pro-scroll"><div data-own-search id="admin-bookings">${table(
@@ -1600,6 +1664,22 @@ function dialogForm(title, html, submit) {
     else { await refresh(); await render(); }
     notify("Сохранено");
   });
+}
+function invoiceDialog(b) {
+  const content = trackedSession(b) ? `<p>Итог за ${b.tariff} ч и добавленные позиции — ${money(b.total)}. Счёт появится в кабинете мастера.</p>`
+    : select("duration","Тариф после сеанса",[3,6,12].filter(h => h >= b.tariff).map(h => [h,`До ${h} часов`]),b.tariff) +
+      `<p class="small muted">Предоплата ${money(b.deposit)} будет вычтена. Счёт появится в кабинете мастера.</p>`;
+  return dialogForm("Итоговый счёт", content, d =>
+    api(`/admin/bookings/${b.id}/invoice`, "POST", {duration:trackedSession(b) ? b.tariff : Number(d.duration)}));
+}
+function cancellationDialog(b) {
+  const content = paidBooking(b)
+    ? select("decision","Оплата за бронь",[["refund","Вернуть через ЮKassa"],["close","Закрыть без возврата"]],"refund") +
+      field("reason","Основание для решения","","text",'required minlength="5" maxlength="500"')
+    : trackedSession(b) ? "<p>Бронь будет отменена. ЮKassa получит запрос на снятие блокировки 500 ₽.</p>"
+    : select("credit","Предоплата",[["yes","Вернуть на внутренний баланс"],["no","Удержать по регламенту"]],"yes");
+  return dialogForm("Решение по отмене",content,d => api(`/admin/bookings/${b.id}/resolve-cancel`,"POST",
+    {credit:d.credit === "yes",decision:d.decision,reason:d.reason}));
 }
 function mountAdmin() {
   if (adminScrollTo) {
@@ -2040,51 +2120,8 @@ function mountAdmin() {
   UX.guardForms();
   UX.bindKeys();
   $$("[data-cash-payment]").forEach(button => button.onclick = () => dialogForm("Подтвердить наличный расчёт", '<p>Отметьте оплату только после получения наличных. Запись будет закрыта как оплаченная.</p>', () => api("/admin/payments/" + button.dataset.cashPayment + "/cash", "POST", {})));
-  $$("[data-invoice]").forEach(
-    (btn) =>
-      (btn.onclick = () => {
-        const b = a.bookings.find((x) => x.id === btn.dataset.invoice);
-        dialogForm(
-          "Итоговый счёт",
-          b.policy?.bookingPayment === "hold" ? `<p>Итог за ${b.tariff} ч и добавленные позиции — ${money(b.total)}. Счёт появится в кабинете мастера.</p>` : `${select(
-            "duration",
-            "Тариф после сеанса",
-            [3, 6, 12]
-              .filter((h) => h >= b.tariff)
-              .map((h) => [h, `До ${h} часов`]),
-            b.tariff,
-          )}<p class="small muted">Предоплата ${money(b.deposit)} будет вычтена. Счёт появится в кабинете мастера.</p>`,
-          (d) =>
-            api("/admin/bookings/" + b.id + "/invoice", "POST", {
-              duration: b.policy?.bookingPayment === "hold" ? b.tariff : Number(d.duration),
-            }),
-        );
-      }),
-  );
-  $$("[data-resolve]").forEach(
-    (btn) =>
-      (btn.onclick = () =>
-        dialogForm(
-          "Решение по отмене",
-          a.bookings.find(b => b.id === btn.dataset.resolve)?.policy?.bookingPayment === "hold"
-            ? "<p>Бронь будет отменена. ЮKassa получит запрос на снятие блокировки 500 ₽.</p>"
-            : select(
-            "credit",
-            "Предоплата",
-            [
-              ["yes", "Вернуть на внутренний баланс"],
-              ["no", "Удержать по регламенту"],
-            ],
-            "yes",
-          ),
-          (d) =>
-            api(
-              "/admin/bookings/" + btn.dataset.resolve + "/resolve-cancel",
-              "POST",
-              { credit: d.credit === "yes" },
-            ),
-        )),
-  );
+  $$("[data-invoice]").forEach(button => button.onclick = () => invoiceDialog(a.bookings.find(b => b.id === button.dataset.invoice)));
+  $$("[data-resolve]").forEach(button => button.onclick = () => cancellationDialog(a.bookings.find(b => b.id === button.dataset.resolve)));
   $$("[data-feedback]").forEach(
     (b) =>
       (b.onclick = async () => {
@@ -2193,7 +2230,7 @@ function documentSections(text, titles = [], tag = "h2") {
 }
 function legalPage(key) {
   const s = pub.settings;
-  const titles = {privacy:"Политика обработки данных",offer:"Оферта",booking:"Условия бронирования",data:"Согласие на обработку данных",info:"Реквизиты студии"};
+  const titles = {privacy:"Политика обработки данных",offer:"Оферта",booking:"Условия бронирования","booking-fee":"Условия платного бронирования","booking-hold":"Условия бронирования с блокировкой",data:"Согласие на обработку данных",info:"Реквизиты студии"};
   const headings = {
     privacy:["Какие данные мы обрабатываем","Для чего нужны данные и кто имеет доступ","Ваши права и срок хранения"],
     offer:["Рабочее место и стоимость","Подтверждение и перенос записи","Работа в студии и дополнительные услуги","Отмена и возврат"],
@@ -2212,11 +2249,16 @@ function legalPage(key) {
   const bank = details("Банковские реквизиты",[
     ["Банк",s.bankName],["БИК",s.bankBik],["Корреспондентский счёт",s.bankCorrespondent],["Расчётный счёт",s.bankAccount],
   ]);
+  const bookingKey = key === "booking" && pub.paidBooking ? "booking-fee" : key === "booking" && pub.bookingHold ? "booking-hold" : key;
   const intro = key === "info"
     ? '<div class="document-intro"><p>Tattoo Office — тату-студия и рабочее пространство для мастеров.</p><p>The Tattoo Office Private Club — клуб постоянных мастеров Tattoo Office с особыми условиями аренды.</p></div>'
-    : key === "booking"
+    : bookingKey === "booking-fee"
+      ? `<p><a href="#/legal/offer">Открыть основную оферту</a></p>${documentSections(pub.paidBookingTerms,[])}`
+      : bookingKey === "booking-hold"
       ? `<p>Для записей с блокировкой 500 ₽. <a href="#/legal/offer">Открыть основную оферту</a></p>${documentSections(pub.bookingTerms,[])}`
-      : `${key === "offer" ? '<p><a href="#/legal/booking">Условия для бронирования с блокировкой 500 ₽</a></p>' : ""}${documentSections(s[key === "data" ? "consent" : key],headings[key])}`;
+      : bookingKey === "booking"
+      ? '<p>Стоимость, способ подтверждения записи и правила отмены указаны в <a href="#/legal/offer">оферте</a> и при оформлении.</p>'
+      : `${key === "offer" ? '<p>Если при оформлении указана отдельная плата 500 ₽, действуют <a href="#/legal/booking-fee">условия платного бронирования</a>. Для этих записей положения ниже о предоплате и внутреннем балансе не применяются. Для записей с блокировкой действуют <a href="#/legal/booking-hold">условия блокировки на карте</a>.</p>' : ""}${documentSections(s[key === "data" ? "consent" : key],headings[key])}`;
   return win(titles[key] || "Документы", `<article class="prose legal-document">${intro}${contacts}${["info","offer"].includes(key)?bank:""}</article>`, legalReturnRoute.slice(2));
 }
 let lastRenderKey = "";
@@ -2456,6 +2498,7 @@ async function render() {
   }
 }
 const adminContext = {
+  paidBooking, trackedSession, invoiceDialog, cancellationDialog, isShift: AP.isShift,
   api, esc, money, dateLabel, timeLabel, statusName, field, select, textarea, table, modal, dialogForm, onForm, notify, render, refresh, go, today, addDate, CITY_LABELS, resourceCity, paymentLabels, paymentStatus,
   state: () => ({ me, pub, adminData, adminDate, adminCity }),
   cityRatesOf, roleName, cityTabs, cityInfo, compressImage,

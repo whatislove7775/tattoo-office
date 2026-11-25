@@ -1,3 +1,4 @@
+import { paidBooking } from "./paid-booking.js";
 import { fail, integer } from "./domain.js";
 
 const maxMoney = 2147483647;
@@ -5,7 +6,7 @@ const cents = (value) => integer(value, 0, maxMoney, "Сумма для чека
 const totalOf = (items) => cents(items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
 
 function bookingItems(booking) {
-  const rent = { name: `Предоставление рабочего места, до ${booking.tariff} ч`, kind: "service", qty: 1, price: booking.rate };
+  const rent = { name: `${paidBooking(booking) ? "Доступ к рабочему месту" : "Предоставление рабочего места"}, до ${booking.tariff} ч`, kind: "service", qty: 1, price: booking.rate };
   return itemsFor([rent, ...(booking.extras || [])]);
 }
 
@@ -38,6 +39,8 @@ export function fiscalDrafts(booking, payment, prepaidPayment) {
 
   if (payment.kind === "expense") {
     drafts.push(receipt(itemsFor(payment.items || []), "full_payment", settlements, channel));
+  } else if (payment.kind === "booking_fee") {
+    drafts.push(receipt(itemsFor([{ name:"Бронирование рабочего места", kind:"service", qty:1, price:amount }]), "full_payment", settlements, channel));
   } else if (payment.kind === "deposit") {
     if (cents(booking.balance_used) || amount !== applied)
       return { drafts, review: ["В платеже участвует внутренний баланс или исходная сумма предоплаты изменилась. Сверьте операции до оформления чека."] };

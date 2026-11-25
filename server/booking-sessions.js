@@ -1,5 +1,6 @@
 import { randomUUID as uuid } from "node:crypto";
 import { fail, priceAdjust, resourceOpen, slot } from "./domain.js";
+import { hasBookingOverlap, paidBooking } from "./paid-booking.js";
 import { yookassaEnabled, yookassaTest } from "./yookassa.js";
 
 export const sessionGraceMinutes = 15;
@@ -10,6 +11,8 @@ export const checkoutEnabled = (settings) => yookassaEnabled() &&
   (yookassaTest() ? settings.mode === "test" : liveCheckoutEnabled(settings));
 export const holdEnabled = (settings) => process.env.YOOKASSA_BOOKING_HOLD === "true" && checkoutEnabled(settings);
 
+export const paidBookingEnabled = (settings) => process.env.YOOKASSA_PAID_BOOKING === "true" && settings.vat === 0 && checkoutEnabled(settings);
+export const sessionBooking = (b) => holdBooking(b) || paidBooking(b);
 export const holdBooking = (b) => b.policy?.bookingPayment === "hold";
 
 export async function releaseBookingHold(q, bookingId) {
@@ -20,7 +23,7 @@ export async function releaseBookingHold(q, bookingId) {
 export function sessionRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, createInvoice, addBookingExpenses, refreshCalendarBusy }) {
   const own = (q, req) => one(q, "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE", [req.params.id, req.user.id]);
   const active = (b) => {
-    if (!b || !holdBooking(b) || b.status !== "confirmed" || !b.started_at || b.finished_at)
+    if (!b || !sessionBooking(b) || b.status !== "confirmed" || !b.started_at || b.finished_at)
       fail("Действие доступно во время сеанса", 409);
   };
 
@@ -28,14 +31,18 @@ export function sessionRoutes(app, { db, auth, lock, one, settings, available, e
     await db.transaction(async q => {
       await lock(q);
       const b = await own(q, req);
-      if (!b || !holdBooking(b) || b.status !== "confirmed") fail("Бронь недоступна", 409);
+      if (!b || !sessionBooking(b) || b.status !== "confirmed") fail("Бронь недоступна", 409);
       if (b.started_at) return;
       if (+new Date(b.starts_at) > Date.now() || +new Date(b.ends_at) <= Date.now())
         fail("Начать сеанс можно в забронированное время", 409);
-      const held = await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='hold' AND status='authorized' AND hold_expires_at>now()", [b.id]);
-      if (!held) fail("Блокировка истекла. Свяжитесь с администратором", 409);
+      if (holdBooking(b)) {
+        const held = await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='hold' AND status='authorized' AND hold_expires_at>now()", [b.id]);
+        if (!held) fail("Блокировка истекла. Свяжитесь с администратором", 409);
+        await releaseBookingHold(q, b.id);
+      } else if (!(await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='booking_fee' AND status='paid'", [b.id]))) {
+        fail("Бронирование не оплачено", 409);
+      }
       await q.query("UPDATE bookings SET started_at=now() WHERE id=$1", [b.id]);
-      await releaseBookingHold(q, b.id);
       await audit(q, req.user.id, "booking.session.start", { id: b.id });
     });
     res.json({ ok: true });
@@ -52,9 +59,8 @@ export function sessionRoutes(app, { db, auth, lock, one, settings, available, e
     const baseRate = b.policy.rates?.[duration];
     if (baseRate == null) fail("Тариф недоступен", 409);
     const rate = priceAdjust(baseRate, date, hour, b.policy.extensionPriceRules || []).rate;
-    const overlap = await one(q, `SELECT id FROM bookings WHERE user_id=$1 AND id<>$2
-      AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') AND starts_at<$4 AND ends_at>$3 LIMIT 1`, [b.user_id, b.id, start, end]);
-    if (overlap) fail("На это время у вас уже есть другая запись", 409);
+    if (await hasBookingOverlap(q, b.user_id, start, end, b.id))
+      fail("На это время у вас уже есть другая запись", 409);
     const resources = (await q.query("SELECT id,name,schedule FROM resources WHERE active AND NOT deleted AND city=$1 ORDER BY name", [b.policy.city])).rows;
     const free = [];
     for (const r of resources)
@@ -111,7 +117,7 @@ export function sessionRoutes(app, { db, auth, lock, one, settings, available, e
     const result = await db.transaction(async q => {
       await lock(q);
       const b = await own(q, req);
-      if (holdBooking(b ?? {}) && b.finished_at) {
+      if (b && sessionBooking(b) && b.finished_at) {
         const p = await one(q, "SELECT id FROM payments WHERE booking_id=$1 AND kind='final'", [b.id]);
         return { paymentId:p?.id ?? null };
       }

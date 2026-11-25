@@ -1,6 +1,7 @@
+import { hasBookingOverlap, paidBooking } from "./paid-booking.js";
 import {holdBooking,releaseBookingHold} from "./booking-sessions.js";
 import { randomUUID as uuid } from "node:crypto";
-import { fail, integer, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
+import { fail, integer, resourceOpen, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
 
 // Владелец студии видит всё. Администратор смены (profile.staffLevel = "shift")
 // работает с расписанием и бронями, но не с деньгами, настройками и правами.
@@ -86,6 +87,16 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       const [start, end] = slot(String(req.body.date || ""), Number(req.body.hour), b.tariff, s);
       if (holdBooking(b) && !(await one(q,"SELECT id FROM payments WHERE booking_id=$1 AND kind='hold' AND status='authorized' AND hold_expires_at>$2::timestamptz+interval '15 minutes'",[b.id,start])))
         fail("Блокировка карты не покрывает новую дату. Отмените запись и создайте новую",409);
+      if (paidBooking(b)) {
+        if (r.city !== b.policy.city || !resourceOpen(r, String(req.body.date || ""), Number(req.body.hour), b.tariff))
+          fail("Выберите доступное рабочее место той же студии", 409);
+        if (await hasBookingOverlap(q, b.user_id, start, end, b.id))
+          fail("На это время у мастера уже есть запись", 409);
+        if (b.resource_id !== r.id) {
+          const old = await one(q,"SELECT calendar_id FROM resources WHERE id=$1",[b.resource_id]);
+          await enqueue(q,"calendar.delete",{ bookingId:b.id, calendarId:old?.calendar_id, removedSlot:true });
+        }
+      }
       if (!(await available(q, r.id, start, end, b.id))) fail("Это время на выбранном месте занято", 409);
       // Запись от администратора после переноса снова ждёт подтверждения мастера — если не выбрано «без подтверждения».
       const askMaster = !!b.policy?.adminCreated && req.body.skipConfirm !== true;
@@ -120,8 +131,8 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       if (b.extras.some((item) => item.addedOnSite)) fail("К записи уже добавлены расходы на месте", 409);
       if (new Date(b.starts_at) > new Date()) fail("Сеанс ещё не начался", 409);
       await q.query("UPDATE bookings SET status='no_show' WHERE id=$1", [b.id]);
-      if (holdBooking(b)) {
-        await releaseBookingHold(q,b.id);
+      if (holdBooking(b) || paidBooking(b)) {
+        if (holdBooking(b)) await releaseBookingHold(q,b.id);
         if (b.policy?.promo?.code) await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1",[b.policy.promo.code]);
         for (const x of b.extras) if (x.kind === "product")
           await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2",[x.qty,x.id]);

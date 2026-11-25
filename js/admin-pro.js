@@ -295,7 +295,7 @@ export function mount(tab) {
       try { await api(`/admin/bookings/${id}/move`, "POST", { resourceId, hour: Number(hour), date: c.state().adminDate }); await reload("Запись перенесена"); } catch (err) { notify(err.message); }
     });
   });
-  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "hold" ? "<p>Запись закроется, запрос на снятие холда уйдёт в ЮKassa.</p>" : "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
+  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "booking_fee" ? "<p>Запись закроется без счёта за доступ к месту.</p>" : a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "hold" ? "<p>Запись закроется, запрос на снятие холда уйдёт в ЮKassa.</p>" : "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
   // Платежи
   const ff = $("#finance-filter");
   if (ff) {

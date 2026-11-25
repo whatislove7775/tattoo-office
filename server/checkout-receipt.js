@@ -1,3 +1,4 @@
+import { paidBooking } from "./paid-booking.js";
 import { fail, validEmail } from "./domain.js";
 
 const rubles = (value) => ({ value:(value / 100).toFixed(2), currency:"RUB" });
@@ -11,12 +12,14 @@ export function checkoutReceipt(payment, { email, tariff, rate, extras, settings
   // АУСН регистрируется при подключении чеков. Используем СНО магазина.
   if (settings.vat !== 0) fail("Проверьте ставки НДС в настройках кассы", 409);
   let lines;
-  if (payment.kind === "hold" || payment.kind === "deposit") {
+  if (payment.kind === "booking_fee") {
+    lines = [{ name:"Бронирование рабочего места", kind:"service", price:payment.amount, qty:1 }];
+  } else if (payment.kind === "hold" || payment.kind === "deposit") {
     lines = [{ name:"Предоставление рабочего места Tattoo Office", kind:"service", price:payment.amount, qty:1 }];
   } else if (payment.kind === "expense") {
     lines = payment.items;
   } else {
-    lines = [{ name:`Предоставление рабочего места, ${tariff} ч`, kind:"service", price:rate, qty:1 }, ...extras];
+    lines = [{ name:`${paidBooking(payment) ? "Доступ к рабочему месту" : "Предоставление рабочего места"}, ${tariff} ч`, kind:"service", price:rate, qty:1 }, ...extras];
   }
   const items = lines.filter(x => x.price > 0);
   if (items.length > 100 || items.reduce((sum, x) => sum+x.price*x.qty,0) !== payment.amount)

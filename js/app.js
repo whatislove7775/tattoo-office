@@ -57,7 +57,7 @@
       keys: ["mode", "role"],
     },
     { rx: /^#\/cabinet$/, page: "office" },
-    { rx: /^#\/legal\/(\w+)$/, page: "office", keys: ["doc"] },
+    { rx: /^#\/legal\/([a-z-]+)$/, page: "office", keys: ["doc"] },
     { rx: /^#\/about$/, page: "office", fixed: { doc: "about" } },
     { rx: /^#\/club$/, page: "office" },
   ];

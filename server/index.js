@@ -10,8 +10,9 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
-import {bookingTerms, bookingTermsVersion, holdAmount, holdCancelHours, holdDays} from "./booking-terms.js";
-import {checkoutEnabled, holdEnabled, holdBooking, releaseBookingHold, sessionRoutes} from "./booking-sessions.js";
+import {bookingTerms, bookingTermsVersion, holdAmount, holdCancelHours, holdDays, paidBookingTerms} from "./booking-terms.js";
+import {checkoutEnabled, holdEnabled, paidBookingEnabled, holdBooking, sessionBooking, releaseBookingHold, sessionRoutes} from "./booking-sessions.js";
+import {bookingFee, transferHours, paidBookingVersion, paidBooking, bookingTransferRoutes, hasBookingOverlap} from "./paid-booking.js";
 import {checkoutReceipt, supportsOnlineReceipt} from "./checkout-receipt.js";
 import { fiscalDrafts, fiscalExample } from "./fiscal-drafts.js";
 import {addBookingExpenses} from "./booking-expenses.js";
@@ -315,6 +316,7 @@ export async function createApp(db) {
     ));
   };
   sessionRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, createInvoice, addBookingExpenses, refreshCalendarBusy });
+  bookingTransferRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, expire, refreshCalendarBusy });
   telegramRoutes(app, { db, session, auth });
   adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
   adminMasterProfileRoutes(app, { db, one, ownerOnly, audit });
@@ -343,6 +345,8 @@ export async function createApp(db) {
         !!process.env.TELEGRAM_CLIENT_SECRET,
       paymentEnabled: checkoutEnabled(s),
       bookingHold: holdEnabled(s) ? { amount:holdAmount, days:holdDays, cancelHours:holdCancelHours, version:bookingTermsVersion } : null,
+      paidBooking: paidBookingEnabled(s) ? { amount:bookingFee, transferHours, version:paidBookingVersion } : null,
+      paidBookingTerms,
       bookingTerms,
     });
   });
@@ -683,14 +687,15 @@ export async function createApp(db) {
       const cash = u.role === "resident" && u.deposit_waived;
       const fullPrepay = u.profile?.fullPrepay === true && !cash;
       const bonus = await loyalty(q, u.id);
-      const hold = !manual && !cash && !fullPrepay && !bonus.freeNext && holdEnabled(s);
-      if (hold) {
-        if (req.body.bookingTermsVersion !== bookingTermsVersion)
+      const eligible = !manual && !cash && !fullPrepay && !bonus.freeNext;
+      const fee = eligible && paidBookingEnabled(s);
+      const hold = eligible && !fee && holdEnabled(s);
+      if (fee || hold) {
+        if (req.body.bookingTermsVersion !== (fee ? paidBookingVersion : bookingTermsVersion))
           fail("Откройте условия бронирования и подтвердите актуальную редакцию", 409);
-        if (+new Date(start) > Date.now() + holdDays * 86400000)
+        if (hold && +new Date(start) > Date.now() + holdDays * 86400000)
           fail("С блокировкой на карте можно бронировать на пять суток вперёд", 409);
-        if (await one(q, `SELECT id FROM bookings WHERE user_id=$1 AND starts_at<$3 AND ends_at>$2
-          AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') LIMIT 1`, [u.id,start,end]))
+        if (await hasBookingOverlap(q, u.id, start, end))
           fail("У вас уже есть запись на это время", 409);
       }
       const rates = cityRates(s, r.city)[u.role];
@@ -707,7 +712,7 @@ export async function createApp(db) {
           [item.id],
         );
         if (!x) fail("Позиция больше недоступна");
-        if (hold && !supportsOnlineReceipt(x,s.mode)) fail("Товар пока не подключён к онлайн-чекам",409);
+        if ((fee || hold) && !supportsOnlineReceipt(x,s.mode)) fail("Товар пока не подключён к онлайн-чекам",409);
         const qty = integer(
           item.qty,
           1,
@@ -742,11 +747,11 @@ export async function createApp(db) {
       }
       const rate = bonus.freeNext ? 0 : Math.max(0, adjusted.rate - discount),
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
-        deposit = hold || cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
+        deposit = fee || hold || cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
         used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
-        "INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,extras,total,balance_used,status,expires_at,deposit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',now()+interval '15 minutes',$11)",
+        "INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,extras,total,balance_used,status,expires_at,deposit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',CASE WHEN $12 THEN LEAST($4,now()+interval '15 minutes') ELSE now()+interval '15 minutes' END,$11)",
         [
           id,
           u.id,
@@ -759,14 +764,16 @@ export async function createApp(db) {
           total,
           used,
           deposit,
+          fee,
         ],
       );
       if (used) await ledger(q, u.id, id, -used, "Предоплата с баланса");
       let payment = null;
       await q.query("UPDATE bookings SET policy=$1 WHERE id=$2", [
         JSON.stringify({
-          cancelHours: hold ? holdCancelHours : s.cancelHours,
-          lateCancellation: hold ? "review" : s.lateCancellation,
+          cancelHours: fee ? transferHours : hold ? holdCancelHours : s.cancelHours,
+          lateCancellation: fee || hold ? "review" : s.lateCancellation,
+          ...(fee ? { bookingPayment:"booking_fee", bookingTermsVersion:paidBookingVersion, bookingFee, extensionPriceRules:s.priceRules } : {}),
           ...(hold ? { bookingPayment:"hold", bookingTermsVersion, extensionPriceRules:s.priceRules } : {}),
           rates,
           city: r.city,
@@ -788,6 +795,11 @@ export async function createApp(db) {
         await q.query("UPDATE bookings SET deposit=0,policy=policy||$2::jsonb WHERE id=$1", [id, JSON.stringify({ masterConfirm: askMaster ? "awaiting" : "skipped", adminCreated: true })]);
         if (askMaster) await enqueue(q, "booking.master_confirm", { bookingId: id });
         await audit(q, req.user.id, "booking.manual", { id });
+      } else if (fee) {
+        payment = uuid();
+        await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'booking_fee',$3)", [payment,id,bookingFee]);
+        await q.query("INSERT INTO consents(id,user_id,kind,version) VALUES($1,$2,'paid_booking',$3)", [uuid(),u.id,paidBookingVersion]);
+        await audit(q, u.id, "booking.fee.terms", { id, version:paidBookingVersion });
       } else if (hold) {
         payment = uuid();
         await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'hold',$3)", [payment,id,holdAmount]);
@@ -872,6 +884,17 @@ export async function createApp(db) {
       ]);
       if (!b || (b.user_id !== req.user.id && req.user.role !== "admin"))
         fail("Бронь не найдена", 404);
+      if (paidBooking(b) && b.status !== "pending") {
+        if (b.status === "cancel_requested") return;
+        if (b.started_at || !["confirmed", "awaiting_date", "no_show"].includes(b.status))
+          fail("Эту бронь нельзя отменить", 409);
+        if (b.status !== "awaiting_date")
+          await enqueue(q, "calendar.delete", { bookingId:b.id });
+        await q.query("UPDATE bookings SET status='cancel_requested' WHERE id=$1", [b.id]);
+        await enqueue(q, "booking.cancel_requested", { bookingId:b.id });
+        await audit(q, req.user.id, "booking.fee.cancel_request", { id:b.id });
+        return;
+      }
       if (
         !["pending", "confirmed"].includes(b.status) ||
         new Date(b.starts_at) <= new Date()
@@ -1483,6 +1506,24 @@ export async function createApp(db) {
           [req.params.id],
         );
         if (!b) fail("Заявка не найдена");
+        if (paidBooking(b)) {
+          if (!isOwner(req.user)) fail("Решение о возврате доступно владельцу студии", 403);
+          const p = await one(q, "SELECT * FROM payments WHERE booking_id=$1 AND kind='booking_fee' AND status='paid' FOR UPDATE", [b.id]);
+          if (!p) fail("Платёж за бронь недоступен", 409);
+          if (!["refund","close"].includes(req.body.decision)) fail("Выберите решение по возврату");
+          const reason = String(req.body.reason || "").trim().slice(0,500);
+          if (reason.length < 5) fail("Укажите основание решения");
+          if (req.body.decision === "refund") {
+            if (!p.checkout_id || !p.provider_id?.startsWith("yookassa:")) fail("Возврат через ЮKassa недоступен",409);
+            await q.query("UPDATE payments SET status='refund_pending',refund_requested_at=now() WHERE id=$1", [p.id]);
+          }
+          await release(q, b, "cancelled");
+          await enqueue(q, "booking.cancelled", { bookingId:b.id });
+          await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(),b.user_id,
+            `Решение по брони ${b.id.slice(0,8)}: ${req.body.decision === "refund" ? "возврат на исходный способ оплаты" : "отмена без возврата"}. ${reason}`]);
+          await audit(q, req.user.id, "booking.fee.cancel_resolve", { id:b.id, decision:req.body.decision, reason });
+          return;
+        }
         if (holdBooking(b)) {
           await release(q, b, "cancelled");
           await enqueue(q, "calendar.delete", { bookingId:b.id });
@@ -1572,7 +1613,13 @@ export async function createApp(db) {
       id,
     ]);
     if (!p) fail("Платёж не найден", 404);
-    if (p.status === "paid") {
+    if (p.kind === "booking_fee" && p.status === "expired" && provider.startsWith("yookassa:")) {
+      await q.query("UPDATE payments SET status='refund_pending',provider_id=$2,is_test=$3,refund_requested_at=now() WHERE id=$1",
+        [p.id,provider,yookassaTest()]);
+      await audit(q, null, "booking.fee.late_payment", { paymentId:p.id, bookingId:p.booking_id });
+      return;
+    }
+    if (["paid","refund_pending","refunded","refund_review"].includes(p.status)) {
       if (p.provider_id !== provider)
         fail("Счёт уже оплачен другой транзакцией", 409);
       return;
@@ -1590,7 +1637,7 @@ export async function createApp(db) {
       p.booking_id,
     ]);
     if (
-      (p.kind === "deposit" && b.status !== "pending") ||
+      (["deposit","booking_fee"].includes(p.kind) && b.status !== "pending") ||
       (p.kind === "final" && b.status !== "invoiced")
     )
       fail("Статус брони изменился", 409);
@@ -1598,13 +1645,13 @@ export async function createApp(db) {
       "UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2",
       [provider, p.id, provider.startsWith("test-") || (provider.startsWith("yookassa:") && yookassaTest())],
     );
-    if (p.kind === "deposit") await confirmed(q, b);
+    if (["deposit","booking_fee"].includes(p.kind)) await confirmed(q, b);
     else if (p.kind === "final")
       await q.query("UPDATE bookings SET status='completed' WHERE id=$1", [
         b.id,
       ]);
     await enqueue(q, "payment.paid", { bookingId: b.id, paymentId: p.id });
-    if (!provider.startsWith("yookassa:") && !provider.startsWith("cash:"))
+    if (!sessionBooking(b) && !provider.startsWith("yookassa:") && !provider.startsWith("cash:"))
       await enqueue(q, "receipt.create", { bookingId: b.id, paymentId: p.id });
   };
 
@@ -1616,7 +1663,7 @@ export async function createApp(db) {
         "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE",
         [req.params.id, req.user.id],
       );
-      if (!b || holdBooking(b) || b.status !== "invoiced")
+      if (!b || sessionBooking(b) || b.status !== "invoiced")
         fail("Нет открытого итогового счёта", 409);
       const h = Number(req.body.duration);
       if (![3, 6, 12].includes(h) || h < b.tariff)
@@ -1662,13 +1709,39 @@ export async function createApp(db) {
     });
     res.json({ ok: true });
   });
+  const syncBookingRefund = async (p) => {
+    // YooKassa keeps idempotency keys for 24 hours. After that, an unknown
+    // request needs reconciliation before it can be retried safely.
+    const expiredKey = !p.refund_id && Date.now() - +new Date(p.refund_requested_at) >= 23 * 3600000;
+    let id = p.refund_id, status = "refund_review";
+    if (!expiredKey) {
+      const amount = { value:(p.amount / 100).toFixed(2), currency:"RUB" };
+      const remote = id
+        ? await yookassaRequest("refunds/" + encodeURIComponent(id))
+        : await yookassaRequest("refunds", { payment_id:p.checkout_id, amount }, "booking-refund-" + p.id);
+      if (!remote.id || (id && remote.id !== id) || remote.payment_id !== p.checkout_id ||
+          remote.amount?.currency !== amount.currency || remote.amount.value !== amount.value)
+        fail("Данные возврата не совпадают", 502);
+      id = remote.id;
+      status = remote.status === "succeeded" ? "refunded" : remote.status === "pending" ? "refund_pending" : "refund_review";
+    }
+    await db.transaction(async q => {
+      const result = await q.query("UPDATE payments SET status=$2,refund_id=$3 WHERE id=$1 AND status='refund_pending' RETURNING booking_id",
+        [p.id,status,id]);
+      if (!result.rows.length || status === "refund_pending") return;
+      await audit(q, null, "booking.fee.refund", { paymentId:p.id, status, refundId:id });
+    });
+  };
   const syncYookassa = async (p) => {
+    if (p.kind === "booking_fee" && p.status === "refund_pending") return syncBookingRefund(p);
     if (!p.checkout_id || !["pending", "authorized", "release_pending", "expired"].includes(p.status)) return;
     const path = "payments/" + encodeURIComponent(p.checkout_id);
     const remote = await yookassaRequest(path);
     const paid = verifyYookassaPayment(remote, p);
     if (p.kind !== "hold") {
       if (paid) await db.transaction(q => settle(q, p.id, "yookassa:" + remote.id));
+      if (p.kind === "booking_fee" && p.status === "expired" && remote.status === "canceled")
+        await db.query("UPDATE payments SET status='void' WHERE id=$1 AND status='expired'", [p.id]);
       if (p.status === "pending" && p.kind !== "deposit" && remote.status === "canceled")
         await db.query("UPDATE payments SET checkout_id=NULL,checkout_attempt=checkout_attempt+1 WHERE id=$1 AND checkout_id=$2 AND status='pending'", [p.id,p.checkout_id]);
       return;
@@ -1717,15 +1790,16 @@ export async function createApp(db) {
   app.locals.reconcilePayments = async () => {
     if (!yookassaEnabled()) return;
     const payments = (await db.query(`SELECT * FROM payments WHERE checkout_id IS NOT NULL AND
-      ((kind='hold' AND (status IN ('pending','release_pending','expired') OR (status='authorized' AND hold_expires_at<=now()))) OR
+      ((kind='booking_fee' AND status='refund_pending') OR
+       (kind='hold' AND (status IN ('pending','release_pending','expired') OR (status='authorized' AND hold_expires_at<=now()))) OR
        (kind<>'hold' AND status IN ('pending','expired') AND created_at>now()-interval '1 day'))
-      ORDER BY CASE WHEN status='release_pending' THEN 0 ELSE 1 END, created_at DESC LIMIT 50`)).rows;
+      ORDER BY CASE WHEN status IN ('release_pending','refund_pending') THEN 0 ELSE 1 END, created_at DESC LIMIT 50`)).rows;
     for (const payment of payments) {
       try { await syncYookassa(payment); }
       catch (error) { console.error("Payment reconciliation:", error.message); }
     }
   };
-  const paymentProvider = (s, p) => checkoutEnabled(s) && (yookassaTest() || holdBooking(p));
+  const paymentProvider = (s, p) => checkoutEnabled(s) && (yookassaTest() || sessionBooking(p));
   app.post("/api/payments/:id/checkout", auth, async (req, res) => {
     const existing = await one(db, `SELECT p.* FROM payments p JOIN bookings b ON b.id=p.booking_id
       WHERE p.id=$1 AND b.user_id=$2`,[req.params.id,req.user.id]);
@@ -1747,9 +1821,9 @@ export async function createApp(db) {
             amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
             capture: !isHold,
             ...(isHold ? {payment_method_data:{type:"bank_card"}} : {}),
-            ...(holdBooking(p) ? {receipt:checkoutReceipt(p,{...p,settings:s})} : {}),
+            ...(sessionBooking(p) ? {receipt:checkoutReceipt(p,{...p,settings:s})} : {}),
             confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
-            description: isHold ? "Tattoo Office — блокировка для брони" : p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
+            description: isHold ? "Tattoo Office — блокировка для брони" : p.kind === "booking_fee" ? "Tattoo Office — бронирование рабочего места" : p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
             metadata: { payment_id: p.id, booking_id: p.booking_id },
           }, p.id + "-" + p.checkout_attempt + "-" + p.amount);
       verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
@@ -1770,7 +1844,11 @@ export async function createApp(db) {
       FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1`, [req.params.id]);
     let p=await read();
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
-    await syncYookassa(p);
+    try { await syncYookassa(p); }
+    catch (error) {
+      if (p.status !== "refund_pending") throw error;
+      console.error("Booking refund reconciliation:", error.message);
+    }
     p=await read();
     const s=await settings(), mode=s.mode;
     res.json({ payment:p, mode, provider:p.policy.paymentMethod === "cash" ? "cash" : paymentProvider(s,p) ? "yookassa" : null, test:yookassaTest(), testPaymentAvailable:mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
@@ -1780,7 +1858,7 @@ export async function createApp(db) {
     if (typeof id !== "string" || id.length > 64) return res.sendStatus(400);
     const p = await one(db, "SELECT * FROM payments WHERE checkout_id=$1", [id]);
     // Verify notifications against the authenticated provider API, never their body.
-    if (p) await syncYookassa(p);
+    if (p && p.status !== "refund_pending") await syncYookassa(p);
     res.json({ ok: true });
   });
   app.post("/api/payments/:id/test", auth, async (req, res) => {
@@ -1814,11 +1892,11 @@ export async function createApp(db) {
     const { InvoiceId, Amount, Currency, AccountId, TransactionId } = req.body;
     const p = await one(
       db,
-      "SELECT p.*,u.email FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id WHERE p.id=$1",
+      "SELECT p.*,u.email,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id WHERE p.id=$1",
       [InvoiceId],
     );
     if (
-      !p ||
+      !p || sessionBooking(p) ||
       p.amount !== Math.round(Number(Amount) * 100) ||
       Currency !== "RUB" ||
       AccountId !== p.email

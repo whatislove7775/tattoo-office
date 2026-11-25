@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { sessionBooking } from "./booking-sessions.js";
 import { supportsOnlineReceipt } from "./checkout-receipt.js";
 import { fail, integer } from "./domain.js";
 
@@ -29,7 +30,7 @@ export async function addBookingExpenses(q, bookingId, actor, { requestId, items
   if (!["confirmed", "invoiced", "completed"].includes(b.status) || new Date(b.starts_at) > new Date())
     fail("Расходы можно добавить к начавшейся или завершённой записи", 409);
 
-  const mode = b.policy?.bookingPayment === "hold" ? (await one(q,"SELECT data FROM settings WHERE id=1")).data.mode : null;
+  const mode = sessionBooking(b) ? (await one(q,"SELECT data FROM settings WHERE id=1")).data.mode : null;
   const lines = [];
   for (const [id, qty] of requested) {
     const x = await one(q, "SELECT * FROM catalog WHERE id=$1 AND active=true FOR UPDATE", [id]);
@@ -44,22 +45,25 @@ export async function addBookingExpenses(q, bookingId, actor, { requestId, items
     }
     lines.push({ id, qty, name: x.name, kind: x.kind, price: x.price, addedOnSite: true });
   }
+  if (mode && b.extras.length + lines.length > 99 && b.status === "confirmed")
+    fail("В итоговом счёте слишком много позиций. Обратитесь к администратору", 409);
   const amount = lines.reduce((sum, x) => sum + x.qty * x.price, 0);
   const final = b.status === "invoiced" ? await one(q,
     "SELECT id,amount,checkout_id FROM payments WHERE booking_id=$1 AND kind='final' AND status='pending' FOR UPDATE", [b.id]) : null;
   if (b.status === "invoiced" && !final) fail("Итоговый счёт недоступен. Обновите запись", 409);
 
   let result;
-  if (b.status === "confirmed" || (final && !final.checkout_id)) {
+  if (b.status === "confirmed" || (final && !final.checkout_id && (!mode || b.extras.length + lines.length <= 99))) {
     integer(b.total + amount, 1, 2147483647, "Стоимость записи");
     await q.query("UPDATE bookings SET total=total+$1,extras=extras || $2::jsonb WHERE id=$3", [amount, JSON.stringify(lines), b.id]);
     if (final) await q.query("UPDATE payments SET amount=amount+$1 WHERE id=$2", [amount, final.id]);
     result = { paymentId: final?.id || null, separate: false, amount };
   } else {
-    const open = await one(q, `SELECT id,amount FROM payments WHERE booking_id=$1 AND kind='expense'
+    const open = await one(q, `SELECT id,amount,jsonb_array_length(items) AS item_count FROM payments WHERE booking_id=$1 AND kind='expense'
       AND status='pending' AND checkout_id IS NULL ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [b.id]);
-    const paymentId = open?.id || randomUUID();
-    if (open) {
+    const canAppend = open && (!mode || open.item_count + lines.length <= 100);
+    const paymentId = canAppend ? open.id : randomUUID();
+    if (canAppend) {
       integer(open.amount + amount, 1, 2147483647, "Сумма счёта");
       await q.query("UPDATE payments SET amount=amount+$1,items=items || $2::jsonb WHERE id=$3", [amount, JSON.stringify(lines), paymentId]);
     } else {
