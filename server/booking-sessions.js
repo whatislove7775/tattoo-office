@@ -4,7 +4,7 @@ import { hasBookingOverlap, paidBooking } from "./paid-booking.js";
 import { yookassaEnabled, yookassaTest } from "./yookassa.js";
 
 export const sessionGraceMinutes = 15;
-export const liveCheckoutEnabled = (settings) => settings.mode === "live" &&
+export const liveCheckoutEnabled = (settings) => settings.mode === "live" && process.env.DEMO_MODE !== "1" &&
   settings.legalApproved === true && Boolean(settings.legalName && settings.inn && settings.legalAddress && settings.email) &&
   process.env.YOOKASSA_LIVE_PAYMENTS === "true";
 export const checkoutEnabled = (settings) => yookassaEnabled() &&

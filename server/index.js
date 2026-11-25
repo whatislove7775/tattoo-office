@@ -20,7 +20,7 @@ import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswo
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
-import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment, verifyYookassaRefund, yookassaFiscalStatus } from "./yookassa.js";
+import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment, verifyYookassaRefund, yookassaFiscalStatus, verifyYookassaLiveStore } from "./yookassa.js";
 import express from "express";
 import { expireReservations } from "./reservations.js";
 import { startWorker } from "./worker.js";
@@ -1163,11 +1163,13 @@ export async function createApp(db) {
           fail("Ставка НДС");
         s.vat = req.body.vat;
       }
-      if (s.mode === "live")
-        fail(
-          "Боевой режим заблокирован до проверки кассовых сценариев и инфраструктуры РФ. См. docs/LAUNCH.md",
-          409,
-        );
+      if (s.mode === "live") {
+        if (!s.legalApproved)
+          fail("Подтвердите реквизиты и документы студии перед запуском", 409);
+        if (yookassaTest() || !paidBookingEnabled(s))
+          fail("Для боевого режима нужен настроенный магазин ЮKassa и ставка «Без НДС»", 409);
+        if (old.mode !== "live" || old.inn !== s.inn) await verifyYookassaLiveStore(s.inn);
+      }
       await q.query("UPDATE settings SET data=$1 WHERE id=1", [
         JSON.stringify(s),
       ]);

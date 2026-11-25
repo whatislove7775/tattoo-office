@@ -19,6 +19,20 @@ export async function yookassaRequest(path, body, key) {
   if (!response.ok) fail("Не удалось открыть ЮKassa. Повторите попытку", 502);
   return response.json();
 }
+export async function verifyYookassaLiveStore(inn) {
+  const store = await yookassaRequest("me");
+  if (store.account_id !== process.env.YOOKASSA_SHOP_ID || store.test !== false || store.status !== "enabled")
+    fail("Боевой магазин ЮKassa недоступен", 409);
+  if (store.itn && store.itn !== inn)
+    fail("ИНН магазина ЮKassa не совпадает с реквизитами студии", 409);
+  if (store.fiscalization?.enabled !== true)
+    fail("В боевом магазине ЮKassa выключены чеки", 409);
+  if (!["avanpost", "yoo_receipt"].includes(store.fiscalization.provider))
+    fail("Для текущей схемы оплаты подключите «Чеки от ЮKassa»", 409);
+  if (!Array.isArray(store.payment_methods) || !store.payment_methods.length)
+    fail("В боевом магазине ЮKassa нет доступных способов оплаты", 409);
+}
+
 export function verifyYookassaPayment(remote, local) {
   if (remote.id !== local.checkout_id || remote.metadata?.payment_id !== local.id ||
       remote.amount?.currency !== "RUB" || remote.amount.value !== (local.amount / 100).toFixed(2) ||
