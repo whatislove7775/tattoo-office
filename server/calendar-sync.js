@@ -20,7 +20,7 @@ export async function refreshCalendarBusy(db, maxAge = 15000) {
     const snapshots = await Promise.all(resources.map(async r => ({...r,events:await listCalendarEvents(r.calendar_id,from,until)})));
     await db.transaction(async q => {
       await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
-      const owned = new Set((await q.query("SELECT replace(id::text,'-','') AS event_id FROM bookings UNION SELECT replace(id::text,'-','') FROM blocks")).rows.map(r => r.event_id));
+      const owned = new Set((await q.query("SELECT replace(id::text,'-','') AS event_id FROM bookings UNION SELECT replace(id::text,'-','') FROM booking_segments UNION SELECT replace(id::text,'-','') FROM blocks")).rows.map(r => r.event_id));
       for (const r of snapshots) {
         const current = (await q.query("SELECT calendar_id FROM resources WHERE id=$1 AND active",[r.id])).rows[0];
         if (current?.calendar_id !== r.calendar_id) continue;

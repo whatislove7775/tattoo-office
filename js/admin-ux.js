@@ -24,7 +24,10 @@ export function scheduleTimeline(a, s, date, city) {
   const { esc, resourceCity } = c;
   const places = a.resources.filter((r) => resourceCity(r) === city && r.active);
   const dayStart = new Date(`${date}T00:00:00+03:00`), dayEnd = new Date(dayStart.getTime() + 86400000);
-  const day = a.bookings.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
+  const occupancy = a.bookings.flatMap(b => b.segments?.length
+    ? [{...b,ends_at:b.first_ends_at}, ...b.segments.map(segment => ({...b,...segment, extension:true}))]
+    : [b]);
+  const day = occupancy.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
   const closedList = a.blocks.filter((k) => new Date(k.starts_at) < dayEnd && new Date(k.ends_at) > dayStart && (!k.resource_id || places.some((r) => r.id === k.resource_id)));
   // Видимые часы: рабочее время студии; если студия круглосуточная — ночь свёрнута, пока в ней нет записей.
   let from = s.openHour, to = s.closeHour;
@@ -58,11 +61,11 @@ export function scheduleTimeline(a, s, date, city) {
     const i = places.findIndex((r) => r.id === b.resource_id), st = startOf(b), en = Math.max(st + 1, endOf(b));
     if (en <= from || st >= to) return "";
     const isPast = new Date(b.ends_at) <= now;
-    const movable = ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > now;
+    const movable = !b.started_at && ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > now;
     const dur = Math.max(1, Math.round((new Date(b.ends_at) - new Date(b.starts_at)) / 3600000));
     const awaiting = b.policy?.masterConfirm === "awaiting";
     const part = gridPast(st, en);
-    return `<div class="tl-booking tl-booking--${b.status}${awaiting ? " tl-booking--awaiting" : ""}${isPast ? " is-past" : ""}${part ? " is-running" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}${part ? `;--past:${part}%` : ""}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${b.tariff} ч</small>${awaiting ? awaitBadge() : badge(b.status)}</div>`;
+    return `<div class="tl-booking tl-booking--${b.status}${awaiting ? " tl-booking--awaiting" : ""}${isPast ? " is-past" : ""}${part ? " is-running" : ""}" role="button" tabindex="0" style="grid-row:${row(st)} / ${row(en)};grid-column:${i + 2}${part ? `;--past:${part}%` : ""}" data-booking-open="${b.id}" ${movable ? `data-drag-booking="${b.id}" data-dur="${dur}"` : ""} title="${esc(b.user_name)} · ${range(b)}${movable ? " · перетащите, чтобы перенести" : ""}"><b>${esc(b.user_name)}</b><small>${range(b)} · ${dur} ч</small>${awaiting ? awaitBadge() : badge(b.status)}</div>`;
   }).join("");
   const lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>';
   const closedCards = closedList.flatMap((k) => places.map((r, i) => {

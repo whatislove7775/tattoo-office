@@ -9,6 +9,9 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
+import {bookingTerms, bookingTermsVersion, holdAmount, holdCancelHours, holdDays} from "./booking-terms.js";
+import {checkoutEnabled, holdEnabled, holdBooking, releaseBookingHold, sessionRoutes} from "./booking-sessions.js";
+import {checkoutReceipt, supportsOnlineReceipt} from "./checkout-receipt.js";
 import { fiscalDrafts, fiscalExample } from "./fiscal-drafts.js";
 import {addBookingExpenses} from "./booking-expenses.js";
 import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswordFree,shiftAdminEmail,hideShiftEmail} from "./admin-pro.js";
@@ -268,6 +271,7 @@ export async function createApp(db) {
       status,
       b.id,
     ]);
+    await releaseBookingHold(q, b.id);
     await q.query(
       "UPDATE payments SET status='expired' WHERE booking_id=$1 AND status='pending'",
       [b.id],
@@ -295,7 +299,7 @@ export async function createApp(db) {
     if (
       await one(
         q,
-        "SELECT id FROM bookings WHERE resource_id=$1 AND id IS DISTINCT FROM $4::uuid AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') AND starts_at<$3 AND ends_at>$2 LIMIT 1",
+        "SELECT booking_id FROM booking_occupancy WHERE resource_id=$1 AND booking_id IS DISTINCT FROM $4::uuid AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') AND starts_at<$3 AND ends_at>$2 LIMIT 1",
         [resource, start, end, except],
       )
     )
@@ -307,6 +311,7 @@ export async function createApp(db) {
       [resource, start, end],
     ));
   };
+  sessionRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, createInvoice, addBookingExpenses, refreshCalendarBusy });
   telegramRoutes(app, { db, session, auth });
   adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
   adminMasterProfileRoutes(app, { db, one, ownerOnly, audit });
@@ -325,14 +330,16 @@ export async function createApp(db) {
         await db.query(
           "SELECT * FROM catalog WHERE active=true ORDER BY kind,name",
         )
-      ).rows,
+      ).rows.map(item => ({...item, onlineReceipt:supportsOnlineReceipt(item,s.mode)})),
       content: (
         await db.query("SELECT * FROM content WHERE data->>'published'='true'")
       ).rows,
       telegramEnabled:
         !!process.env.TELEGRAM_CLIENT_ID &&
         !!process.env.TELEGRAM_CLIENT_SECRET,
-      paymentEnabled: yookassaEnabled(),
+      paymentEnabled: checkoutEnabled(s),
+      bookingHold: holdEnabled(s) ? { amount:holdAmount, days:holdDays, cancelHours:holdCancelHours, version:bookingTermsVersion } : null,
+      bookingTerms,
     });
   });
   app.get("/api/directory",async(req,res)=>res.json({masters:(await masterDirectory(db)).map(({rankingVisible,score,bookings,...m})=>m)}));
@@ -669,6 +676,19 @@ export async function createApp(db) {
         fail("Студия в этом городе пока не открыта для записи", 409);
       if (!manual && !resourceOpen(r, req.body.date, Number(req.body.hour), duration))
         fail("Это место не работает в выбранное время", 409);
+      const cash = u.role === "resident" && u.deposit_waived;
+      const fullPrepay = u.profile?.fullPrepay === true && !cash;
+      const bonus = await loyalty(q, u.id);
+      const hold = !manual && !cash && !fullPrepay && !bonus.freeNext && holdEnabled(s);
+      if (hold) {
+        if (req.body.bookingTermsVersion !== bookingTermsVersion)
+          fail("Откройте условия бронирования и подтвердите актуальную редакцию", 409);
+        if (+new Date(start) > Date.now() + holdDays * 86400000)
+          fail("С блокировкой на карте можно бронировать на пять суток вперёд", 409);
+        if (await one(q, `SELECT id FROM bookings WHERE user_id=$1 AND starts_at<$3 AND ends_at>$2
+          AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') LIMIT 1`, [u.id,start,end]))
+          fail("У вас уже есть запись на это время", 409);
+      }
       const rates = cityRates(s, r.city)[u.role];
       const extras = [];
       if (!Array.isArray(req.body.extras) || req.body.extras.length > 30)
@@ -683,6 +703,7 @@ export async function createApp(db) {
           [item.id],
         );
         if (!x) fail("Позиция больше недоступна");
+        if (hold && !supportsOnlineReceipt(x,s.mode)) fail("Товар пока не подключён к онлайн-чекам",409);
         const qty = integer(
           item.qty,
           1,
@@ -704,7 +725,6 @@ export async function createApp(db) {
           qty,
         });
       }
-      const bonus = await loyalty(q, u.id);
       // Надбавки за ночь и выходные, затем промокод (только на аренду, не на услуги).
       const adjusted = priceAdjust(rates[duration], req.body.date, Number(req.body.hour), s.priceRules);
       let promo = null, discount = 0;
@@ -718,10 +738,7 @@ export async function createApp(db) {
       }
       const rate = bonus.freeNext ? 0 : Math.max(0, adjusted.rate - discount),
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
-        cash = u.role === "resident" && u.deposit_waived,
-        // Мастерам с неявками администратор может включить полную предоплату.
-        fullPrepay = u.profile?.fullPrepay === true && !cash,
-        deposit = cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
+        deposit = hold || cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
         used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
@@ -744,8 +761,9 @@ export async function createApp(db) {
       let payment = null;
       await q.query("UPDATE bookings SET policy=$1 WHERE id=$2", [
         JSON.stringify({
-          cancelHours: s.cancelHours,
-          lateCancellation: s.lateCancellation,
+          cancelHours: hold ? holdCancelHours : s.cancelHours,
+          lateCancellation: hold ? "review" : s.lateCancellation,
+          ...(hold ? { bookingPayment:"hold", bookingTermsVersion, extensionPriceRules:s.priceRules } : {}),
           rates,
           city: r.city,
           rulesVersion: s.rulesVersion,
@@ -766,6 +784,11 @@ export async function createApp(db) {
         await q.query("UPDATE bookings SET deposit=0,policy=policy||$2::jsonb WHERE id=$1", [id, JSON.stringify({ masterConfirm: askMaster ? "awaiting" : "skipped", adminCreated: true })]);
         if (askMaster) await enqueue(q, "booking.master_confirm", { bookingId: id });
         await audit(q, req.user.id, "booking.manual", { id });
+      } else if (hold) {
+        payment = uuid();
+        await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'hold',$3)", [payment,id,holdAmount]);
+        await q.query("INSERT INTO consents(id,user_id,kind,version) VALUES($1,$2,'booking_hold',$3)", [uuid(),u.id,bookingTermsVersion]);
+        await audit(q, u.id, "booking.hold.terms", { id, version:bookingTermsVersion });
       } else if (used === deposit) await confirmed(q, b);
       else {
         payment = uuid();
@@ -795,7 +818,7 @@ export async function createApp(db) {
   // Лёгкая проверка изменений для живого обновления календаря и кабинета.
   app.get("/api/pulse", auth, async (req, res) => {
     const admin = req.user.role === "admin";
-    const row = await one(db, `SELECT md5(COALESCE(string_agg(b.id::text||b.status||b.starts_at::text||b.resource_id::text||COALESCE(b.policy->>'masterConfirm',''),',' ORDER BY b.id),'')) AS v
+    const row = await one(db, `SELECT md5(COALESCE(string_agg(b.id::text||b.status||b.starts_at::text||b.ends_at::text||b.total::text||COALESCE(b.started_at::text,'')||b.resource_id::text||COALESCE(b.policy->>'masterConfirm',''),',' ORDER BY b.id),'')) AS v
       FROM bookings b WHERE ($1 OR b.user_id=$2) AND b.ends_at > now() - interval '2 days'`, [admin, req.user.id]);
     const unread = await one(db, "SELECT count(*)::int AS n FROM notifications WHERE user_id=$1 AND read_at IS NULL", [req.user.id]);
     res.json({ v: row.v + ":" + unread.n });
@@ -815,7 +838,11 @@ export async function createApp(db) {
       loyalty: await loyalty(db, req.user.id),
       bookings: (
         await db.query(
-          "SELECT b.*,r.name AS resource_name FROM bookings b JOIN resources r ON r.id=b.resource_id WHERE b.user_id=$1 ORDER BY b.starts_at DESC",
+          `SELECT b.*,r.name AS resource_name,
+            COALESCE((SELECT jsonb_agg(jsonb_build_object('resourceName',x.name,'startsAt',s.starts_at,'endsAt',s.ends_at,'rate',s.rate) ORDER BY s.starts_at)
+              FROM booking_segments s JOIN resources x ON x.id=s.resource_id WHERE s.booking_id=b.id),'[]'::jsonb) AS segments,
+            (SELECT p.status FROM payments p WHERE p.booking_id=b.id AND p.kind='hold' LIMIT 1) AS hold_status
+            FROM bookings b JOIN resources r ON r.id=b.resource_id WHERE b.user_id=$1 ORDER BY b.starts_at DESC`,
           [req.user.id],
         )
       ).rows,
@@ -853,6 +880,13 @@ export async function createApp(db) {
       const current = await settings(q),
         s = { ...current, ...b.policy },
         early = new Date(b.starts_at) - Date.now() >= s.cancelHours * 3600000;
+      if (holdBooking(b) && (early || req.user.role === "admin")) {
+        await release(q, b, "cancelled");
+        await enqueue(q, "calendar.delete", { bookingId: b.id });
+        await enqueue(q, "booking.cancelled", { bookingId: b.id });
+        await audit(q, req.user.id, "booking.hold.cancel", { id:b.id });
+        return;
+      }
       if (!early && s.lateCancellation === "review") {
         await q.query(
           "UPDATE bookings SET status='cancel_requested' WHERE id=$1",
@@ -931,7 +965,10 @@ export async function createApp(db) {
         ).rows,
         bookings: (
           await db.query(
-            "SELECT b.*,u.name AS user_name,r.name AS resource_name FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id ORDER BY b.starts_at DESC LIMIT 500",
+            `SELECT b.*,u.name AS user_name,r.name AS resource_name,
+              COALESCE((SELECT jsonb_agg(jsonb_build_object('resource_id',s.resource_id,'starts_at',s.starts_at,'ends_at',s.ends_at) ORDER BY s.starts_at)
+                FROM booking_segments s WHERE s.booking_id=b.id),'[]'::jsonb) AS segments
+              FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id ORDER BY b.starts_at DESC LIMIT 500`,
           )
         ).rows,
         blocks: (await db.query("SELECT id,resource_id,starts_at,ends_at,reason,false AS external FROM blocks UNION ALL SELECT id,resource_id,starts_at,ends_at,'Google Calendar' AS reason,true AS external FROM calendar_busy ORDER BY starts_at DESC"))
@@ -1329,9 +1366,9 @@ export async function createApp(db) {
       await lock(q);
       const r = await one(q, "SELECT id FROM resources WHERE id=$1 AND NOT deleted FOR UPDATE", [req.params.id]);
       if (!r) fail("Рабочее место не найдено", 404);
-      const upcoming = await one(q, "SELECT id FROM bookings WHERE resource_id=$1 AND ends_at>now() AND status IN ('pending','confirmed','cancel_requested') LIMIT 1", [r.id]);
+      const upcoming = await one(q, "SELECT booking_id FROM booking_occupancy WHERE resource_id=$1 AND ends_at>now() AND status IN ('pending','confirmed','cancel_requested') LIMIT 1", [r.id]);
       if (upcoming) fail("На этом месте есть предстоящие записи. Перенесите или отмените их", 409);
-      const used = await one(q, "SELECT (SELECT count(*) FROM bookings WHERE resource_id=$1)+(SELECT count(*) FROM blocks WHERE resource_id=$1)+(SELECT count(*) FROM calendar_busy WHERE resource_id=$1) AS n", [r.id]);
+      const used = await one(q, "SELECT (SELECT count(*) FROM booking_occupancy WHERE resource_id=$1)+(SELECT count(*) FROM blocks WHERE resource_id=$1)+(SELECT count(*) FROM calendar_busy WHERE resource_id=$1) AS n", [r.id]);
       if (Number(used.n)) await q.query("UPDATE resources SET deleted=true,active=false WHERE id=$1", [r.id]);
       else await q.query("DELETE FROM resources WHERE id=$1", [r.id]);
       await audit(q, req.user.id, "resource.delete", { id: r.id, archived: Number(used.n) > 0 });
@@ -1385,7 +1422,7 @@ export async function createApp(db) {
       if (
         await one(
           q,
-          "SELECT id FROM bookings WHERE ($1::uuid IS NULL OR resource_id=$1) AND status IN ('pending','confirmed','invoiced','cancel_requested') AND starts_at<$3 AND ends_at>$2",
+          "SELECT booking_id FROM booking_occupancy WHERE ($1::uuid IS NULL OR resource_id=$1) AND status IN ('pending','confirmed','invoiced','cancel_requested') AND starts_at<$3 AND ends_at>$2",
           [req.body.resourceId || null, a, b],
         )
       )
@@ -1442,6 +1479,13 @@ export async function createApp(db) {
           [req.params.id],
         );
         if (!b) fail("Заявка не найдена");
+        if (holdBooking(b)) {
+          await release(q, b, "cancelled");
+          await enqueue(q, "calendar.delete", { bookingId:b.id });
+          await enqueue(q, "booking.cancelled", { bookingId:b.id });
+          await audit(q, req.user.id, "cancellation.resolve", { id:b.id, holdReleased:true });
+          return;
+        }
         if (req.body.credit === true && b.deposit)
           await ledger(
             q,
@@ -1568,7 +1612,7 @@ export async function createApp(db) {
         "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE",
         [req.params.id, req.user.id],
       );
-      if (!b || b.status !== "invoiced")
+      if (!b || holdBooking(b) || b.status !== "invoiced")
         fail("Нет открытого итогового счёта", 409);
       const h = Number(req.body.duration);
       if (![3, 6, 12].includes(h) || h < b.tariff)
@@ -1600,6 +1644,7 @@ export async function createApp(db) {
        ORDER BY created_at DESC LIMIT 1) AS paid_deposit
       FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1`, [req.params.id]);
     if (!row) fail("Платёж не найден", 404);
+    if (row.kind === "hold") fail("Блокировка средств не является оплатой сеанса", 409);
     res.json(fiscalDrafts(row.booking, row, { amount: row.paid_deposit }));
   });
   app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
@@ -1614,51 +1659,117 @@ export async function createApp(db) {
     res.json({ ok: true });
   });
   const syncYookassa = async (p) => {
-    if (!p.checkout_id || !["pending", "expired"].includes(p.status)) return;
-    const remote = await yookassaRequest("payments/" + encodeURIComponent(p.checkout_id));
-    if (verifyYookassaPayment(remote, p))
-      await db.transaction(q => settle(q, p.id, "yookassa:" + remote.id));
+    if (!p.checkout_id || !["pending", "authorized", "release_pending", "expired"].includes(p.status)) return;
+    const path = "payments/" + encodeURIComponent(p.checkout_id);
+    const remote = await yookassaRequest(path);
+    const paid = verifyYookassaPayment(remote, p);
+    if (p.kind !== "hold") {
+      if (paid) await db.transaction(q => settle(q, p.id, "yookassa:" + remote.id));
+      if (p.status === "pending" && p.kind !== "deposit" && remote.status === "canceled")
+        await db.query("UPDATE payments SET checkout_id=NULL,checkout_attempt=checkout_attempt+1 WHERE id=$1 AND checkout_id=$2 AND status='pending'", [p.id,p.checkout_id]);
+      return;
+    }
+    await db.transaction(async q => {
+      await lock(q);
+      await expire(q);
+      const current = await one(q, "SELECT * FROM payments WHERE id=$1 FOR UPDATE", [p.id]);
+      if (current.checkout_id !== remote.id || !["pending", "authorized", "release_pending", "expired"].includes(current.status)) return;
+      const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [p.booking_id]);
+      if (paid) {
+        await q.query("UPDATE payments SET status='review',provider_id=$2 WHERE id=$1", [p.id, "yookassa:"+remote.id]);
+        await audit(q, null, "booking.hold.unexpected_capture", { id:b.id, paymentId:p.id });
+        if (b.status === "pending") await release(q,b,"expired");
+        return;
+      }
+      if (remote.status === "canceled") {
+        const wasReserved = ["pending","confirmed","cancel_requested"].includes(b.status) && !b.started_at;
+        if (wasReserved) {
+          await release(q,b,b.status === "cancel_requested" ? "cancelled" : "expired");
+          if (b.status !== "pending") await enqueue(q,"calendar.delete",{bookingId:b.id});
+          await enqueue(q,"booking.cancelled",{bookingId:b.id});
+        }
+        await q.query("UPDATE payments SET status='released' WHERE id=$1", [p.id]);
+        return;
+      }
+      if (remote.status !== "waiting_for_capture") return;
+      if (["release_pending","expired"].includes(current.status)) {
+        const canceled = await yookassaRequest(path + "/cancel", {}, "release-" + p.id);
+        verifyYookassaPayment(canceled, p);
+        if (canceled.status === "canceled")
+          await q.query("UPDATE payments SET status='released' WHERE id=$1", [p.id]);
+        return;
+      }
+      if (current.status !== "pending" || b.status !== "pending") return;
+      const expiry = Date.parse(remote.expires_at);
+      if (!Number.isFinite(expiry) || expiry <= +new Date(b.starts_at) + 15 * 60000 || +new Date(b.starts_at) <= Date.now()) {
+        await release(q,b,"expired");
+        await enqueue(q,"booking.cancelled",{bookingId:b.id});
+        return;
+      }
+      await q.query("UPDATE payments SET status='authorized',hold_expires_at=$2,is_test=$3 WHERE id=$1",[p.id,new Date(expiry),remote.test]);
+      await confirmed(q,b);
+    });
   };
   app.locals.reconcilePayments = async () => {
     if (!yookassaEnabled()) return;
-    const payments = (await db.query("SELECT * FROM payments WHERE checkout_id IS NOT NULL AND status IN ('pending','expired') AND created_at>now()-interval '1 day' ORDER BY created_at DESC LIMIT 50")).rows;
+    const payments = (await db.query(`SELECT * FROM payments WHERE checkout_id IS NOT NULL AND
+      ((kind='hold' AND (status IN ('pending','release_pending','expired') OR (status='authorized' AND hold_expires_at<=now()))) OR
+       (kind<>'hold' AND status IN ('pending','expired') AND created_at>now()-interval '1 day'))
+      ORDER BY CASE WHEN status='release_pending' THEN 0 ELSE 1 END, created_at DESC LIMIT 50`)).rows;
     for (const payment of payments) {
       try { await syncYookassa(payment); }
       catch (error) { console.error("Payment reconciliation:", error.message); }
     }
   };
+  const paymentProvider = (s, p) => checkoutEnabled(s) && (yookassaTest() || holdBooking(p));
   app.post("/api/payments/:id/checkout", auth, async (req, res) => {
-    if (!yookassaEnabled()) fail("ЮKassa пока не подключена", 409);
-    if (!yookassaTest()) fail("Боевые платежи пока не включены", 409);
+    const existing = await one(db, `SELECT p.* FROM payments p JOIN bookings b ON b.id=p.booking_id
+      WHERE p.id=$1 AND b.user_id=$2`,[req.params.id,req.user.id]);
+    if (!existing) fail("Счёт недоступен", 404);
+    await syncYookassa(existing);
     const result = await db.transaction(async q => {
       await lock(q);
       await expire(q);
-      const p = await one(q, "SELECT p.*,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1 AND b.user_id=$2 AND p.status='pending' FOR UPDATE OF p", [req.params.id, req.user.id]);
+      const p = await one(q, `SELECT p.*,b.policy,b.rate,b.tariff,b.extras,u.email FROM payments p
+        JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id
+        WHERE p.id=$1 AND b.user_id=$2 AND p.status='pending' FOR UPDATE OF p`, [req.params.id, req.user.id]);
       if (!p) fail("Счёт недоступен или резерв истёк", 409);
+      if (!paymentProvider(await settings(q),p)) fail("ЮKassa для этого счёта недоступна", 409);
       if (p.policy.paymentMethod === "cash") fail("Оплата наличными в студии", 409);
+      const s = await settings(q), isHold = p.kind === "hold";
       const remote = p.checkout_id
         ? await yookassaRequest("payments/" + encodeURIComponent(p.checkout_id))
         : await yookassaRequest("payments", {
             amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
-            capture: true,
+            capture: !isHold,
+            ...(isHold ? {payment_method_data:{type:"bank_card"}} : {}),
+            ...(holdBooking(p) ? {receipt:checkoutReceipt(p,{...p,settings:s})} : {}),
             confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
-            description: p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
+            description: isHold ? "Tattoo Office — блокировка для брони" : p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
             metadata: { payment_id: p.id, booking_id: p.booking_id },
-          }, p.id + "-" + p.amount);
+          }, p.id + "-" + p.checkout_attempt + "-" + p.amount);
       verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
-      if (remote.status !== "pending" || !remote.confirmation?.confirmation_url) fail("Платёж уже завершён. Обновите страницу", 409);
       await q.query("UPDATE payments SET checkout_id=$1 WHERE id=$2", [remote.id, p.id]);
-      return { confirmationUrl: remote.confirmation.confirmation_url, test: remote.test };
+      return { confirmationUrl:remote.status === "pending" ? remote.confirmation?.confirmation_url : null,test:remote.test };
     });
+    if (!result.confirmationUrl) {
+      const p = await one(db,"SELECT * FROM payments WHERE id=$1",[req.params.id]);
+      await syncYookassa(p);
+      res.json({ ...result, refresh:true });
+      return;
+    }
     res.json(result);
   });
   app.get("/api/payments/:id", auth, async (req, res) => {
-    let p = await one(db, "SELECT p.*,b.user_id,b.tariff,b.rate,b.deposit,b.extras AS booking_extras,b.policy,b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1", [req.params.id]);
+    const read = () => one(db, `SELECT p.*,b.user_id,b.tariff,b.rate,b.deposit,b.extras AS booking_extras,b.policy,
+      b.starts_at,b.ends_at,b.expires_at,b.status AS booking_status,r.name AS resource_name,r.city
+      FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1`, [req.params.id]);
+    let p=await read();
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
     await syncYookassa(p);
-    p = { ...p, ...(await one(db, "SELECT * FROM payments WHERE id=$1", [p.id])) };
-    const mode = (await settings()).mode;
-    res.json({ payment: p, mode, provider: p.policy.paymentMethod === "cash" ? "cash" : yookassaEnabled() && yookassaTest() ? "yookassa" : null, test: yookassaTest(), testPaymentAvailable: mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
+    p=await read();
+    const s=await settings(), mode=s.mode;
+    res.json({ payment:p, mode, provider:p.policy.paymentMethod === "cash" ? "cash" : paymentProvider(s,p) ? "yookassa" : null, test:yookassaTest(), testPaymentAvailable:mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
   });
   app.post("/api/webhooks/yookassa", async (req, res) => {
     const id = req.body?.object?.id;

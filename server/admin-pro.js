@@ -1,3 +1,4 @@
+import {holdBooking,releaseBookingHold} from "./booking-sessions.js";
 import { randomUUID as uuid } from "node:crypto";
 import { fail, integer, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
 
@@ -44,7 +45,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
     const rule = { sessions: 8, days: 60, inactiveDays: 90, ...(s.residentRule || {}) };
     const [today, freeNow, money, invoices, expenseInvoices, cancels, feedback, lowStock, incomplete, candidates, inactive, risky, waitlist, failed, places] = await Promise.all([
       db.query(`SELECT b.id,b.starts_at,b.ends_at,b.status,b.total,b.deposit,u.name AS user_name,u.id AS user_id,r.name AS resource_name,r.city FROM bookings b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.resource_id WHERE b.starts_at>=${MSK_DAY} AND b.starts_at<${MSK_DAY}+interval '1 day' AND b.status NOT IN ('cancelled','expired') ORDER BY b.starts_at`),
-      db.query(`SELECT r.id,r.name,r.city FROM resources r WHERE r.active AND NOT r.deleted AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.resource_id=r.id AND b.status IN ('pending','confirmed','invoiced','cancel_requested') AND b.starts_at<=now() AND b.ends_at>now()) AND NOT EXISTS(SELECT 1 FROM blocks k WHERE (k.resource_id=r.id OR k.resource_id IS NULL) AND k.starts_at<=now() AND k.ends_at>now()) ORDER BY r.city,r.name`),
+      db.query(`SELECT r.id,r.name,r.city FROM resources r WHERE r.active AND NOT r.deleted AND NOT EXISTS(SELECT 1 FROM booking_occupancy b WHERE b.resource_id=r.id AND b.status IN ('pending','confirmed','invoiced','cancel_requested') AND b.starts_at<=now() AND b.ends_at>now()) AND NOT EXISTS(SELECT 1 FROM blocks k WHERE (k.resource_id=r.id OR k.resource_id IS NULL) AND k.starts_at<=now() AND k.ends_at>now()) ORDER BY r.city,r.name`),
       db.query(`SELECT (SELECT COALESCE(sum(total),0) FROM bookings WHERE starts_at>=${MSK_DAY} AND starts_at<${MSK_DAY}+interval '1 day' AND status IN ('pending','confirmed','invoiced','completed','cancel_requested'))::bigint AS expected,
         (SELECT COALESCE(sum(amount),0) FROM payments WHERE status='paid' AND created_at>=${MSK_DAY})::bigint AS received`),
       db.query(`SELECT b.id,b.starts_at,b.total,b.deposit,u.name AS user_name,p.id AS payment_id,p.amount FROM bookings b JOIN users u ON u.id=b.user_id LEFT JOIN payments p ON p.booking_id=b.id AND p.kind='final' AND p.status='pending' WHERE b.status='invoiced' ORDER BY b.starts_at`),
@@ -83,6 +84,8 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       const s = await settings(q), r = await one(q, "SELECT * FROM resources WHERE id=$1 AND active AND NOT deleted", [req.body.resourceId || b.resource_id]);
       if (!r) fail("Рабочее место не найдено", 404);
       const [start, end] = slot(String(req.body.date || ""), Number(req.body.hour), b.tariff, s);
+      if (holdBooking(b) && !(await one(q,"SELECT id FROM payments WHERE booking_id=$1 AND kind='hold' AND status='authorized' AND hold_expires_at>$2::timestamptz+interval '15 minutes'",[b.id,start])))
+        fail("Блокировка карты не покрывает новую дату. Отмените запись и создайте новую",409);
       if (!(await available(q, r.id, start, end, b.id))) fail("Это время на выбранном месте занято", 409);
       // Запись от администратора после переноса снова ждёт подтверждения мастера — если не выбрано «без подтверждения».
       const askMaster = !!b.policy?.adminCreated && req.body.skipConfirm !== true;
@@ -113,9 +116,16 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       await lock(q);
       const b = await one(q, "SELECT * FROM bookings WHERE id=$1 FOR UPDATE", [req.params.id]);
       if (!b || b.status !== "confirmed") fail("Неявку можно отметить у подтверждённой записи", 409);
+      if (b.started_at) fail("Сеанс уже начался",409);
       if (b.extras.some((item) => item.addedOnSite)) fail("К записи уже добавлены расходы на месте", 409);
       if (new Date(b.starts_at) > new Date()) fail("Сеанс ещё не начался", 409);
       await q.query("UPDATE bookings SET status='no_show' WHERE id=$1", [b.id]);
+      if (holdBooking(b)) {
+        await releaseBookingHold(q,b.id);
+        if (b.policy?.promo?.code) await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1",[b.policy.promo.code]);
+        for (const x of b.extras) if (x.kind === "product")
+          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2",[x.qty,x.id]);
+      }
       await enqueue(q, "booking.no_show", { bookingId: b.id });
       await enqueue(q, "calendar.delete", { bookingId: b.id });
       await audit(q, req.user.id, "booking.no_show", { id: b.id, depositRetained: b.deposit });
