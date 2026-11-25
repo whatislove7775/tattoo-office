@@ -25,3 +25,29 @@ export function verifyYookassaPayment(remote, local) {
       remote.test !== yookassaTest()) fail("Данные платежа не совпадают", 409);
   return remote.status === "succeeded" && remote.paid === true;
 }
+
+export function verifyYookassaRefund(remote, local) {
+  if (!remote.id || (local.refund_id && remote.id !== local.refund_id) ||
+      remote.payment_id !== local.checkout_id || remote.amount?.currency !== "RUB" ||
+      remote.amount.value !== (local.amount / 100).toFixed(2))
+    fail("Данные возврата не совпадают", 502);
+}
+
+export async function yookassaFiscalStatus(payment) {
+  if (!payment.checkout_id || !payment.provider_id?.startsWith("yookassa:")) return null;
+  const registration = (remote) => ["pending","succeeded","canceled"].includes(remote.receipt_registration)
+    ? remote.receipt_registration : "unreported";
+  const jobs = [async () => {
+    const remote = await yookassaRequest("payments/" + encodeURIComponent(payment.checkout_id));
+    if (!verifyYookassaPayment(remote, payment)) fail("ЮKassa не подтвердила оплату", 409);
+    return registration(remote);
+  }];
+  if (payment.refund_id) jobs.push(async () => {
+    const remote = await yookassaRequest("refunds/" + encodeURIComponent(payment.refund_id));
+    verifyYookassaRefund(remote, payment);
+    return registration(remote);
+  });
+  const [charge,refund] = (await Promise.allSettled(jobs.map(read => read())))
+    .map(result => result.status === "fulfilled" ? result.value : "unavailable");
+  return { charge, refund:refund ?? null, test:payment.is_test ?? yookassaTest() };
+}

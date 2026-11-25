@@ -90,10 +90,20 @@ function filteredPayments(a) {
     return (!f.from || d >= f.from) && (!f.to || d <= f.to) && (f.method === "all" || paymentMethod(p, a) === f.method) && (f.kind === "all" || p.kind === f.kind);
   });
 }
-function fiscalDraftHTML({ drafts, review, requestExamples }, { esc, money }) {
+function fiscalDraftHTML({ drafts, review, requestExamples, registration }, { esc, money }) {
   const modes = { partial_prepayment: "Частичная предоплата", full_prepayment: "Полная предоплата", full_payment: "Полный расчёт" };
   const types = { cashless: "Безналичный расчёт", cash: "Наличные", prepayment: "Зачёт предоплаты" };
-  return `<h2>Предпросмотр чеков</h2><p class="small muted">Черновики для сверки. Касса их не получила.</p>
+  const statuses = {
+    succeeded: "зарегистрирован",
+    pending: "ожидает регистрации",
+    canceled: "касса не зарегистрировала чек",
+    unreported: "ЮKassa не передала статус",
+    unavailable: "не удалось получить статус от ЮKassa",
+  };
+  const receiptStatus = registration ? `<section class="note-paper"><h3>${registration.test ? "Статус в тестовой ЮKassa" : "Статус в ЮKassa"}</h3>
+    <p>Чек прихода · ${statuses[registration.charge]}</p>
+    ${registration.refund ? `<p>Чек возврата · ${statuses[registration.refund]}</p>` : ""}</section>` : "";
+  return `<h2>Сверка чеков</h2>${receiptStatus}<p class="small muted">Ниже расчётный состав позиций для сверки с кассовым чеком.</p>
     ${drafts.map((draft) => `<section class="note-paper"><h3>${modes[draft.mode]} · ${money(draft.total)}</h3>
       <ul>${draft.items.map((item) => `<li>${esc(item.description)} · ${item.quantity} × ${money(item.unitPrice)}</li>`).join("")}</ul>
       <ul>${draft.settlements.map((part) => `<li>${types[part.type]} · ${money(part.amount)}</li>`).join("")}</ul></section>`).join("")}
@@ -109,7 +119,7 @@ export function financeHTML(a, s) {
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
   <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button><button type="button" class="chrome" data-fiscal-example>Пример чеков</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}${p.kind === "hold" ? "" : `<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Черновик чека</button>`}</td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}${p.kind === "hold" ? "" : `<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Сверить чек</button>`}</td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;

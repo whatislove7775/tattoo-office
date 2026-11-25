@@ -15,7 +15,7 @@ test("paid booking keeps one payment across transfer, then bills time and produc
     if (type === "refunds") {
       if (id) return Response.json([...refunds.values()].find(r => r.id === id));
       const key = options.headers["Idempotence-Key"];
-      if (!refunds.has(key)) refunds.set(key, { ...JSON.parse(options.body), id:uuid(), status:"succeeded" });
+      if (!refunds.has(key)) refunds.set(key, { ...JSON.parse(options.body), id:uuid(), status:"succeeded", receipt_registration:"succeeded" });
       return Response.json(refunds.get(key));
     }
     if (id) return Response.json(provider.get(id));
@@ -74,6 +74,14 @@ test("paid booking keeps one payment across transfer, then bills time and produc
   await successful(fee);
   const original = await bookings(booked.bookingId);
   assert.equal(original.status,"confirmed");
+  const fiscalPath = "/admin/payments/" + booked.paymentId + "/fiscal-draft";
+  await api(fiscalPath,undefined,403);
+  for (const state of [undefined,"pending","canceled","succeeded"]) {
+    fee.receipt_registration = state;
+    assert.deepEqual((await api(fiscalPath,undefined,200,adminCookie)).registration, {
+      test:true, charge:state || "unreported", refund:null,
+    });
+  }
   assert.equal(original.deposit,0);
   assert.equal(original.balance_used,0);
   await api(path+"/transfer",{},404,adminCookie);
@@ -116,6 +124,9 @@ test("paid booking keeps one payment across transfer, then bills time and produc
   await api("/admin/bookings/"+cancelled.bookingId+"/resolve-cancel",{decision:"refund",reason:"Отмена по обращению мастера"},200,adminCookie);
   await app.locals.reconcilePayments();
   assert.equal((await payment(cancelled.paymentId)).status,"refunded");
+  cancellationPayment.receipt_registration = "succeeded";
+  const returned = await api("/admin/payments/"+cancelled.paymentId+"/fiscal-draft",undefined,200,adminCookie);
+  assert.deepEqual(returned.registration,{ test:true, charge:"succeeded", refund:"succeeded" });
   const late = await create(19), latePayment = await checkout(late.paymentId);
   await db.query("UPDATE bookings SET expires_at=now()-interval '1 second' WHERE id=$1",[late.bookingId]);
   await successful(latePayment);

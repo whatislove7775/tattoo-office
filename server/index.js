@@ -20,7 +20,7 @@ import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswo
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
-import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
+import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment, verifyYookassaRefund, yookassaFiscalStatus } from "./yookassa.js";
 import express from "express";
 import { expireReservations } from "./reservations.js";
 import { startWorker } from "./worker.js";
@@ -1696,7 +1696,9 @@ export async function createApp(db) {
       FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1`, [req.params.id]);
     if (!row) fail("Платёж не найден", 404);
     if (row.kind === "hold") fail("Блокировка средств не является оплатой сеанса", 409);
-    res.json(fiscalDrafts(row.booking, row, { amount: row.paid_deposit }));
+    const draft = fiscalDrafts(row.booking, row, { amount:row.paid_deposit });
+    const registration = await yookassaFiscalStatus(row);
+    res.json({ ...draft, registration });
   });
   app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
     await db.transaction(async q => {
@@ -1719,9 +1721,7 @@ export async function createApp(db) {
       const remote = id
         ? await yookassaRequest("refunds/" + encodeURIComponent(id))
         : await yookassaRequest("refunds", { payment_id:p.checkout_id, amount }, "booking-refund-" + p.id);
-      if (!remote.id || (id && remote.id !== id) || remote.payment_id !== p.checkout_id ||
-          remote.amount?.currency !== amount.currency || remote.amount.value !== amount.value)
-        fail("Данные возврата не совпадают", 502);
+      verifyYookassaRefund(remote, p);
       id = remote.id;
       status = remote.status === "succeeded" ? "refunded" : remote.status === "pending" ? "refund_pending" : "refund_review";
     }
