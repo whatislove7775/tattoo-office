@@ -563,7 +563,7 @@ function findPage() {
 function archivePage() {
   const actual=pub.content.filter(c=>c.data?.published&&!/^master-/.test(c.id)&&!["interior","find","about"].includes(c.id));
   const posts=actual.length?actual:demoArchive;
-  return win("Event Archive",`<div class="archive-intro"><div><h2>События остаются в деле.</h2><p>Встречи, гостевые смены и дни, которые хочется сохранить.</p></div>${actual.length?"":''}</div><div class="archive-grid">${posts.map((c,i)=>`<article class="archive-card"><div class="archive-card__photo"><img src="assets/interior/${c.data.photo||((i%4)+1)}.jpg" alt="Пространство Tattoo Office" loading="lazy"><span>${esc(c.data.date||"OFFICE NOTE")}</span></div><div class="archive-card__body"><h3>${esc(c.data.title)}</h3><p>${esc(c.data.body)}</p></div></article>`).join("")}</div><div class="archive-footer"><span>Архив пополняет команда студии.</span><a href="#/masters">Познакомиться с мастерами →</a></div>`);
+  return win("Event Archive",`<div class="archive-intro"><div><h2>События остаются в деле.</h2><p>Встречи, гостевые смены и дни, которые хочется сохранить.</p></div>${actual.length?"":''}</div><div class="archive-grid">${posts.map((c,i)=>`<article class="archive-card"><div class="archive-card__photo"><img src="assets/interior/${c.data.photo||((i%4)+1)}.jpg" alt="Пространство Tattoo Office" loading="lazy"><span>${esc(c.data.date||"OFFICE NOTE")}</span></div><div class="archive-card__body"><h3>${esc(c.data.title)}</h3><p>${esc(c.data.body)}</p></div></article>`).join("")}</div>`);
 }
 function safetyPage() {
   const s = pub.settings;
