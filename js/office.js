@@ -493,15 +493,29 @@ function officePicker() {
 }
 const interiorPhotos = [1,2,3,4].map(i => ({ src:`assets/interior/${i}.jpg` }));
 function mountInteriorPhotos() {
-  const track = $(".interior-photos__track");
-  const slides = $$("[data-interior]",track);
-  const step = direction => {
-    const current = Math.round(track.scrollLeft / track.clientWidth);
-    const next = (current + direction + slides.length) % slides.length;
-    track.scrollTo({left:next * track.clientWidth,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+  const carousel = $(".interior-photos");
+  const track = $(".interior-photos__track", carousel);
+  const slides = $$("[data-interior]", track);
+  const dots = $$(".interior-photos__dot", carousel);
+  const currentSlide = () => Math.min(slides.length - 1, Math.max(0, Math.round(track.scrollLeft / track.clientWidth)));
+  const showSlide = index => {
+    track.scrollTo({
+      left: index * track.clientWidth,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
   };
-  $(".interior-photos__prev").onclick = () => step(-1);
-  $(".interior-photos__next").onclick = () => step(1);
+  const step = direction => showSlide((currentSlide() + direction + slides.length) % slides.length);
+  let active = 0;
+  track.addEventListener("scroll", () => {
+    const current = currentSlide();
+    if (current === active) return;
+    dots[active].removeAttribute("aria-current");
+    dots[current].setAttribute("aria-current", "true");
+    active = current;
+  }, { passive: true });
+  dots.forEach((dot, index) => dot.onclick = () => showSlide(index));
+  $(".interior-photos__prev", carousel).onclick = () => step(-1);
+  $(".interior-photos__next", carousel).onclick = () => step(1);
   track.onkeydown = event => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
@@ -519,7 +533,14 @@ function interiorPage() {
       <iframe src="/assets/studio-tour/v1/explore.html?v=10" title="Интерактивная карта Tattoo Office в Санкт-Петербурге"></iframe>
     </section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
-    <section class="interior-photos" aria-label="Фотографии пространства"><div class="interior-photos__track" tabindex="0">${interiorPhotos.map(({src},i) => `<button type="button" data-interior="${i}" aria-label="Открыть фотографию интерьера ${i+1}"><img src="${src}" alt="Интерьер студии, вид ${i+1}" loading="lazy" decoding="async"></button>`).join("")}</div><button type="button" class="chrome interior-photos__prev" aria-label="Предыдущая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><button type="button" class="chrome interior-photos__next" aria-label="Следующая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></section>`,
+    <section class="interior-photos" aria-label="Фотографии пространства">
+      <div class="interior-photos__viewport">
+        <div class="interior-photos__track" tabindex="0">${interiorPhotos.map(({src},i) => `<button type="button" data-interior="${i}" aria-label="Открыть фотографию интерьера ${i+1}"><img src="${src}" alt="Интерьер студии, вид ${i+1}" loading="lazy" decoding="async"></button>`).join("")}</div>
+        <button type="button" class="chrome interior-photos__prev" aria-label="Предыдущая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button>
+        <button type="button" class="chrome interior-photos__next" aria-label="Следующая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
+      </div>
+      <div class="interior-photos__dots" role="group" aria-label="Выбор фотографии">${interiorPhotos.map((_, i) => `<button type="button" class="interior-photos__dot" aria-label="Показать фото ${i+1}"${i === 0 ? ' aria-current="true"' : ""}></button>`).join("")}</div>
+    </section>`,
   );
 }
 const demoArchive = [
