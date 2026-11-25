@@ -87,3 +87,13 @@ CREATE OR REPLACE VIEW booking_occupancy AS
   SELECT id AS booking_id,id AS event_id,resource_id,starts_at,COALESCE(first_ends_at,ends_at) AS ends_at,status FROM bookings
   UNION ALL
   SELECT b.id,s.id,s.resource_id,s.starts_at,s.ends_at,b.status FROM booking_segments s JOIN bookings b ON b.id=s.booking_id;
+
+CREATE TABLE IF NOT EXISTS master_about(
+  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  revision integer NOT NULL CHECK(revision>0), blocks jsonb NOT NULL
+);
+CREATE TABLE IF NOT EXISTS master_about_photos(
+  id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  image text NOT NULL, thumbnail text NOT NULL
+);
+CREATE INDEX IF NOT EXISTS master_about_photos_owner ON master_about_photos(user_id);

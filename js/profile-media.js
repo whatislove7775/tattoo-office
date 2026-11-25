@@ -1,6 +1,6 @@
 import {bindFileUpload} from "./file-upload.js";
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function compressed(file,max,longest) {
+export async function compressed(file,max,longest) {
   const bitmap=await createImageBitmap(file);
   try {
     const scale=Math.min(1,longest/Math.max(bitmap.width,bitmap.height));

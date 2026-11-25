@@ -2960,3 +2960,70 @@ img {-webkit-user-drag:none;}
 .mu-row--archived .mu-photo img:first-child {filter:grayscale(1);opacity:.7;}
 /* Users: таблица начинается на той же высоте, что в Календаре (строка с переключателем на 4px выше круглых кнопок) */
 @media (min-width:701px) { .office-feature [data-admin-section="users"] .pro-dayline.users-line {margin-bottom:6px!important;} }
+
+/* The About page and the profile editor share the same block layouts. */
+.about-story {display:grid;gap:clamp(14px,2.4vw,30px);min-width:0;}
+.about-story :is(h3,p,figure) {margin:0;}
+.about-intro {display:grid;justify-items:start;gap:9px;padding-block:2px 17px;border-bottom:1px solid var(--panel-edge);}
+.about-intro__status {font-size:13px;color:var(--ink-2);}
+.about-intro__bio {font-size:clamp(15px,1.65vw,20px);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;}
+.about-intro__style {font-size:13px;color:var(--ink-2);overflow-wrap:anywhere;}
+.about-block {min-width:0;display:grid;align-items:start;gap:14px;}
+.about-block--soft,.about-block--dark {padding:clamp(14px,2.4vw,26px);border:1px solid var(--panel-edge);border-radius:18px;}
+.about-block--soft {background:var(--panel-2);}
+.about-block--dark {background:#202020;color:#f7f7f7;border-color:#444;color-scheme:dark;}
+.about-block__text {display:grid;justify-items:start;gap:8px;min-width:0;}
+.about-block__text h3 {font-size:clamp(20px,2.3vw,29px);font-weight:500;line-height:1.15;letter-spacing:-.025em;}
+.about-block__text p {font-size:15px;line-height:1.55;white-space:pre-wrap;}
+.about-block__text :is(h3,p) {overflow-wrap:anywhere;}
+.about-block--split:has(> .about-block__text) {grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;}
+.about-block--split:has(> .about-block__text)[data-side="right"] > figure {grid-column:2;grid-row:1;}
+.about-block--split[data-side="right"] > .about-block__text {grid-column:1;grid-row:1;}
+.about-photos {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start;}
+.about-photos[data-count="1"] {grid-template-columns:minmax(0,1fr);}
+.about-photo {min-width:0;display:grid;gap:6px;}
+.about-photo__open {display:block;width:100%;border:0;padding:0;background:transparent;text-align:left;border-radius:13px;cursor:zoom-in;}
+.about-photo img {display:block;width:100%;height:auto;border-radius:13px;}
+.about-block--photo .about-photo img {max-height:650px;object-fit:contain;object-position:left center;}
+.about-photo figcaption {font-size:13px;line-height:1.4;opacity:.78;overflow-wrap:anywhere;}
+.about-link {display:inline-flex;align-items:center;padding:.5em .8em;border:1px solid currentColor;border-radius:999px;line-height:1.2;overflow-wrap:anywhere;}
+.about-empty {margin:0;color:var(--ink-2);font-size:14px;}
+
+.about-editor {min-width:0;container-type:inline-size;}
+.about-editor__head,.about-actions {display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.about-editor__head {justify-content:space-between;}
+.about-editor__head h3 {font-size:21px;line-height:1.1;margin:0;}
+.about-editor__status {min-height:1.4em;margin:8px 0 12px;font-size:13px;color:var(--ink-2);}
+.about-editor__status.is-error {color:#b3261e;}
+.about-studio {display:grid;gap:18px;align-items:start;min-width:0;}
+.about-studio__tools,.about-studio__preview {min-width:0;}
+.about-studio__preview {padding:clamp(12px,2vw,21px);border:1px solid var(--panel-edge);border-radius:16px;background:var(--panel);}
+.about-studio__preview h4 {font-size:13px;margin:0 0 12px;color:var(--ink-2);font-weight:500;}
+.about-studio:not(.is-preview) .about-studio__preview .about-block__text h3 {font-size:19px;}
+.about-add {padding-bottom:11px;}
+.about-editor .about-actions button {min-height:36px;padding:6px 10px;font-size:13px;}
+.about-order {display:grid;gap:4px;list-style:none;margin:0 0 12px;padding:0;}
+.about-order li {min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 30px 30px;gap:2px;padding:3px;border:1px solid var(--panel-edge);border-radius:9px;}
+.about-order li:has([aria-pressed="true"]) {background:var(--panel-2);border-color:var(--ink-3);}
+.about-order button {min-width:0;min-height:30px;padding:3px;background:transparent;border:0;color:inherit;cursor:pointer;}
+.about-order button[aria-pressed] {display:flex;align-items:center;justify-content:space-between;gap:5px;text-align:left;padding-inline:7px;}
+.about-order button:disabled {opacity:.28;cursor:default;}
+.about-order button span {text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+.about-order small {font-size:10px;white-space:nowrap;color:var(--ink-2);}
+.about-edit-block {display:grid;gap:10px;margin:0;padding:12px;min-width:0;border:1px solid var(--panel-edge);border-radius:12px;}
+.about-edit-block legend {padding:0 5px;font-size:13px;color:var(--ink-2);}
+.about-field {display:grid;gap:4px;min-width:0;font-size:13px;}
+.about-field :is(input,textarea,select) {box-sizing:border-box;width:100%;min-width:0;max-width:none;padding:8px 9px;border:1px solid var(--panel-edge);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit;font-size:16px;}
+.about-field textarea {resize:vertical;min-height:78px;}
+.about-text-action {justify-self:start;min-height:34px;padding:3px 0;background:transparent;border:0;color:var(--ink-2);font-size:13px;text-decoration:underline;cursor:pointer;}
+.about-photo-editor {display:grid;gap:8px;}
+.about-photo-form {display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:start;}
+.about-photo-form > div {display:grid;gap:6px;min-width:0;}
+.about-photo-form img {display:block;width:52px;aspect-ratio:1;border-radius:8px;object-fit:cover;}
+.about-file-zone {display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:7px;border:1px dashed var(--panel-edge);border-radius:9px;}
+.about-file-zone.is-dragover {border-color:var(--ink);background:var(--panel-2);}
+@container (min-width:560px) {.about-studio:not(.is-preview) {grid-template-columns:minmax(250px,1fr) minmax(0,1.12fr);}}
+@media(max-width:700px) {
+  .about-block--split:has(> .about-block__text) {grid-template-columns:minmax(0,1fr);}
+  .about-block--split:has(> .about-block__text)[data-side="right"] > :is(figure,.about-block__text) {grid-column:auto;grid-row:auto;}
+}

@@ -4,6 +4,7 @@ import { updateStudioWorkspaces } from "./studio-workspaces.js";
 import {updateOperatorDetails} from "./operator-details.js";
 import {updateLegalDocuments} from "./legal-migration.js";
 import {ageFromBirthDate} from "./profile-age.js";
+import {masterAboutRoutes} from "./master-about.js";
 import {adminMasterProfileRoutes} from "./admin-master-profile.js";
 import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./master-directory.js";
 import {jpegPayload,mediaView} from "./master-media.js";
@@ -156,6 +157,8 @@ export async function createApp(db) {
   );
   app.use("/api/me/gallery",express.json({limit:"400kb"}));
   app.use(/^\/api\/admin\/users\/[^/]+\/gallery(?:\/|$)/,express.json({limit:"400kb"}));
+  app.use("/api/me/about",express.json({limit:"2mb"}));
+  app.use(/^\/api\/admin\/users\/[^/]+\/about(?:\/|$)/,express.json({limit:"2mb"}));
   app.use("/api/admin/media",express.json({limit:"1200kb"}));
   app.use(
     express.json({
@@ -315,6 +318,7 @@ export async function createApp(db) {
   telegramRoutes(app, { db, session, auth });
   adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
   adminMasterProfileRoutes(app, { db, one, ownerOnly, audit });
+  masterAboutRoutes(app,{db,auth,ownerOnly,findMaster:registeredMasterProfile,audit});
   app.get("/api/health", async (req, res) => {
     await db.query("SELECT 1");
     res.json({ ok: true });

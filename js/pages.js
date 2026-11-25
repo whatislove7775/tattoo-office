@@ -218,15 +218,34 @@
       mountMasterPass(root, global.TO.toast);
       var pane = root.querySelector('#worksPane');
 
+      var activeTab, aboutBlocks, aboutModule;
       function render(tab) {
+        activeTab = tab;
         if (tab === 'about') {
-          pane.innerHTML = '<section class="master-about"><h3>' + esc(t('master.about')) + '</h3>' +
-            (pick(m.status) ? '<p class="master-about__status">' + esc(pick(m.status)) + '</p>' : '') +
-            '<p class="master-about__bio">' + esc(pick(m.bio) || t('master.aboutEmpty')) + '</p>' +
-            (pick(m.specialty) ? '<dl><div><dt>' + esc(t('master.style')) + '</dt><dd>' + esc(pick(m.specialty)) + '</dd></div></dl>' : '') +
-          '</section>';
+          pane.innerHTML = '<p class="small muted" role="status">Загрузка раздела…</p>';
+          aboutModule ||= import('./master-about.js');
+          aboutModule.then(async function (about) {
+            const intro = {status:pick(m.status),bio:pick(m.bio),specialty:pick(m.specialty),
+              styleLabel:t('master.style'),empty:t('master.aboutEmpty')};
+            if (activeTab !== 'about' || !pane.isConnected) return;
+            pane.innerHTML = about.aboutHTML([],intro);
+            if (m.registered !== true) return;
+            try {
+              aboutBlocks ??= await about.fetchAbout(m.id);
+              if (activeTab === 'about' && pane.isConnected) {
+                pane.innerHTML = about.aboutHTML(aboutBlocks,intro);
+                pane.onclick = about.openAboutPhoto;
+              }
+            } catch (_) {
+              if (activeTab === 'about' && pane.isConnected)
+                pane.insertAdjacentHTML('beforeend','<p class="small muted" role="status">Не удалось загрузить дополнительные блоки.</p>');
+            }
+          }).catch(function () {
+            if (activeTab === 'about' && pane.isConnected) pane.textContent = pick(m.bio) || t('master.aboutEmpty');
+          });
           return;
         }
+        pane.onclick = null;
         var list = tab === 'drafts' ? m.drafts : m.portfolio;
         if (!list.length) {
           pane.innerHTML = '<p class="hint">' + esc(t('master.empty')) + '</p>';
