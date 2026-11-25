@@ -1806,7 +1806,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     padding: 0 8px;
     gap: 6px;
     justify-content: center;
-    font-size: clamp(13px, 3.6vw, 16px);
+    font-size: clamp(14px, 3.85vw, 17px);
     line-height: 1;
     white-space: nowrap;
     border-radius: 14px;
@@ -1814,7 +1814,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     transform: none;
     z-index: 4;
   }
-  #siteHeader > .ranking-launch .ranking-users {width:1.1em;height:1.1em;flex:none;}
+  #siteHeader > .ranking-launch .ranking-users {width:1.13em;height:1.13em;flex:none;}
 }
 @media (min-width:701px) {
   body[data-page="club"] #office-view>.window:has(>.club-offer) {display:flex;flex-direction:column;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 76px)!important;}
