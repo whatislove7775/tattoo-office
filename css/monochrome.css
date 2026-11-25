@@ -1783,6 +1783,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     bottom: auto;
     width: min(250px, calc(var(--mobile-notch-width, 49vw) - var(--ranking-inset) - 18px));
     height: var(--ranking-height);
+    min-height: 0;
     box-sizing: border-box;
     margin: 0;
     padding: 0 8px;
