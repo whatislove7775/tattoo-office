@@ -238,7 +238,7 @@
   /* ---------------------------- форма шапки -------------------------------- */
   /* Единый корпус ABOUT + лого рисуется как одна SVG-фигура (не два div'а):
      слева невысокая полоса, справа блок логотипа повыше, переход — ступенька
-     из двух дуг радиуса 26 с прямым участком между ними, как в присланном
+     из двух дуг с прямым участком между ними, как в присланном
      макете. Координаты считаются в реальных пикселях при каждом ресайзе —
      так углы остаются окружностями, а не растянутыми эллипсами. */
   // Тень шапки рисуется отдельной копией формы под окнами, а сама шапка — поверх них.
@@ -263,63 +263,29 @@
       return;
     }
 
+    var width = header.clientWidth;
+    var toolbarHeight = fringe.offsetHeight;
+    var logoHeight = Math.max(brand.offsetHeight, toolbarHeight);
+    var split = brand.offsetLeft;
+    var radius = global.isMobileLayout() ? 17 : 26;
+    // The two curves must meet without reversing direction on a shallow step.
+    var stepRadius = Math.min(radius, (logoHeight - toolbarHeight) / 2);
+
     if (global.isMobileLayout()) {
-      var width = header.clientWidth, split = brand.offsetLeft, bottom = brand.offsetHeight, top = fringe.offsetHeight, rad = 17;
-      path.setAttribute("d", `M0,0 H${width} V${bottom-rad} Q${width},${bottom} ${width-rad},${bottom} H${split+rad} Q${split},${bottom} ${split},${bottom-rad} V${top+rad} Q${split},${top} ${split-rad},${top} H${rad} Q0,${top} 0,${top-rad} Z`);
+      path.setAttribute("d", `M0,0 H${width} V${logoHeight - radius}
+        Q${width},${logoHeight} ${width - radius},${logoHeight}
+        H${split + stepRadius} Q${split},${logoHeight} ${split},${logoHeight - stepRadius}
+        V${toolbarHeight + stepRadius} Q${split},${toolbarHeight} ${split - stepRadius},${toolbarHeight}
+        H${radius} Q0,${toolbarHeight} 0,${toolbarHeight - radius} Z`);
       return;
     }
-    var w = header.clientWidth;
-    var h = brand.offsetHeight;
-    document.documentElement.style.setProperty("--desktop-brand-height", h + "px");
-    var a = fringe.offsetHeight;
-    var l = brand.offsetWidth;
-    var r = 26;
-    var notch = w - l;
 
-    var d =
-      "M0,0" +
-      "H" +
-      w +
-      "V" +
-      (h - r) +
-      "A" +
-      r +
-      "," +
-      r +
-      " 0 0 1 " +
-      (w - r) +
-      "," +
-      h +
-      "H" +
-      (notch + r) +
-      "A" +
-      r +
-      "," +
-      r +
-      " 0 0 1 " +
-      notch +
-      "," +
-      (h - r) +
-      "V" +
-      (a + r) +
-      "A" +
-      r +
-      "," +
-      r +
-      " 0 0 0 " +
-      (notch - r) +
-      "," +
-      a +
-      "H" +
-      r +
-      "A" +
-      r +
-      "," +
-      r +
-      " 0 0 1 0," +
-      (a - r) +
-      "V0Z";
-    path.setAttribute("d", d);
+    document.documentElement.style.setProperty("--desktop-brand-height", logoHeight + "px");
+    path.setAttribute("d", `M0,0 H${width} V${logoHeight - radius}
+      A${radius},${radius} 0 0 1 ${width - radius},${logoHeight}
+      H${split + stepRadius} A${stepRadius},${stepRadius} 0 0 1 ${split},${logoHeight - stepRadius}
+      V${toolbarHeight + stepRadius} A${stepRadius},${stepRadius} 0 0 0 ${split - stepRadius},${toolbarHeight}
+      H${radius} A${radius},${radius} 0 0 1 0,${toolbarHeight - radius} V0Z`);
   }
 
   /* ---------------------------- форма меню --------------------------------- */
