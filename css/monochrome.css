@@ -1792,13 +1792,14 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 .field--money .field__currency {position:absolute;right:16px;bottom:13px;pointer-events:none;color:var(--ink-3);line-height:20px;}
 @media (max-width:700px) {
   #siteHeader > .ranking-launch.chrome {
-    --ranking-inset: clamp(10px, 4vw, 18px);
-    --ranking-height: clamp(22px, calc(var(--mobile-notch-height, 36px) - 10px), 44px);
+    --ranking-inset-inline: clamp(8px, 2.8vw, 14px);
+    --ranking-inset-block: clamp(5px, 1.4vw, 10px);
+    --ranking-height: max(22px, calc(var(--mobile-notch-height, 36px) - 2 * var(--ranking-inset-block)));
     position: absolute;
-    left: var(--ranking-inset);
+    left: var(--ranking-inset-inline);
     top: calc(var(--mobile-notch-top, 44px) + (var(--mobile-notch-height, 36px) - var(--ranking-height)) / 2);
     bottom: auto;
-    width: min(250px, calc(var(--mobile-notch-width, 49vw) - var(--ranking-inset) - 18px));
+    width: calc(var(--mobile-notch-width, 49vw) - 2 * var(--ranking-inset-inline));
     height: var(--ranking-height);
     min-height: 0;
     box-sizing: border-box;
@@ -1809,7 +1810,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     font-size: clamp(14px, 3.85vw, 17px);
     line-height: 1;
     white-space: nowrap;
-    border-radius: 14px;
+    border-radius: clamp(12px, 3vw, 22px);
     box-shadow: 0 2px 6px #00000014;
     transform: none;
     z-index: 4;
