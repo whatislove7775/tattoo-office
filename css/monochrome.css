@@ -2600,6 +2600,9 @@ body.admin-session .office-feature .admin-main-title {font-size:clamp(22px,1.95v
 /* Safari's link flash is separate from text selection. */
 .brand__logo {-webkit-tap-highlight-color:transparent;}
 .brand__logo:focus:not(:focus-visible) {outline:none!important;filter:none!important;}
+@media (hover:none), (max-width:700px) {
+  .brand__logo:hover {opacity:1;}
+}
 
 /* The route diagram stays vector at every zoom level. */
 dialog.location-map-dialog {box-sizing:border-box;width:min(940px,96vw);height:min(780px,92dvh);max-width:none;max-height:none;margin:auto;padding:0;overflow:hidden;border:1px solid var(--panel-edge);border-radius:22px;background:var(--panel);color:var(--ink);box-shadow:0 25px 70px #0006;}
