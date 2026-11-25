@@ -264,10 +264,7 @@
     }
 
     if (global.isMobileLayout()) {
-      var width = header.clientWidth, split = width * .49, bottom = width * .225, top = 44, rad = 17;
-      header.style.setProperty("--mobile-notch-width", split + "px");
-      header.style.setProperty("--mobile-notch-top", top + "px");
-      header.style.setProperty("--mobile-notch-height", (bottom - top) + "px");
+      var width = header.clientWidth, split = brand.offsetLeft, bottom = brand.offsetHeight, top = fringe.offsetHeight, rad = 17;
       path.setAttribute("d", `M0,0 H${width} V${bottom-rad} Q${width},${bottom} ${width-rad},${bottom} H${split+rad} Q${split},${bottom} ${split},${bottom-rad} V${top+rad} Q${split},${top} ${split-rad},${top} H${rad} Q0,${top} 0,${top-rad} Z`);
       return;
     }
@@ -413,8 +410,9 @@
     var rect = element.getBoundingClientRect();
     var w = element.offsetWidth, h = element.offsetHeight, r = 17;
     var top = rect.top + (inDocument ? global.scrollY + pageScroller.scrollTop : 0);
-    var notch = Math.min(w - r * 2, global.innerWidth * .49 - rect.left - 12);
-    var depth = Math.max(r * 2, global.innerWidth * .225 + 12 - top);
+    var brand = document.querySelector("#siteHeader .brand");
+    var notch = Math.min(w - r * 2, brand.offsetLeft - rect.left - 12);
+    var depth = Math.max(r * 2, brand.offsetHeight + 12 - top);
     element.style.setProperty("--mobile-panel-notch-depth", depth + "px");
     var bottom = joined ? `V${h} H0 V${r}` : `V${h-r} Q${w},${h} ${w-r},${h} H${r} Q0,${h} 0,${h-r} V${r}`;
     return `M${r},0 H${notch-r} Q${notch},0 ${notch},${r} V${depth-r} Q${notch},${depth} ${notch+r},${depth} H${w-r} Q${w},${depth} ${w},${depth+r} ${bottom} Q0,0 ${r},0 Z`;
@@ -584,6 +582,12 @@
       applyTheme(document.documentElement.getAttribute("data-theme"));
       paintHeaderShape(); paintMenuShape(); paintStageShape(); updateThumb();
     });
+    var headerObserver = new ResizeObserver(function () {
+      paintHeaderShape();
+      paintStageShape();
+      paintMenuShape();
+    });
+    headerObserver.observe(document.querySelector("#siteHeader .brand"));
     global.addEventListener("resize", paintHeaderShape);
     global.addEventListener("resize", paintMenuShape);
     global.addEventListener("resize", paintStageShape);
