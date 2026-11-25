@@ -565,7 +565,24 @@ body[data-page] .office-feature .window:has(>.auth-form:not(#feedback-form))>.wi
 /* Booking content ends at its actions, without an unused lower band. */
 body[data-page="booking"] .office-feature .window { min-height:0;padding-bottom:28px; }
 .booking-grid>div:first-child { display:flex;flex-direction:column;min-width:0; }
-.booking-grid>div:first-child>.form-actions { margin-top:auto;padding-top:30px; }
+body[data-page="booking"] #view:has(.steps),
+body[data-page="booking"] #view:has(.steps) :is(.view-enter,#office-view,.window:has(>.steps)) { display:flex;flex-direction:column; }
+body[data-page="booking"] #view:has(.steps) :is(.view-enter,#office-view,.window:has(>.steps)) { flex:1 0 auto; }
+.booking-grid + .form-actions { margin-top:auto;padding-top:30px; }
+.booking-grid + .form-actions :is(#booking-back,#booking-next) {
+  box-sizing:border-box;
+  min-height:46px;
+  padding-block:10px;
+  line-height:1.25;
+}
+@media (max-width:700px) {
+  body[data-page="booking"] #stage:has(.steps) { --booking-top-inset:12px; }
+  body[data-page="booking"] #stage:has(.steps)>.stage__inner { padding-top:var(--booking-top-inset); }
+  body[data-page="booking"] .office-feature .window:has(>.steps)>.window-head {
+    min-height:max(32px,calc(var(--mobile-panel-notch-depth,60px) - var(--booking-top-inset) - 12px));
+  }
+  body[data-page="booking"] .office-feature .steps { margin-top:0; }
+}
 #booking-error:empty { display:none; }
 @media (min-width:701px) { body[data-page="booking"] .stage { min-height:0; } }
 
@@ -926,7 +943,7 @@ img {pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-
 /* Compact studio links occupy the free corner of the mobile navigation. */
 .menu__studio {display:none;}
 @media (max-width:700px) {
-  .mobile-menu-open .menu__studio {position:absolute;z-index:2;right:12px;top:calc(var(--mobile-menu-notch-depth,46px) + 7px);display:flex;flex-direction:column;gap:4px;}
+  .mobile-menu-open .menu__studio {position:absolute;z-index:2;right:12px;top:calc(var(--mobile-panel-notch-depth,46px) + 7px);display:flex;flex-direction:column;gap:4px;}
   .menu__studio a {display:block;min-width:94px;padding:5px 8px;border:1px solid var(--panel-edge);border-radius:10px;background:var(--control-fill);color:var(--ink);font-size:12px;line-height:1.2;text-align:center;text-decoration:none;white-space:nowrap;}
 }
 .office-feature .walking-route {padding:0;border:0;background:none;}
@@ -1789,7 +1806,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     padding: 0 8px;
     gap: 6px;
     justify-content: center;
-    font-size: clamp(12px, 3.35vw, 15px);
+    font-size: clamp(13px, 3.6vw, 16px);
     line-height: 1;
     white-space: nowrap;
     border-radius: 14px;
@@ -1797,7 +1814,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
     transform: none;
     z-index: 4;
   }
-  #siteHeader > .ranking-launch .ranking-users {width:1em;height:1em;flex:none;}
+  #siteHeader > .ranking-launch .ranking-users {width:1.1em;height:1.1em;flex:none;}
 }
 @media (min-width:701px) {
   body[data-page="club"] #office-view>.window:has(>.club-offer) {display:flex;flex-direction:column;min-height:calc(100dvh - var(--desktop-stage-top,100px) - 76px)!important;}
@@ -2200,7 +2217,9 @@ body.admin-session[data-page="admin"] .admin-feedback-dock {gap:12px;}
 @media (max-width:700px) {.admin-master-editor .form-grid {grid-template-columns:minmax(0,1fr);}.admin-master-avatar {justify-content:space-between;}.admin-master-avatar__preview {width:72px;height:72px;}}
 .pro-surcharge {font-style:normal;font-size:11px;padding:1px 6px;border-radius:10px;background:var(--ink);color:var(--bg);}
 .pro-promo {display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:14px 0;}
-.pro-promo .field {flex:1 1 200px;}
+.pro-promo .field {flex:1 1 158px;margin:0;}
+.pro-promo__actions {display:flex;flex-wrap:wrap;gap:8px;}
+.office-feature .pro-promo :is(input,.chrome) {box-sizing:border-box;min-height:48px;padding-block:8px;}
 .pro-waitlist {margin:14px 0;}
 .schedule .is-movable {cursor:grab;}
 .pro-dragging .schedule [data-drop] {outline:1px dashed var(--ink-3);outline-offset:-4px;}
