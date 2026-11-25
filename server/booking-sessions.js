@@ -107,8 +107,16 @@ export function sessionRoutes(app, { db, auth, lock, one, settings, available, e
     const result = await db.transaction(async q => {
       await lock(q);
       const b = await own(q, req);
-      active(b);
-      return addBookingExpenses(q, b.id, req.user.id, req.body);
+      const shopOnly = req.body.shop === true;
+      if (shopOnly && b && !sessionBooking(b)) {
+        const now = Date.now();
+        if (b.status !== "confirmed" || b.policy?.masterConfirm === "awaiting" ||
+          Date.parse(b.starts_at) > now || Date.parse(b.ends_at) <= now)
+          fail("Товары можно добавить во время сеанса", 409);
+      } else {
+        active(b);
+      }
+      return addBookingExpenses(q, b.id, req.user.id, req.body, { shopOnly });
     });
     res.status(201).json(result);
   });

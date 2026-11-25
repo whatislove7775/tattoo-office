@@ -22,7 +22,7 @@ import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
 import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment, verifyYookassaRefund, yookassaFiscalStatus, verifyYookassaLiveStore } from "./yookassa.js";
 import express from "express";
-import { expireReservations } from "./reservations.js";
+import { expireReservations, releasePromo } from "./reservations.js";
 import { startWorker } from "./worker.js";
 import { telegramRoutes } from "./telegram.js";
 import helmet from "helmet";
@@ -104,15 +104,15 @@ export async function createApp(db) {
     ]);
   };
   if (!(await one(db, "SELECT id FROM catalog LIMIT 1")))
-    for (const [name, kind, price, stock] of [
-      ["Сборка места", "service", 30000, 0],
-      ["Разборка места", "service", 30000, 0],
-      ["Защитная плёнка", "product", 15000, 30],
-      ["Набор расходников", "product", 45000, 20],
+    for (const [name, kind, price, unlimited] of [
+      ["Сборка места", "service", 30000, false],
+      ["Разборка места", "service", 30000, false],
+      ["Защитная плёнка", "product", 0, true],
+      ["Набор расходников", "product", 0, true],
     ])
       await db.query(
-        "INSERT INTO catalog(id,name,kind,price,stock) VALUES($1,$2,$3,$4,$5)",
-        [uuid(), name, kind, price, stock],
+        "INSERT INTO catalog(id,name,kind,price,unlimited) VALUES($1,$2,$3,$4,$5)",
+        [uuid(), name, kind, price, unlimited],
       );
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
     const email = validEmail(process.env.ADMIN_EMAIL);
@@ -255,8 +255,7 @@ export async function createApp(db) {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
   };
   const release = async (q, b, status) => {
-    if (b.policy?.promo?.code)
-      await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1", [b.policy.promo.code]);
+    await releasePromo(q, b);
     if (b.balance_used)
       await ledger(
         q,
@@ -267,7 +266,7 @@ export async function createApp(db) {
       );
     for (const x of b.extras)
       if (x.kind === "product")
-        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
           x.qty,
           x.id,
         ]);
@@ -719,7 +718,7 @@ export async function createApp(db) {
           x.kind === "service" ? 1 : 100,
           "Количество",
         );
-        if (x.kind === "product") {
+        if (x.kind === "product" && !x.unlimited) {
           if (x.stock < qty) fail(`Недостаточно на складе: ${x.name}`, 409);
           await q.query("UPDATE catalog SET stock=stock-$1 WHERE id=$2", [
             qty,
@@ -731,6 +730,7 @@ export async function createApp(db) {
           name: x.name,
           kind: x.kind,
           price: x.price,
+          receipt_unmarked: x.receipt_unmarked,
           qty,
         });
       }
@@ -782,7 +782,7 @@ export async function createApp(db) {
           loyaltyFree: bonus.freeNext,
           pricePercent: adjusted.percent,
           baseRate: rates[duration],
-          promo: promo ? { code: promo.code, discount } : undefined,
+          promo: promo ? { code: promo.code, discount, singleUse:promo.max_uses === 1 } : undefined,
           fullPrepay: fullPrepay || undefined,
         }),
         id,
@@ -932,7 +932,7 @@ export async function createApp(db) {
         );
       for (const x of b.extras)
         if (x.kind === "product")
-          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
             x.qty,
             x.id,
           ]);
@@ -1429,12 +1429,16 @@ export async function createApp(db) {
     const minStock = req.body.minStock === undefined ? 5 : integer(Number(req.body.minStock), 0, 100000, "Минимальный остаток");
     await db.transaction(async (q) => {
       await lock(q);
-      const before = await one(q, "SELECT stock FROM catalog WHERE id=$1", [id]);
+      const before = await one(q, "SELECT stock,unlimited,shop,receipt_unmarked FROM catalog WHERE id=$1", [id]);
+      const unlimited = kind === "product" && (before?.unlimited || ["Защитная плёнка","Набор расходников"].includes(name));
+      if (before?.unlimited && kind !== "product") fail("Бесплатную позицию можно сохранить только как товар", 409);
+      const shop = !unlimited && kind === "product" && (req.body.shop ?? before?.shop) === true;
+      const receiptUnmarked = kind === "product" && (req.body.receiptUnmarked ?? before?.receipt_unmarked) === true;
       await q.query(
-        "INSERT INTO catalog(id,name,kind,price,stock,active,min_stock) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(id) DO UPDATE SET name=$2,price=$4,stock=$5,active=$6,min_stock=$7",
-        [id, name, kind, price, stock, req.body.active !== false, minStock],
+        "INSERT INTO catalog(id,name,kind,price,stock,active,min_stock,unlimited,shop,receipt_unmarked) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(id) DO UPDATE SET name=$2,kind=$3,price=$4,stock=$5,active=$6,min_stock=$7,unlimited=$8,shop=$9,receipt_unmarked=$10",
+        [id, name, kind, unlimited ? 0 : price, unlimited ? 0 : stock, req.body.active !== false, unlimited ? 0 : minStock, Boolean(unlimited), shop, receiptUnmarked],
       );
-      if (kind === "product" && (before ? before.stock : 0) !== stock)
+      if (kind === "product" && !unlimited && (before ? before.stock : 0) !== stock)
         await q.query("INSERT INTO stock_moves(id,catalog_id,delta,reason,actor) VALUES($1,$2,$3,$4,$5)", [uuid(), id, stock - (before ? before.stock : 0), before ? "Исправление остатка" : "Начальный остаток", req.user.id]);
       await audit(q, req.user.id, "catalog.save", { id });
     });
@@ -1543,7 +1547,7 @@ export async function createApp(db) {
           );
         for (const x of b.extras)
           if (x.kind === "product")
-            await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+            await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
               x.qty,
               x.id,
             ]);

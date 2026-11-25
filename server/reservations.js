@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { releaseBookingHold } from "./booking-sessions.js";
+export async function releasePromo(q, booking) {
+  const promo = booking.policy?.promo;
+  if (!promo?.code || (promo.singleUse && booking.status !== "pending")) return;
+  await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1 AND ($2 OR max_uses IS DISTINCT FROM 1)",
+    [promo.code, booking.status === "pending"]);
+}
 // Caller holds the settings row lock, serializing allocation, cancellation and expiry.
 export async function expireReservations(q) {
   const { rows } = await q.query(
@@ -19,11 +25,10 @@ export async function expireReservations(q) {
         "Резерв истёк: возврат баланса",
       ]);
     }
-    if (b.policy?.promo?.code)
-      await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1", [b.policy.promo.code]);
+    await releasePromo(q, b);
     for (const x of b.extras)
       if (x.kind === "product")
-        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
           x.qty,
           x.id,
         ]);

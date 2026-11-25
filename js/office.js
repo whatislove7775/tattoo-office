@@ -48,7 +48,7 @@ const addDate = (d, n) =>
 // Ссылка, по которой админ смены входит только по паролю.
 const shiftLoginLink = () => location.origin + location.pathname + "#/admin/shift";
 const roleName = {
-  resident: "Резидент Private Club",
+  resident: "Club member",
   guest: "Мастер",
   admin: "Управление сайтом",
 };
@@ -276,7 +276,7 @@ function paintShell() {
   document.body.classList.toggle("admin-session", me?.role === "admin" && location.hash === "#/admin");
   document.getElementById("accountLogoutDock").append(logoutButton);
   el.innerHTML = me
-    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email || "Админ смены")}">${esc(me.email || "Админ смены")}</small></span></div>`
+    ? `<div class="who"><span class="office-initial">${esc(me.name.slice(0, 1))}</span><span class="who__text"><span class="who__name" title="${esc(me.name)}"><a class="who__label" href="#/${me.role === "admin" ? "admin" : "cabinet"}">${esc(me.name)}</a>${me.role === "resident" ? '<button type="button" class="resident-info-trigger" aria-label="Tattoo Office Club member" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span><small title="${esc(me.email || "Админ смены")}">${esc(me.email || "Админ смены")}</small></span></div>`
     : `<a class="login__master" href="#/login/master">Login as <u>tattoo master</u></a>`;
   if (me) el.querySelector(".who").append(logoutButton);
   if (me?.role === "admin") {
@@ -488,6 +488,24 @@ function mountMaster(id) {
 function officePicker() {
   return `<label class="space-picker"><span class="space-picker__label">ОФИС</span><select id="space-picker" aria-label="Выбрать офис"><option value="spb">Санкт-Петербург</option><option value="msk" disabled data-note="*soon">Москва</option></select></label>`;
 }
+const interiorPhotos = [1,2,3,4].map(i => ({ src:`assets/interior/${i}.jpg` }));
+function mountInteriorPhotos() {
+  const track = $(".interior-photos__track");
+  const slides = $$("[data-interior]",track);
+  const step = direction => {
+    const current = Math.round(track.scrollLeft / track.clientWidth);
+    const next = (current + direction + slides.length) % slides.length;
+    track.scrollTo({left:next * track.clientWidth,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+  };
+  $(".interior-photos__prev").onclick = () => step(-1);
+  $(".interior-photos__next").onclick = () => step(1);
+  track.onkeydown = event => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    step(event.key === "ArrowLeft" ? -1 : 1);
+  };
+  slides.forEach((slide,i) => slide.onclick = () => window.PhotoViewer.open(interiorPhotos,i));
+}
 function interiorPage() {
   const configured = pub.content.find((c) => c.id === "interior")?.data;
   const description = configured?.body || "Тихие рабочие места, общая зона для разговоров и пространство для подготовки. Здесь можно провести весь сеанс — от первого эскиза до последней фотографии работы.";
@@ -498,7 +516,7 @@ function interiorPage() {
       <iframe src="/assets/studio-tour/v1/explore.html?v=10" title="Интерактивная карта Tattoo Office в Санкт-Петербурге"></iframe>
     </section>
     <aside class="interior-dossier"><h3>Свет, воздух и место для работы.</h3><p>Высокие потолки, паркет и дневной свет. Перед сеансом можно спокойно обсудить эскиз; всё необходимое для работы находится рядом.</p><a class="chrome" href="#/booking">Забронировать место →</a></aside></div>
-    <div class="photo-ledger"><div class="photo-ledger__head"><h3>Фотографии пространства</h3></div><div class="photo-ledger__grid">${[1,2,3,4].map((i) => `<button type="button" data-interior="${i-1}" aria-label="Открыть фотографию интерьера ${i}"><img src="assets/interior/${i}.jpg" alt="Интерьер студии, вид ${i}" loading="lazy"><span>${["Общая зона","Рабочий кабинет","Студия в работе","Рабочие места"][i-1]}</span></button>`).join("")}</div></div>`,
+    <section class="interior-photos" aria-label="Фотографии пространства"><div class="interior-photos__track" tabindex="0">${interiorPhotos.map(({src},i) => `<button type="button" data-interior="${i}" aria-label="Открыть фотографию интерьера ${i+1}"><img src="${src}" alt="Интерьер студии, вид ${i+1}" loading="lazy" decoding="async"></button>`).join("")}</div><button type="button" class="chrome interior-photos__prev" aria-label="Предыдущая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button><button type="button" class="chrome interior-photos__next" aria-label="Следующая фотография"><svg class="ui-icon" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button></section>`,
   );
 }
 const demoArchive = [
@@ -689,6 +707,15 @@ function bookingTimePicker() {
     return `<details class="booking-time-group" ${openHour >= group.from && openHour < group.to ? "open" : ""}><summary><span>${group.name} <small>${String(group.from).padStart(2, "0")}:00–${String(group.to).padStart(2, "0")}:00</small></span><span class="booking-time-group__count">${availableCount} из ${hours.length} часов свободны</span></summary><div class="times">${hours.map(slot => `<button type="button" class="time ${draft.hour === slot.hour ? "selected" : ""}" data-hour="${slot.hour}" aria-pressed="${draft.hour === slot.hour}" ${slot.free.length ? "" : "disabled"}><strong>${String(slot.hour).padStart(2, "0")}:00</strong><span class="time__availability">${slot.free.length ? `${slot.free.length} ${slot.free.length === 1 ? "место" : slot.free.length < 5 ? "места" : "мест"}` : "Нет мест"}</span>${slot.pricePercent ? `<em class="pro-surcharge">${slot.pricePercent > 0 ? "+" : "−"}${Math.abs(slot.pricePercent)}%</em>` : ""}</button>`).join("")}</div></details>`;
   }).join("")}</div>`;
 }
+const catalogPriceLabel = item => item.price ? money(item.price) : "Бесплатно";
+function bookingExtra(item) {
+  const quantity = draft.extras.find(x => x.id === item.id)?.qty || 0;
+  const details = item.unlimited ? " · без ограничений" : item.kind === "product" ? ` · в наличии ${item.stock} шт.` : "";
+  const control = item.kind === "service" || item.unlimited
+    ? `<input type="checkbox" data-extra="${item.id}" ${quantity ? "checked" : ""}>`
+    : `<input aria-label="Количество: ${esc(item.name)}" type="number" min="0" max="${Math.min(100,item.stock)}" value="${quantity}" data-extra="${item.id}" ${item.stock ? "" : "disabled"}>`;
+  return `<label class="extra"><span><span class="extra__name">${esc(item.name)}${catalogHelp(item)}</span><br><small class="muted">${catalogPriceLabel(item)}${details}</small></span>${control}</label>`;
+}
 function bookingPage() {
   if (!draft.city) return cityChoicePage();
   const s = pub.settings,
@@ -706,8 +733,11 @@ function bookingPage() {
       )
       .join("")}</div>`;
   }
-  if (draft.step === 2)
-    body = `<h2>Всё под рукой.</h2><p data-help class="small muted">Добавьте подготовку места и расходники. Оплата — в итоговом счёте.</p>${pub.catalog.filter(x => !selectedFee() || x.onlineReceipt !== false).map((x) => `<label class="extra"><span><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span><br><small class="muted">${money(x.price)} ${x.kind === "product" ? `· на складе ${x.stock} шт.` : ""}</small></span>${x.kind === "service" ? `<input type="checkbox" data-extra="${x.id}" ${draft.extras.some((e) => e.id === x.id) ? "checked" : ""}>` : `<input aria-label="Количество: ${esc(x.name)}" type="number" min="0" max="${Math.min(100, x.stock)}" value="${draft.extras.find((e) => e.id === x.id)?.qty || 0}" data-extra="${x.id}">`}</label>`).join("")}`;
+  if (draft.step === 2) {
+    const items = pub.catalog.filter(x => !selectedFee() || x.onlineReceipt !== false);
+    body = `<h2>Всё под рукой.</h2>${items.filter(x => !x.shop).map(bookingExtra).join("")}
+      <details class="booking-shop"><summary>Tattoo Office Shop</summary>${items.some(x => x.shop) ? items.filter(x => x.shop).map(bookingExtra).join("") : '<p class="small muted">Товары скоро появятся.</p>'}</details>`;
+  }
   if (draft.step === 3) {
     const base = adjustedRate(), discount = promoDiscountOf(base), rate = base - discount,
       extra = draft.extras.reduce(
@@ -921,8 +951,8 @@ function mountResidentInfo(){
   if(!triggers.length)return;
   const controller=new AbortController(),options={signal:controller.signal};
   const panel=document.createElement('div');
-  panel.id='resident-info-popover';panel.className='resident-info-popover';panel.setAttribute('popover','manual');panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Резидент Tattoo Office Private Club');
-  panel.innerHTML=`<p>Этот мастер является резидентом Tattoo Office Private Club.</p>${managerLink('Хотите вступить?')}`;
+  panel.id='resident-info-popover';panel.className='resident-info-popover';panel.setAttribute('popover','manual');panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Tattoo Office Club member');
+  panel.innerHTML=`<p>Участник Tattoo Office Private Club.</p>${managerLink('Хотите вступить?')}`;
   document.body.append(panel);
   let active=null,timer,returningFocus=false;
   const cancel=()=>clearTimeout(timer);
@@ -962,14 +992,33 @@ new MutationObserver(()=>{
 }).observe(document.body,{childList:true,subtree:true});
 
 async function rankingPage() {
-  const data = await api("/ranking?period=all");
-  data.masters=data.masters.map(m=>({...m,profileUrl:window.Pages.masterProfilePath(m)}));
+  const {masters} = await api("/ranking?period=all");
+  const ranked = masters.map(m => ({ ...m, profileUrl:window.Pages.masterProfilePath(m) }));
   const podiumCrown = rank => {
     if (![1,2,3].includes(rank)) return "";
     const fill={1:"#e6b422",2:"#aeb8c4",3:"#c9854b"}[rank];
     return `<svg class="ranking-crown" viewBox="0 0 24 24" role="img" aria-label="${rank}-е место"><path fill="${fill}" d="M11.2 3.6Q12 2.1 12.8 3.6l3.3 5.3q.55.85 1.3.3l3.2-2.4q1.5-1.1 1.15.85l-1.9 9.3q-.2 1-1.2 1H5.6q-1 0-1.2-1L2.25 7.45q-.35-1.95 1.15-.85l3.2 2.4q.75.55 1.3-.3ZM6 19h12a1.2 1.2 0 0 1 0 2.4H6a1.2 1.2 0 0 1 0-2.4Z"/></svg>`;
   };
-  return win("Топ мастеров", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="никнейм" autocomplete="off"></label></div>${data.masters.length ? `<ol class="ranking-list ranking-list--compact">${data.masters.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}" data-ranking-name="${esc(m.name.toLocaleLowerCase('ru'))}" data-ranking-username="${esc(m.username?.toLowerCase() || "")}" data-ranking-city="${esc(m.city)}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div><div class="ranking-meta"><span>${esc(m.city || 'Город не указан')}</span>${m.resident ? '<button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">резидент</button>' : ""}</div></div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("")}</ol><div class="empty" id="ranking-empty" hidden>Мастеры не найдены.</div>` : '<div class="empty">В рейтинге пока нет мастеров.</div>'}`, "masters");
+  const rows = items => items.map(m => `<li data-ranking-place="${m.rank}" class="${m.rank <= 3 ? "ranking-podium" : ""}"><div class="ranking-row" data-profile-url="${esc(m.profileUrl)}"><span class="ranking-position" aria-label="Место ${m.rank}">${m.rank}.</span><a class="ranking-avatar" href="${esc(m.profileUrl)}">${m.avatar ? `<img src="${esc(window.PhotoSources?.[m.avatar]?.small || m.avatar)}" alt="${esc(m.name)}" width="46" height="46" loading="lazy" decoding="async">` : `<span aria-label="Аватар ${esc(m.name)}">${esc(m.name.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span>`}</a><div class="ranking-person"><div class="ranking-name"><a class="ranking-name-text" href="${esc(m.profileUrl)}">${esc(m.name)}</a>${podiumCrown(m.rank)}</div>${m.resident ? '<div class="ranking-meta"><button type="button" class="ranking-resident is-resident" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt="">club member</button></div>' : ""}</div><strong class="ranking-sessions" title="${esc(Object.entries(m.pointsBreakdown||{}).map(([k,v])=>`${scoreLabels[k]||k}: ${v}`).join(" · "))}">${Number(m.score||0).toLocaleString("ru-RU")}<small>${pointsWord(m.score||0)}</small></strong></div></li>`).join("");
+  const html = win("Top artists", `<div class="ranking-tools"><label class="field"><span>Поиск мастера</span><input id="ranking-search" type="search" placeholder="Имя или никнейм" autocomplete="off"></label></div><ol class="ranking-list ranking-list--compact">${rows(ranked.slice(0,30))}</ol><div class="empty" id="ranking-empty" role="status" ${ranked.length ? "hidden" : ""}>В рейтинге пока нет мастеров.</div>`, "masters");
+  function mount() {
+    const input = $("#ranking-search"), list = $(".ranking-list"), empty = $("#ranking-empty");
+    input.oninput = () => {
+      const query = input.value.trim().toLocaleLowerCase("ru").replace(/^@/, "");
+      const visible = query ? ranked.filter(m => m.name.toLocaleLowerCase("ru").includes(query) || m.username?.toLowerCase().includes(query)) : ranked.slice(0,30);
+      residentInfoCleanup();
+      list.innerHTML = rows(visible);
+      empty.textContent = query ? "Мастеры не найдены." : "В рейтинге пока нет мастеров.";
+      empty.hidden = visible.length > 0;
+      mountResidentInfo();
+    };
+    list.onclick = event => {
+      const row = event.target.closest(".ranking-row");
+      if (row && !event.target.closest("a,button")) location.hash = row.dataset.profileUrl;
+    };
+    mountResidentInfo();
+  }
+  return {html,mount};
 }
 // Форма личного дела мастера: во вкладке «Личное дело» и в окне «Редактировать профиль».
 function profileFormHTML() {
@@ -999,7 +1048,7 @@ function ownProfileHTML(publicProfileId) {
     <div class="master own-profile__master"><div class="master-profile">
       <button type="button" class="own-photo" data-own-edit="photo" aria-label="Изменить фото">${photo ? `<img class="master__photo" src="${esc(photo)}" alt="${esc(me.name)}">` : `<span class="master__photo own-photo__empty">${esc(me.name.slice(0, 1))}</span>`}<span class="own-photo__hint">Изменить фото</span></button>
       <div class="master-profile__copy">
-        <div class="master-profile__identity"><div class="master__name"><span>${esc(me.name)}${resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span></div>
+        <div class="master-profile__identity"><div class="master__name"><span>${esc(me.name)}${resident ? '<button type="button" class="resident-info-trigger" aria-label="Tattoo Office Club member" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : ""}</span></div>
           ${window.Pages.masterPassHTML(pass, true)}
         </div>
         <div class="master-profile__facts">${p.city ? `<span class="master__city">${esc(p.city)}</span>` : ""}${age ? `<span class="master__age">${esc(age)}</span>` : ""}${p.experience ? `<span class="master__exp">Стаж ${esc(p.experience)}</span>` : ""}${!p.city && !age && !p.experience ? '<button type="button" class="own-empty" data-own-edit="all">+ Город, возраст и стаж</button>' : ""}</div>
@@ -1022,6 +1071,19 @@ function bookingBalanceSection(bookings, payments) {
   return { amount, count:available.length, html:available.length
     ? `<section class="cabinet-expenses" aria-label="Оплаченные брони"><h3>Для бронирования</h3><p class="small muted">Выберите новое время по уже оплаченной брони.</p>${cards}</section>`
     : "" };
+}
+function shopSession(booking) {
+  if (booking.status !== "confirmed" || booking.policy?.masterConfirm === "awaiting") return false;
+  if (trackedSession(booking)) return Boolean(booking.started_at && !booking.finished_at);
+  return Date.parse(booking.starts_at) <= Date.now() && Date.parse(booking.ends_at) > Date.now();
+}
+function shopPage(bookings) {
+  const items = pub.catalog.filter(x => x.shop);
+  const sessions = bookings.filter(shopSession);
+  return `<section class="cabinet-expenses" aria-label="Tattoo Office Shop"><h3>Tattoo Office Shop</h3>
+    ${sessions.length ? "" : '<p class="small muted">Товар можно добавить во время сеанса.</p>'}
+    ${items.length ? items.map(x => `<article class="note-paper"><div class="cabinet-expenses__head"><span>${esc(x.name)}</span><strong>${catalogPriceLabel(x)}</strong></div><p class="small muted">${x.onlineReceipt === false ? "Оплата этой позиции пока недоступна" : x.stock ? `В наличии ${x.stock} шт.` : "Нет в наличии"}</p>
+      <button type="button" class="chrome" data-shop-add="${x.id}" ${sessions.length && x.stock && x.price && x.onlineReceipt !== false ? "" : "disabled"}>Добавить в сеанс</button></article>`).join("") : '<p class="small muted">Товары скоро появятся.</p>'}</section>`;
 }
 async function cabinetPage() {
   if (!me) return authPage(false);
@@ -1052,6 +1114,7 @@ async function cabinetPage() {
     body = active.length
       ? active.filter(b => b !== next || !trackedSession(b)).map((b) => bookingItem(b, data.payments)).join("")
       : '<div class="empty">В вашем календаре пока тихо.<br><br><a href="#/booking">Забронировать первое место →</a></div>';
+  if (cabTab === "shop") body = shopPage(active);
   if (cabTab === "history")
     body =
       data.bookings
@@ -1080,6 +1143,7 @@ async function cabinetPage() {
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
+      ...(me.accountType === "master" ? [["shop", "Tattoo Office Shop"]] : []),
       ["notifications", "Входящие"],
       ["profile", "Личное дело"],
     ]
@@ -1327,6 +1391,21 @@ setInterval(() => {
 function mountCabinet() {
   mountBookingSessions();
   mountBookingTransfers();
+  $$("[data-shop-add]").forEach(button => button.onclick = async () => {
+    button.disabled = true;
+    try {
+      const {bookings} = await api("/bookings");
+      const sessions = bookings.filter(shopSession);
+      const item = pub.catalog.find(x => x.id === button.dataset.shopAdd && x.shop);
+      if (!item || !sessions.length) { notify("Сеанс или товар недоступен"); return; }
+      const requestId = crypto.randomUUID();
+      const choices = sessions.map(b => [b.id,`${b.resource_name} · ${dateLabel(b.starts_at)}, ${timeLabel(b.starts_at)}`]);
+      dialogForm(esc(item.name), select("booking","Сеанс",choices,choices[0][0]) +
+        field("qty","Количество",1,"number",`min="1" max="${Math.min(100,item.stock)}" required`),
+        d => api("/bookings/" + d.booking + "/session-expenses","POST",{requestId,shop:true,items:[{id:item.id,qty:Number(d.qty)}]}));
+    } catch (error) { notify(error.message); }
+    finally { button.disabled = false; }
+  });
   if (!me) {
     mountAuth(false);
     return;
@@ -1566,7 +1645,7 @@ async function adminPage() {
     if (shift && !["all", "resident", "guest"].includes(usersFilter)) usersFilter = "all";
     if (!shift && ["resident", "guest"].includes(usersFilter)) usersFilter = "all";
     const shown = a.users.filter((u) => (shift && !isMaster(u) ? false : usersFilter === "master" ? isMaster(u) : usersFilter === "admin" ? isAdmin(u) : usersFilter === "resident" ? isMaster(u) && u.role === "resident" : usersFilter === "guest" ? isMaster(u) && u.role !== "resident" : true) && (!usersTag || AP.userTags(u).some(([k]) => k === usersTag))),
-      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : (u.role === "admin" && u.staff_level === "shift" ? "Админ смены" : {resident:"Резидент",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
+      roleLabel = (u) => (u.account_type === "customer" ? "Клиент" : (u.role === "admin" && u.staff_level === "shift" ? "Админ смены" : {resident:"Club member",guest:"Мастер",admin:"Администратор"}[u.role])) + (u.role === "resident" && u.deposit_waived ? '<br><small>Без предоплаты · наличные</small>' : "");
     // Строка как в Календаре: слева круглые переключатели и действия, по центру заголовок, справа метка и поиск.
     const ico = (d) => `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`,
       usersIcons = { all: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14.4c2.1.7 3.5 2.8 3.5 5.6", master: "M4 20l4-1L19 8a2.1 2.1 0 0 0-3-3L5 16zM14 7l3 3", admin: "M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4" },
@@ -1593,10 +1672,10 @@ async function adminPage() {
     const masterRow = ({ mp, u, cardNo, resident, rank, archived }) => {
       const name = u?.name || mp.name;
       const medal = archived ? " mu-row--archived" : rank === 1 ? " mu-row--gold" : rank === 2 ? " mu-row--silver" : rank === 3 ? " mu-row--bronze" : "";
-      const photo = `<span class="mu-photo">${mp.avatar ? `<img src="${esc(mp.avatar)}" alt="">` : `<span class="mu-photo__empty">${esc(String(name).slice(0, 1))}</span>`}${resident ? '<img class="mu-photo__mark" src="assets/resident-mark.svg?v=clean-2" alt="Резидент Private Club" title="Резидент Private Club">' : ""}</span>`;
+      const photo = `<span class="mu-photo">${mp.avatar ? `<img src="${esc(mp.avatar)}" alt="">` : `<span class="mu-photo__empty">${esc(String(name).slice(0, 1))}</span>`}${resident ? '<img class="mu-photo__mark" src="assets/resident-mark.svg?v=clean-2" alt="Club member" title="Club member">' : ""}</span>`;
       const identity = `<div class="mu-identity">${photo}<div class="admin-user-identity"><span class="admin-user-name">${u ? `<button type="button" class="pro-link" data-user-card="${u.id}">${esc(name)}</button>` : `<span>${esc(name)}</span>`}${copyButton(name, "имя")}</span>${(() => { const mail = u?.email || `${mp.id}@archive.tattoo-office`; return `<span class="admin-user-email${u ? "" : " is-placeholder"}" title="${u ? esc(mail) : "Служебная почта карточки — аккаунт не привязан"}"><span>${esc(mail)}</span>${copyButton(mail, "email")}</span>`; })()}</div></div>`;
       const status = archived ? "archive" : resident ? "resident" : "guest";
-      const access = shift ? `<div class="admin-user-role">${resident ? "Резидент Private Club" : "Обычный профиль"}</div>` : `<div class="mu-status-select"><select data-master-status="${esc(mp.id)}" aria-label="Статус ${esc(name)}">${[["guest", "Обычный профиль"], ["resident", "Резидент Private Club"], ["archive", "В архив"]].map(([v, l]) => `<option value="${v}" ${status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>${u && !u.active ? '<span class="admin-user-status">Доступ закрыт</span>' : ""}`;
+      const access = shift ? `<div class="admin-user-role">${resident ? "Club member" : "Обычный профиль"}</div>` : `<div class="mu-status-select"><select data-master-status="${esc(mp.id)}" aria-label="Статус ${esc(name)}">${[["guest", "Обычный профиль"], ["resident", "Club member"], ["archive", "В архив"]].map(([v, l]) => `<option value="${v}" ${status === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>${u && !u.active ? '<span class="admin-user-status">Доступ закрыт</span>' : ""}`;
       const points = `<div class="mu-points"><b>${(mp.score || 0).toLocaleString("ru-RU")}</b><span class="mu-points__tools">${shift ? "" : `<button type="button" class="mu-icon" data-edit-points="${esc(mp.id)}" aria-label="Изменить баллы: ${esc(name)}" title="Изменить баллы"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg></button>`}<button type="button" class="mu-icon" data-points-history="${esc(mp.id)}" aria-label="История баллов: ${esc(name)}" title="История баллов"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2"/></svg></button></span></div>`;
       const main = archived ? '<span class="small muted" title="Мастер в архиве — на главную поставить нельзя">в архиве</span>' : shift ? `<span class="small">${mp.onMain ? "На главной" : "—"}</span>` : `<label class="mu-switch" title="${mp.onMain ? "Убрать с главной" : "Добавить на главную"}"><input type="checkbox" data-main-master="${esc(mp.id)}" ${mp.onMain ? "checked" : ""} aria-label="Карточка ${esc(name)} на главной"><span aria-hidden="true"></span></label>${mp.onMain && !mp.avatar ? '<small class="mu-warn">нет фото — карточка не видна</small>' : ""}`;
       // Все прежние действия — компактными значками с подсказками.
@@ -1607,7 +1686,7 @@ async function adminPage() {
     };
     body = `<div class="pro-dayline users-line"><div class="pro-dayline__left"><div class="tabs admin-city-tabs users-tabs" role="tablist" aria-label="Кого показать">${shift
       // Админ смены: три значка; у выбранного пункта значок сменяется подписью, бегунок ездит за курсором.
-      ? [["all", ico(usersIcons.all), "Все тату-мастера"], ["guest", '<svg class="ui-icon" aria-hidden="true"><use href="#ui-user"></use></svg>', "Обычный профиль"], ["resident", '<img src="assets/resident-mark.svg?v=clean-2" width="17" height="17" alt="">', "Резиденты Private Club"]].map(([value, icon, label]) => `<button type="button" role="tab" class="users-tab--morph" data-users-filter="${value}" aria-selected="${usersFilter === value}" aria-label="${label}"><span class="users-tab__ico" aria-hidden="true">${icon}</span><span class="users-tab__txt" aria-hidden="true">${label}</span></button>`).join("")
+      ? [["all", ico(usersIcons.all), "Все тату-мастера"], ["guest", '<svg class="ui-icon" aria-hidden="true"><use href="#ui-user"></use></svg>', "Обычный профиль"], ["resident", '<img src="assets/resident-mark.svg?v=clean-2" width="17" height="17" alt="">', "Club members"]].map(([value, icon, label]) => `<button type="button" role="tab" class="users-tab--morph" data-users-filter="${value}" aria-selected="${usersFilter === value}" aria-label="${label}"><span class="users-tab__ico" aria-hidden="true">${icon}</span><span class="users-tab__txt" aria-hidden="true">${label}</span></button>`).join("")
       : [["all", ico(usersIcons.all), 'aria-label="Все пользователи" title="Все пользователи"'], ["master", "Тату-мастера", ""], ["admin", "Админы", ""]].map(([value, label, extra]) => `<button type="button" role="tab" data-users-filter="${value}" aria-selected="${usersFilter === value}" ${extra}>${label}</button>`).join("")}</div>${shift ? "" : `<span class="users-line__gap" aria-hidden="true"></span><button type="button" class="date-open pro-listbtn" id="add-user" aria-label="Новый пользователь" title="Новый пользователь">${ico("M12 5v14M5 12h14")}</button>`}${shift ? "" : `<button type="button" class="date-open pro-listbtn" id="broadcast" aria-label="Рассылка" title="Рассылка">${ico("M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM4 7l8 6 8-6")}</button>`}${masterView && !shift ? `<button type="button" class="date-open pro-listbtn" id="main-cards" aria-label="Карточки на главной" title="Карточки на главной · ${mainCards.length}">${ico("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z")}</button>` : ""}</div><div class="pro-dayline__center"><strong class="pro-daynav__label">${usersTitle} <span class="users-line__count">${masterView ? masterRows.length : shown.length}</span></strong></div><div class="pro-dayline__right"><div class="pro-dayline__filters">${masterView && !shift ? select("masterKind", "Тату-мастера", [["all", "Все"], ["guest", "Обычный профиль"], ["resident", "Резиденты"], ["archive", "Архив"]], masterKind) : select("usersTag", "Метка", tagOptions, usersTag)}<input id="list-search" class="pro-list-search" type="search" placeholder="${masterView ? "Поиск мастера" : "Поиск"}" aria-label="${masterView ? "Поиск по тату-мастерам" : "Поиск по пользователям"}"></div></div></div><p data-help class="small muted">Нажмите на имя, чтобы открыть карточку: брони, оплаты, заметки, пароль, баланс и вход от имени пользователя.</p><div class="pro-scroll" data-own-search>${masterView ? `<div class="admin-users-list admin-users-list--masters">${table(["№", "Баллы", "Мастер", "Статус", "Баланс", "На главной", "Действия"], masterRows.map(masterRow))}</div>` : `<div class="admin-users-list">${table(
       ["Пользователь", "Роль и доступ", "Баллы", "Баланс", "Действия"],
       shown.map(
@@ -1621,7 +1700,7 @@ async function adminPage() {
       ["Позиция", "Тип", "Цена", "Остаток", ""],
       a.catalog.map(
         (x) =>
-          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.kind === "product" ? "Товар" : "Услуга"}</td><td>${money(x.price)}</td><td>${x.kind === "product" ? `<span class="${x.stock <= (x.min_stock ?? 5) ? "pro-low" : ""}">${x.stock}</span> <small class="muted">мин. ${x.min_stock ?? 5}</small>` : "—"}</td><td>${x.kind === "product" ? `<button data-stock="${x.id}">Приход / списание</button> ` : ""}${AP.isShift() ? "" : `<button data-edit-catalog="${x.id}">Изменить</button>`}</td></tr>`,
+          `<tr><td><span class="extra__name">${esc(x.name)}${catalogHelp(x)}</span> ${x.active ? "" : "(скрыто)"}</td><td>${x.shop ? "Tattoo Office Shop" : x.kind === "product" ? "Товар" : "Услуга"}</td><td>${catalogPriceLabel(x)}</td><td>${x.unlimited ? "Без ограничений" : x.kind === "product" ? `<span class="${x.stock <= (x.min_stock ?? 5) ? "pro-low" : ""}">${x.stock}</span> <small class="muted">мин. ${x.min_stock ?? 5}</small>` : "—"}</td><td>${x.kind === "product" && !x.unlimited ? `<button data-stock="${x.id}">Приход / списание</button> ` : ""}${AP.isShift() ? "" : `<button data-edit-catalog="${x.id}">Изменить</button>`}</td></tr>`,
       ),
     )}${AP.catalogExtrasHTML(a)}`;
   if (adminTab === "finance") body = AP.financeHTML(a, s);
@@ -1892,7 +1971,7 @@ function mountAdmin() {
       await api("/admin/masters/" + encodeURIComponent(id) + "/status", "PATCH", { status });
       const mp = adminData.masterPoints?.find((m) => m.id === id);
       if (mp) { mp.archived = status === "archive"; if (status !== "archive") mp.resident = status === "resident"; if (mp.userId) { const u = adminData.users.find((x) => x.id === mp.userId); if (u && status !== "archive") u.role = status; } }
-      notify({ guest: "Обычный профиль", resident: "Резидент Private Club", archive: "Мастер в архиве" }[status]);
+      notify({ guest: "Обычный профиль", resident: "Club member", archive: "Мастер в архиве" }[status]);
       adminCache = true; await render(); refresh().catch(() => {});
     } catch (error) { notify(error.message); adminCache = true; await render(); }
   }));
@@ -1914,7 +1993,7 @@ function mountAdmin() {
   if ($("#main-cards")) $("#main-cards").onclick = () => {
     const paint = () => {
       const cards = (adminData.masterPoints || []).filter((m) => m.onMain);
-      modal(`<h2>Карточки на главной</h2><p class="small muted">Эти мастера стоят карточками на главной странице. Без фото карточка на главной не показывается. Добавить мастера — переключатель «На главной» в списке.</p>${cards.length ? `<div class="main-cards">${cards.map((m) => `<figure class="main-card${m.avatar ? "" : " is-empty"}">${m.avatar ? `<img src="${esc(m.avatar)}" alt="">` : `<span>${esc(String(m.name).slice(0, 1))}</span>`}<figcaption><b>${esc(m.name)}</b><small>${m.resident ? "Резидент Private Club" : "Обычный профиль"}${m.avatar ? "" : " · нет фото"}</small></figcaption><button type="button" class="small" data-main-remove="${esc(m.id)}">Убрать</button></figure>`).join("")}</div>` : '<p>Пока на главной нет карточек.</p>'}<p><a class="chrome" href="#/masters">Открыть главную ↗</a></p>`);
+      modal(`<h2>Карточки на главной</h2><p class="small muted">Эти мастера стоят карточками на главной странице. Без фото карточка на главной не показывается. Добавить мастера — переключатель «На главной» в списке.</p>${cards.length ? `<div class="main-cards">${cards.map((m) => `<figure class="main-card${m.avatar ? "" : " is-empty"}">${m.avatar ? `<img src="${esc(m.avatar)}" alt="">` : `<span>${esc(String(m.name).slice(0, 1))}</span>`}<figcaption><b>${esc(m.name)}</b><small>${m.resident ? "Club member" : "Обычный профиль"}${m.avatar ? "" : " · нет фото"}</small></figcaption><button type="button" class="small" data-main-remove="${esc(m.id)}">Убрать</button></figure>`).join("")}</div>` : '<p>Пока на главной нет карточек.</p>'}<p><a class="chrome" href="#/masters">Открыть главную ↗</a></p>`);
       $$("[data-main-remove]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { await setMain(b.dataset.mainRemove, false); paint(); } catch (error) { b.disabled = false; notify(error.message); } }));
       $$('#dialog a[href="#/masters"]').forEach((link) => link.addEventListener("click", () => $("#dialog").close()));
     };
@@ -1943,7 +2022,7 @@ function mountAdmin() {
           ["service", "Услуга"],
         ],
         x?.kind || "product",
-      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}${field("minStock", "Минимальный остаток (предупреждение)", x?.min_stock ?? 5, "number", 'required min="0" step="1" data-plain-number="true"')}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Активна для записи и начисления расходов</label>`,
+      )}${field("price", "Цена, ₽", (x?.price || 0) / 100, "number", 'required min="0" step="1"')}${field("stock", "Остаток", x?.stock || 0, "number", 'required min="0" step="1"')}${field("minStock", "Минимальный остаток (предупреждение)", x?.min_stock ?? 5, "number", 'required min="0" step="1" data-plain-number="true"')}${x?.unlimited ? "" : `<label class="check"><input name="shop" type="checkbox" ${x?.shop ? "checked" : ""}><span>Показать в Tattoo Office Shop</span></label><label class="check"><input name="receiptUnmarked" type="checkbox" ${x?.receipt_unmarked ? "checked" : ""}><span>Товар без обязательной маркировки · доступен для онлайн-оплаты</span></label>`}<label class="check"><input name="active" type="checkbox" ${x?.active !== false ? "checked" : ""}> Активна для записи и начисления расходов</label>`,
       (d) =>
         api("/admin/catalog", "POST", {
           ...d,
@@ -1951,6 +2030,8 @@ function mountAdmin() {
           price: Math.round(Number(d.price) * 100),
           stock: Number(d.stock),
           minStock: Number(d.minStock),
+          shop: d.shop === "on",
+          receiptUnmarked: d.receiptUnmarked === "on",
           active: d.active === "on",
         }),
     );
@@ -2324,16 +2405,7 @@ async function render() {
     }
     switch (path[0]) {
       case "ranking":
-        html = await rankingPage();
-        mount=()=>{
-          const filter=()=>{let count=0;const query=$('#ranking-search').value.trim().toLocaleLowerCase('ru');
-            $$('[data-ranking-name]').forEach(row=>{row.hidden=!row.dataset.rankingName.includes(query) && !row.dataset.rankingUsername.includes(query.replace(/^@/, ''));if(!row.hidden)count++;});
-            if($('#ranking-empty'))$('#ranking-empty').hidden=count>0;
-          };
-          $('#ranking-search').oninput=()=>{residentInfoCleanup();filter();mountResidentInfo();};
-          $$('.ranking-row[data-profile-url]').forEach(row=>row.onclick=e=>{if(!e.target.closest('a,button'))location.hash=row.dataset.profileUrl;});
-          mountResidentInfo();
-        };
+        ({html,mount} = await rankingPage());
         break;
       case "masters":
       case "":
@@ -2350,7 +2422,7 @@ async function render() {
         html = interiorPage();
         mount = () => {
           window.StudioModel?.mount($("#studio-model"));
-          $$("[data-interior]").forEach((b) => b.onclick = () => window.PhotoViewer.open([1,2,3,4].map((i) => ({ src: `assets/interior/${i}.jpg`, caption: ["Общая зона","Рабочий кабинет","Студия в работе","Ещё один ракурс"][i-1] })), Number(b.dataset.interior)));
+          mountInteriorPhotos();
         };
         break;
       case "booking":
@@ -2533,7 +2605,7 @@ function demoBar() {
   const bar = document.createElement("aside");
   bar.className = "demo-bar";
   bar.setAttribute("aria-label", "Тестовый режим");
-  const accounts = [["owner", "Владелец", "admin"], ["shift", "Админ смены", "admin"], ["master", "Мастер", "cabinet"], ["resident", "Резидент", "cabinet"]];
+  const accounts = [["owner", "Владелец", "admin"], ["shift", "Админ смены", "admin"], ["master", "Мастер", "cabinet"], ["resident", "Club member", "cabinet"]];
   bar.innerHTML = `<b>Тестовый режим</b><span>данные не настоящие · войти как:</span>${accounts.map(([key, label]) => `<button type="button" data-demo-as="${key}" data-demo-go="${key === "customer" ? "masters" : accounts.find((a) => a[0] === key)[2]}">${label}</button>`).join("")}<button type="button" class="demo-bar__toggle" aria-label="Свернуть">–</button>`;
   document.body.append(bar);
   bar.addEventListener("click", async (e) => {

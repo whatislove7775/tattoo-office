@@ -8,7 +8,7 @@ const uuidPattern = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 // The booking, inventory and any pending invoice are changed under the same
 // lock as checkout and settlement, so an in-flight payment keeps its amount.
-export async function addBookingExpenses(q, bookingId, actor, { requestId, items } = {}) {
+export async function addBookingExpenses(q, bookingId, actor, { requestId, items } = {}, { shopOnly = false } = {}) {
   if (!uuidPattern.test(bookingId)) fail("Бронь не найдена", 404);
   if (typeof requestId !== "string" || !uuidPattern.test(requestId)) fail("Повторите форму начисления");
   if (!Array.isArray(items) || items.length === 0 || items.length > 10) fail("Выберите от 1 до 10 позиций");
@@ -34,7 +34,7 @@ export async function addBookingExpenses(q, bookingId, actor, { requestId, items
   const lines = [];
   for (const [id, qty] of requested) {
     const x = await one(q, "SELECT * FROM catalog WHERE id=$1 AND active=true FOR UPDATE", [id]);
-    if (!x) fail("Позиция больше недоступна", 409);
+    if (!x || shopOnly && !x.shop) fail("Позиция больше недоступна", 409);
     if (!supportsOnlineReceipt(x,mode)) fail("Товар пока не подключён к онлайн-чекам",409);
     if (x.price <= 0) fail(`Укажите цену в каталоге: ${x.name}`, 409);
     if (x.kind === "product") {
@@ -43,7 +43,7 @@ export async function addBookingExpenses(q, bookingId, actor, { requestId, items
       await q.query("INSERT INTO stock_moves(id,catalog_id,delta,reason,actor) VALUES($1,$2,$3,$4,$5)",
         [randomUUID(), id, -qty, "Расходы по записи " + b.id.slice(0, 8), actor]);
     }
-    lines.push({ id, qty, name: x.name, kind: x.kind, price: x.price, addedOnSite: true });
+    lines.push({ id, qty, name: x.name, kind: x.kind, price: x.price, receipt_unmarked: x.receipt_unmarked, addedOnSite: true });
   }
   if (mode && b.extras.length + lines.length > 99 && b.status === "confirmed")
     fail("В итоговом счёте слишком много позиций. Обратитесь к администратору", 409);

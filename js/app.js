@@ -265,6 +265,9 @@
 
     if (global.isMobileLayout()) {
       var width = header.clientWidth, split = width * .49, bottom = width * .225, top = 44, rad = 17;
+      header.style.setProperty("--mobile-notch-width", split + "px");
+      header.style.setProperty("--mobile-notch-top", top + "px");
+      header.style.setProperty("--mobile-notch-height", (bottom - top) + "px");
       path.setAttribute("d", `M0,0 H${width} V${bottom-rad} Q${width},${bottom} ${width-rad},${bottom} H${split+rad} Q${split},${bottom} ${split},${bottom-rad} V${top+rad} Q${split},${top} ${split-rad},${top} H${rad} Q0,${top} 0,${top-rad} Z`);
       return;
     }

@@ -4,7 +4,7 @@ import { fail, validEmail } from "./domain.js";
 const rubles = (value) => ({ value:(value / 100).toFixed(2), currency:"RUB" });
 
 export function supportsOnlineReceipt(item, mode) {
-  if (item.kind !== "product" || mode !== "live") return true;
+  if (item.unlimited || item.receipt_unmarked || item.kind !== "product" || mode !== "live") return true;
   return (process.env.YOOKASSA_UNMARKED_PRODUCT_IDS || "").split(",").map(id => id.trim()).includes(item.id);
 }
 

@@ -70,7 +70,7 @@ export async function seedDemo(db) {
   await booking("risky", 1, MSK(-20, 12), 3, "no_show");
   // Прошлый месяц для сравнения.
   for (let i = 0; i < 6; i++) await booking("resident", i, MSK(-33 - i * 4, 12), 6, "completed", { total: 450000, ...(i === 1 ? { extras: kit } : {}) });
-  await db.query("UPDATE catalog SET stock=2 WHERE id=(SELECT id FROM catalog WHERE kind='product' ORDER BY name LIMIT 1)");
+  await db.query("INSERT INTO catalog(id,name,kind,price,stock,shop,receipt_unmarked) VALUES($1,'Тестовый держатель','product',25000,2,true,true) ON CONFLICT(id) DO NOTHING", [did("8008")]);
   await db.query("INSERT INTO feedback(id,message,status,contact,created_at) VALUES($1,'Было бы здорово поставить ещё одну лампу у второго места.','new','guest@example.com',now()-interval '1 day'),($2,'Спасибо за кофе и музыку!','done','',now()-interval '8 days')", [did("8006"), did("8006")]);
   await db.query("INSERT INTO promo_codes(code,kind,value,max_uses,note) VALUES('OFFICE10','percent',10,100,'Пример промокода')");
   // Запись от администратора, которую Катя ещё не подтвердила (штриховка в календаре, блок в кабинете).

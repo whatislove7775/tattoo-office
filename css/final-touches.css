@@ -33,10 +33,7 @@
 .office-feature .interior-dossier .chrome { margin:6px 0 0; }
 .space-picker { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);white-space:nowrap; }
 .space-picker select { max-width:220px;padding:8px 26px 8px 10px;border:1px solid var(--ios-edge);border-radius:9px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom));color:var(--ink);font:inherit;cursor:pointer; }
-.photo-ledger__grid button { cursor:url("../assets/cursors/link.png") 10 10,pointer; }
 .work,.work * { cursor:url("../assets/cursors/link.png") 10 10,pointer!important; }
-.photo-ledger__grid img { border-radius:8px; }
-.photo-ledger__grid span { text-decoration:none;font-size:13px; }
 .brand-story,.club-page { display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;margin-top:18px; }
 .brand-story__copy,.club-page>div { display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:clamp(22px,3vw,50px);border:1px solid var(--ios-edge);border-radius:14px;background:linear-gradient(var(--ios-cell),var(--ios-cell-bottom)); }
 .brand-story h2,.club-page h2 { margin:0 0 18px;font-size:clamp(34px,4vw,68px);font-weight:500;line-height:1;letter-spacing:-.05em; }

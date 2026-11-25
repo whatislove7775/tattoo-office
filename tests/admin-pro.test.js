@@ -129,7 +129,7 @@ test("admin automation: overview, move, no-show, waitlist, promo, balance, roles
     assert.equal(sent.data.count, 2);
 
     // Stock receipt and history.
-    const product = (await db.query("SELECT id,stock FROM catalog WHERE kind='product' LIMIT 1")).rows[0];
+    const product = (await db.query("INSERT INTO catalog(id,name,kind,price,stock) VALUES($1,'Тестовый товар','product',10000,4) RETURNING id,stock", [randomUUID()])).rows[0];
     assert.equal((await shift.call("/admin/catalog/" + product.id + "/stock", "POST", { delta: 10, reason: "Закупка" })).status, 200);
     assert.equal((await db.query("SELECT stock FROM catalog WHERE id=$1", [product.id])).rows[0].stock, product.stock + 10);
     assert.equal((await shift.call("/admin/catalog/" + product.id + "/stock", "POST", { delta: -100000 })).status, 409);
