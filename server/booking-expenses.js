@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { supportsOnlineReceipt } from "./checkout-receipt.js";
 import { fail, integer } from "./domain.js";
 
 const one = async (q, sql, params) => (await q.query(sql, params)).rows[0];
@@ -28,10 +29,12 @@ export async function addBookingExpenses(q, bookingId, actor, { requestId, items
   if (!["confirmed", "invoiced", "completed"].includes(b.status) || new Date(b.starts_at) > new Date())
     fail("Расходы можно добавить к начавшейся или завершённой записи", 409);
 
+  const mode = b.policy?.bookingPayment === "hold" ? (await one(q,"SELECT data FROM settings WHERE id=1")).data.mode : null;
   const lines = [];
   for (const [id, qty] of requested) {
     const x = await one(q, "SELECT * FROM catalog WHERE id=$1 AND active=true FOR UPDATE", [id]);
     if (!x) fail("Позиция больше недоступна", 409);
+    if (!supportsOnlineReceipt(x,mode)) fail("Товар пока не подключён к онлайн-чекам",409);
     if (x.price <= 0) fail(`Укажите цену в каталоге: ${x.name}`, 409);
     if (x.kind === "product") {
       if (x.stock < qty) fail(`Недостаточно на складе: ${x.name}`, 409);

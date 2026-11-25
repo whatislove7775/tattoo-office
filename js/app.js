@@ -174,7 +174,7 @@
   /* ------------------------------- подвал --------------------------------- */
   function paintFooter() {
     document.getElementById("footLinks").innerHTML = [
-      ["privacy", "Конфиденциальность"], ["offer", "Оферта"],
+      ["privacy", "Конфиденциальность"], ["offer", "Оферта"], ["booking", "Условия бронирования"],
       ["info", "Информация"], ["data", "Персональные данные"]
     ].map(function (item) { return '<a href="#/legal/' + item[0] + '">' + item[1] + '</a>'; }).join("") + '<a href="https://t.me/artasimnsupport" target="_blank" rel="noopener noreferrer">Поддержка</a>';
   }

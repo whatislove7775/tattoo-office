@@ -70,3 +70,20 @@ ALTER TABLE resources ADD COLUMN IF NOT EXISTS schedule jsonb NOT NULL DEFAULT '
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS contact text NOT NULL DEFAULT '';
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS reply text NOT NULL DEFAULT '';
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS replied_at timestamptz;
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS started_at timestamptz;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS finished_at timestamptz;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS first_ends_at timestamptz;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS hold_expires_at timestamptz;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS checkout_attempt integer NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS booking_segments(
+  id uuid PRIMARY KEY, booking_id uuid NOT NULL REFERENCES bookings(id),
+  resource_id uuid NOT NULL REFERENCES resources(id), starts_at timestamptz NOT NULL,
+  ends_at timestamptz NOT NULL, rate integer NOT NULL CHECK(rate>=0),
+  CHECK(ends_at>starts_at), UNIQUE(booking_id,starts_at)
+);
+CREATE INDEX IF NOT EXISTS booking_segments_resource_idx ON booking_segments(resource_id,starts_at);
+CREATE OR REPLACE VIEW booking_occupancy AS
+  SELECT id AS booking_id,id AS event_id,resource_id,starts_at,COALESCE(first_ends_at,ends_at) AS ends_at,status FROM bookings
+  UNION ALL
+  SELECT b.id,s.id,s.resource_id,s.starts_at,s.ends_at,b.status FROM booking_segments s JOIN bookings b ON b.id=s.booking_id;

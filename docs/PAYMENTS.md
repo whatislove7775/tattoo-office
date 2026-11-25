@@ -1,9 +1,18 @@
-# YooKassa test integration
+# ЮKassa и расчёт за сеанс
 
-Configure `YOOKASSA_SHOP_ID` and `YOOKASSA_SECRET_KEY` only in the backend's protected `.env`. Keep `APP_ORIGIN` equal to the public frontend origin. The current integration accepts only test keys; live checkout remains disabled.
+Включите `YOOKASSA_BOOKING_HOLD=true` в тестовой среде со своим тестовым магазином. Храните `YOOKASSA_SHOP_ID` и `YOOKASSA_SECRET_KEY` в закрытой конфигурации API. `APP_ORIGIN` должен указывать на фронтенд этой среды. Для интеграционных тестов без доступа к ЮKassa запускайте `node --test tests/booking-hold.test.js`.
 
-Checkout is an authenticated POST to `/api/payments/:id/checkout`. Amounts come from the database. Retries reuse the provider payment and a stable idempotence key. Users return to their payment page; the backend fetches the provider payment and verifies amount, currency, metadata and test mode before settlement. Duplicate confirmations never apply money twice.
+Для уведомлений тестового магазина укажите URL тестового сайта с путём `/api/webhooks/yookassa` и события `payment.waiting_for_capture`, `payment.canceled` и `payment.succeeded`. Сервер дополнительно сверяет операции через API каждые 30 секунд. Состояние из тела уведомления не используется для подтверждения. При повторной оплате отменённого итогового платежа открывается новая попытка на ту же зафиксированную сумму.
 
-Optional HTTP notifications: configure `payment.succeeded` in the YooKassa dashboard (Integration → HTTP notifications), URL `https://tattoo-office-ten.vercel.app/api/webhooks/yookassa`. Basic-auth shops must configure notifications in the dashboard, not via the webhook API. Notification bodies are never trusted as proof of payment. A server reconciliation task also checks pending provider payments every 30 seconds, including when the browser is closed. Late deposit payments go to the user's internal balance once and never revive an expired reservation.
+## Проверка в магазине ЮKassa
 
-Resident exceptions: Admin → People → Edit → No deposit / cash settlement. Only administrators can set this; it applies only to residents and new bookings. No card payment or balance debit occurs at booking. The selected payment method is captured in the booking policy. An administrator issues the final invoice, receives cash and explicitly confirms it with “Cash received”; the full amount is recorded in the payment register and the booking is completed. Test receipts are not fiscal receipts. Live fiscalization requires a separate verified setup before enabling real money.
+1. Включите проверку чеков в тестовом магазине. Забронируйте место на 3 часа за 5 дней и убедитесь, что 500 ₽ в статусе блокировки, а не оплачены.
+2. Проверьте отмену до истечения 24 часов, отмену на рассмотрении и отметку неявки. Во всех трёх случаях решение о снятии блокировки не создаёт поступление 500 ₽ в реестре. Для поздней отмены запрос на снятие отправляется после решения администратора.
+3. Начните сеанс. Подтвердите снятие холда в ЮKassa. Добавьте шесть часов на другом месте, внесите расходник и завершите сеанс. Сверьте один итоговый платёж и позиции чека на полную сумму. Проверьте отказ оплаты и новую попытку.
+4. Сверьте документы, которые ЮKassa формирует при создании холда и его отмене, и применяемый СНО для АУСН «Доходы». Согласуйте порядок учёта товаров, выдаваемых до расчёта, и способ оформления маркированных товаров. Проверка чеков в тестовом магазине имитирует передачу в кассу и не создаёт реальную фискальную операцию.
+
+## Настройки рабочего сайта
+
+Боевой онлайн-расчёт требует режима `live` и проверенных реквизитов и документов в настройках студии, рабочего магазина ЮKassa и флага `YOOKASSA_LIVE_PAYMENTS=true`. Для самого холда дополнительно нужен `YOOKASSA_BOOKING_HOLD=true`. Включайте их после проверки цепочки платежей и согласования чеков. Без этих флагов новые брони идут по действующему сценарию студии.
+
+Для новых сеансов с холдом список `YOOKASSA_UNMARKED_PRODUCT_IDS` разрешает только проверенные позиции каталога, для которых согласован итоговый онлайн-чек. Обычные услуги допускаются без списка при настройке «Без НДС». Маркированные позиции требуют отдельной интеграции. Прежние записи, льготные аккаунты и расчёт наличными продолжают работать по ранее сохранённым условиям.

@@ -31,7 +31,7 @@ const BUSY = "('pending','confirmed','invoiced','completed','cancel_requested')"
 // Свободно ли хотя бы одно место города в это время (для листа ожидания).
 async function freePlace(q, city, start, end) {
   return one(q, `SELECT r.id FROM resources r WHERE r.active AND NOT r.deleted AND r.city=$1
-    AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.resource_id=r.id AND b.status IN ${BUSY} AND b.starts_at<$3 AND b.ends_at>$2)
+    AND NOT EXISTS(SELECT 1 FROM booking_occupancy b WHERE b.resource_id=r.id AND b.status IN ${BUSY} AND b.starts_at<$3 AND b.ends_at>$2)
     AND NOT EXISTS(SELECT 1 FROM blocks k WHERE (k.resource_id=r.id OR k.resource_id IS NULL) AND k.starts_at<$3 AND k.ends_at>$2)
     AND NOT EXISTS(SELECT 1 FROM calendar_busy c WHERE c.resource_id=r.id AND c.starts_at<$3 AND c.ends_at>$2) LIMIT 1`, [city, start, end]);
 }
@@ -43,7 +43,7 @@ async function notifyUser(q, user, text) {
 // Автоматизация студии: итоговый счёт после сеанса, напоминания, лист ожидания.
 export async function automationTick(q, settings) {
   if (settings.autoInvoice === true) {
-    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
+    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND COALESCE(policy->>'bookingPayment','')<>'hold' AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
     for (const b of done) await createInvoice(q, b, { duration: b.tariff, settings, auto: true });
   }
   const remind = async (sql, kind, label) => {
@@ -126,16 +126,19 @@ export async function workerTick(db) {
             job.kind === "calendar.upsert" ||
             job.kind === "calendar.delete"
           ) {
-            const cancelled = ["cancelled", "expired"].includes(b.status);
+            const segment = job.payload.segmentId
+              ? await one(db,"SELECT o.*,r.calendar_id FROM booking_occupancy o JOIN resources r ON r.id=o.resource_id WHERE o.event_id=$1 AND o.booking_id=$2",[job.payload.segmentId,b.id])
+              : { ...b, event_id:b.id, ends_at:b.first_ends_at || b.ends_at };
+            const cancelled = ["cancelled", "expired", "no_show"].includes(b.status);
             await syncCalendar(
-              b.calendar_id,
-              b.id,
+              segment.calendar_id,
+              segment.event_id,
               job.kind === "calendar.delete" || cancelled
                 ? null
                 : {
                     summary: "Tattoo Office / запись " + b.id.slice(0, 8),
-                    start: { dateTime: new Date(b.starts_at).toISOString() },
-                    end: { dateTime: new Date(b.ends_at).toISOString() },
+                    start: { dateTime: new Date(segment.starts_at).toISOString() },
+                    end: { dateTime: new Date(segment.ends_at).toISOString() },
                     // The workspace calendar itself is private. Normal events
                     // allow the service account to edit without access to personal events.
                     visibility: "default",
@@ -244,7 +247,9 @@ export async function workerTick(db) {
           timeStyle: "short",
           timeZone: "Europe/Moscow",
         }).format(new Date(b.starts_at));
-        const text = `${labels[job.kind]}\n${time} (МСК)\nЗапись ${b.id.slice(0, 8)}\n${process.env.APP_ORIGIN || "http://127.0.0.1:3000"}/#/cabinet`;
+        const label = job.kind === "booking.no_show" && b.policy?.bookingPayment === "hold"
+          ? "Отмечена неявка на сеанс. Блокировку 500 ₽ снимаем" : labels[job.kind];
+        const text = `${label}\n${time} (МСК)\nЗапись ${b.id.slice(0, 8)}\n${process.env.APP_ORIGIN || "http://127.0.0.1:3000"}/#/cabinet`;
         await db.transaction(async (q) => {
           for (const u of recipients) {
             await q.query(

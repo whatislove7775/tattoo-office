@@ -102,13 +102,13 @@ function fiscalDraftHTML({ drafts, review, requestExamples }, { esc, money }) {
 export function financeHTML(a, s) {
   const { esc, money, dateLabel, select } = c, rows = filteredPayments(a);
   const sum = (list) => list.reduce((t, p) => t + Number(p.amount), 0);
-  const paid = rows.filter((p) => p.status === "paid"), pending = rows.filter((p) => p.status === "pending");
+  const paid = rows.filter((p) => p.status === "paid"), pending = rows.filter((p) => p.status === "pending" && p.kind !== "hold");
   const byMethod = Object.keys(METHOD).map((m) => [m, sum(paid.filter((p) => paymentMethod(p, a) === m))]);
   const userOf = (p) => a.bookings.find((b) => b.id === p.booking_id);
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
   <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button><button type="button" class="chrome" data-fiscal-example>Пример чеков</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Черновик чека</button></td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}${p.kind === "hold" ? "" : `<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Черновик чека</button>`}</td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -281,7 +281,7 @@ export function mount(tab) {
       try { await api(`/admin/bookings/${id}/move`, "POST", { resourceId, hour: Number(hour), date: c.state().adminDate }); await reload("Запись перенесена"); } catch (err) { notify(err.message); }
     });
   });
-  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
+  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "hold" ? "<p>Запись закроется, запрос на снятие холда уйдёт в ЮKassa.</p>" : "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
   // Платежи
   const ff = $("#finance-filter");
   if (ff) {

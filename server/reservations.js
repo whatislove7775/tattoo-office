@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { releaseBookingHold } from "./booking-sessions.js";
 // Caller holds the settings row lock, serializing allocation, cancellation and expiry.
 export async function expireReservations(q) {
   const { rows } = await q.query(
@@ -30,6 +31,7 @@ export async function expireReservations(q) {
       "UPDATE bookings SET status='expired',balance_used=0 WHERE id=$1",
       [b.id],
     );
+    await releaseBookingHold(q,b.id);
     await q.query(
       "UPDATE payments SET status='expired' WHERE booking_id=$1 AND status='pending'",
       [b.id],
