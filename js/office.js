@@ -1,5 +1,6 @@
 import {bindFileUpload} from "./file-upload.js";
 import {mountGallery} from "./profile-media.js";
+import {mountAboutEditor} from "./master-about-editor.js";
 import {openLocationMap} from "./location-map.js";
 import * as AP from "./admin-pro.js";
 import * as UX from "./admin-ux.js";
@@ -977,7 +978,7 @@ function ownProfileHTML(publicProfileId) {
   const booking = pick(dm.bookingLink) || dm.bookingLink || "";
   const pass = { id: publicProfileId, username: me.username || dm.username };
   const pane = profileTab === "about"
-    ? `<section class="master-about own-about"><div class="own-about__head"><h3>О себе</h3><button type="button" class="chrome" data-own-edit="bio">Изменить</button></div>${p.status ? `<p class="master-about__status">${esc(p.status)}</p>` : ""}<p class="master-about__bio">${esc(p.bio || "Расскажите о себе — нажмите «Изменить».")}</p>${p.specialty ? `<dl><div><dt>Стиль</dt><dd>${esc(p.specialty)}</dd></div></dl>` : ""}</section>`
+    ? '<div id="profile-about"><p class="small muted" role="status">Загрузка раздела…</p></div>'
     : `<section id="profile-gallery" class="profile-gallery profile-gallery--tab"><h3>${profileTab === "drafts" ? "Эскизы" : "Работы"}</h3><p class="small muted" role="status">Загрузка фотографий…</p></section>`;
   return `<section class="cabinet-public-profile own-profile" aria-label="Ваш публичный профиль">
     <div class="own-profile__bar"><span class="eyebrow">ВАШ ПРОФИЛЬ · ТАК ЕГО ВИДЯТ ВСЕ</span><div class="own-profile__actions"><a class="chrome" href="${esc(window.Pages.masterProfilePath(pass))}" target="_blank" rel="noopener noreferrer">Посмотреть профиль ↗</a><button type="button" class="chrome pro-primary" data-own-edit="all">Редактировать</button><button id="logout" class="small cabinet-action">Выйти</button></div></div>
@@ -1308,7 +1309,18 @@ function mountCabinet() {
     // После изменения фото рейтинг во вкладке «Личное дело» пересчитывается сразу.
     mountGallery(gallery,api,notify,async()=>{await refresh();if(cabTab==="profile")setTimeout(()=>render(),0);},profileTab).catch(e=>notify(e.message));
   }
-  $$("[data-ptab]").forEach((b) => (b.onclick = () => { profileTab = b.dataset.ptab; render(); }));
+  const about = $("#profile-about");
+  if (about) {
+    const {bio,status,specialty} = me.profile || {};
+    mountAboutEditor(about,{api,intro:{bio,status,specialty}}).catch(() => {
+      about.textContent = "Не удалось загрузить «О себе». Откройте вкладку ещё раз.";
+    });
+  }
+  $$("[data-ptab]").forEach(b => b.onclick = () => {
+    if (b.dataset.ptab === profileTab) return;
+    if (about?.dataset.dirty && !confirm("В разделе «О себе» есть неопубликованные изменения. Покинуть редактор?")) return;
+    profileTab = b.dataset.ptab; render();
+  });
   // «Редактировать», клик по фото и пустые поля открывают личное дело в окне поверх профиля.
   $$("[data-own-edit]").forEach((b) => (b.onclick = () => {
     const tabForm = $(".cabinet-content #profile-form");
@@ -2224,7 +2236,7 @@ setInterval(async () => {
   if (!me || !live || pulseBusy || document.visibilityState !== "visible") { if (!live) pulseVersion = null; return; }
   if ($("#dialog")?.open || document.body.classList.contains("pro-dragging") || document.activeElement?.matches?.("input,textarea,select")) return;
   // Редактор фото что-то сохраняет или в нём есть несохранённые подписи и порядок — не трогаем.
-  if ($("#office-view [aria-busy]") || $("#profile-gallery")?.dataset.dirty === "1") return;
+  if ($("#office-view [aria-busy]") || $("#profile-gallery")?.dataset.dirty === "1" || $("#profile-about")?.dataset.dirty === "1") return;
   pulseBusy = true;
   try {
     const { v } = await api("/pulse");

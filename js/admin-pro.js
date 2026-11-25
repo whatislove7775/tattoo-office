@@ -1,3 +1,4 @@
+import { mountAboutEditor } from "./master-about-editor.js";
 import { mountGallery } from './profile-media.js';
 import { bindFileUpload } from './file-upload.js';
 
@@ -209,7 +210,7 @@ async function masterProfileEditor(id) {
   const { api, esc, field, select, textarea, modal, notify } = c;
   const { name, profile: p } = await api(`/admin/users/${encodeURIComponent(id)}/profile`);
   $('#dialog').close();
-  modal(`<div class="admin-master-editor"><h2>Профиль мастера · ${esc(name)}</h2><form id="admin-master-profile-form" class="pro-card__form"><div class="admin-master-avatar file-upload-zone"><span class="admin-master-avatar__preview">${p.avatar ? `<img src="${esc(p.avatar)}" alt="Фото мастера">` : 'Фото не загружено'}</span><button type="button" class="chrome" id="admin-master-avatar-choose">${p.avatar ? 'Заменить фото' : 'Загрузить фото'}</button><input type="file" id="admin-master-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(p.avatar || '')}"></div><div class="form-grid">${field('name','Имя',name,'text','required maxlength="100"')}${select('city','Город',[['Москва','Москва'],['СПБ','СПБ']],p.city||'Москва')}${field('birthDate','Дата рождения',p.birthDate||'','date')}${field('experience','Стаж',p.experience||'','text','maxlength="80"')}${field('specialty','Стиль',p.specialty||'','text','maxlength="100"')}${field('status','Статус на сегодня',p.status||'','text','maxlength="100"')}${field('bookingLink','Ссылка на чат в Telegram',p.adminBookingLink||'','url','maxlength="2048" placeholder="https://t.me/имя"')}<div class="wide">${textarea('bio','О себе',p.bio||'')}</div></div><label class="check"><input type="checkbox" name="rankingVisible" ${p.rankingVisible !== false ? 'checked' : ''}><span>Показывать в рейтинге</span></label><button type="submit" class="chrome">Сохранить данные мастера</button></form><div class="tabs admin-master-editor__tabs"><button type="button" data-admin-gallery="portfolio" aria-selected="true">Работы</button><button type="button" data-admin-gallery="drafts" aria-selected="false">Эскизы</button></div><section id="admin-master-gallery" class="profile-gallery profile-gallery--tab"></section></div>`);
+  modal(`<div class="admin-master-editor"><h2>Профиль мастера · ${esc(name)}</h2><form id="admin-master-profile-form" class="pro-card__form"><div class="admin-master-avatar file-upload-zone"><span class="admin-master-avatar__preview">${p.avatar ? `<img src="${esc(p.avatar)}" alt="Фото мастера">` : 'Фото не загружено'}</span><button type="button" class="chrome" id="admin-master-avatar-choose">${p.avatar ? 'Заменить фото' : 'Загрузить фото'}</button><input type="file" id="admin-master-avatar-file" accept="image/jpeg,image/png,image/webp" hidden><input type="hidden" name="avatar" value="${esc(p.avatar || '')}"></div><div class="form-grid">${field('name','Имя',name,'text','required maxlength="100"')}${select('city','Город',[['Москва','Москва'],['СПБ','СПБ']],p.city||'Москва')}${field('birthDate','Дата рождения',p.birthDate||'','date')}${field('experience','Стаж',p.experience||'','text','maxlength="80"')}${field('specialty','Стиль',p.specialty||'','text','maxlength="100"')}${field('status','Статус на сегодня',p.status||'','text','maxlength="100"')}${field('bookingLink','Ссылка на чат в Telegram',p.adminBookingLink||'','url','maxlength="2048" placeholder="https://t.me/имя"')}<div class="wide">${textarea('bio','О себе',p.bio||'')}</div></div><label class="check"><input type="checkbox" name="rankingVisible" ${p.rankingVisible !== false ? 'checked' : ''}><span>Показывать в рейтинге</span></label><button type="submit" class="chrome">Сохранить данные мастера</button></form><div class="tabs admin-master-editor__tabs"><button type="button" data-admin-gallery="portfolio" aria-selected="true">Работы</button><button type="button" data-admin-gallery="drafts" aria-selected="false">Эскизы</button><button type="button" data-admin-gallery="about" aria-selected="false">О себе</button></div><section id="admin-master-gallery" class="profile-gallery profile-gallery--tab"></section></div>`);
   const file = $('#admin-master-avatar-file');
   bindFileUpload($('.admin-master-avatar'), file, $('#admin-master-avatar-choose'), async files => {
     const selected = files[0]; if (!selected) return;
@@ -226,8 +227,21 @@ async function masterProfileEditor(id) {
     await c.refresh(); await c.render(); notify('Профиль мастера сохранён');
   });
   const showGallery = async kind => {
+    const root = $('#admin-master-gallery');
+    if (!root || root.querySelector("[aria-busy]") || (root.querySelector("[data-dirty]") && !confirm("Покинуть редактор без публикации?"))) return;
+    const current = $('.admin-master-editor__tabs button[aria-selected=true]');
+    if (current?.dataset.adminGallery === kind && root.childElementCount) return;
+    delete root.dataset.dirty;
+    // A new mount point prevents an older network response from replacing the current tab.
+    const pane = document.createElement('div');
+    root.replaceChildren(pane);
     $$('.admin-master-editor__tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.adminGallery === kind)));
-    await mountGallery($('#admin-master-gallery'), api, notify, async () => {}, kind, `/admin/users/${encodeURIComponent(id)}/gallery`);
+    if (kind === 'about') {
+      const {bio,status,specialty} = p;
+      await mountAboutEditor(pane,{api,path:`/admin/users/${encodeURIComponent(id)}/about`,intro:{bio,status,specialty}});
+      return;
+    }
+    await mountGallery(pane, api, notify, async () => {}, kind, `/admin/users/${encodeURIComponent(id)}/gallery`);
   };
   $$('.admin-master-editor__tabs button').forEach(b => b.onclick = () => showGallery(b.dataset.adminGallery).catch(e => notify(e.message)));
   await showGallery('portfolio');
