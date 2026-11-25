@@ -1010,6 +1010,19 @@ function ownProfileHTML(publicProfileId) {
       <div class="own-profile__pane">${pane}</div></div>
     </div></section>`;
 }
+function bookingTransferButton(booking, city) {
+  return `<button type="button" class="chrome" data-pick-slot="${booking.id}" data-city="${esc(city)}" data-hours="${booking.tariff}">Выбрать новую дату</button>`;
+}
+function bookingBalanceSection(bookings, payments) {
+  const fees = new Map(payments.filter(p => p.kind === "booking_fee" && p.status === "paid")
+    .map(p => [p.booking_id, p]));
+  const available = bookings.filter(b => b.status === "awaiting_date" && paidBooking(b) && fees.has(b.id));
+  const amount = available.reduce((sum, b) => sum + fees.get(b.id).amount, 0);
+  const cards = available.map(b => `<article class="note-paper"><div class="cabinet-expenses__head"><span>Бронь № ${b.id.slice(0,8)}</span><strong>${money(fees.get(b.id).amount)}</strong></div><p class="small muted">${esc(CITY_LABELS[b.policy.city])} · ${b.tariff} ч</p>${bookingTransferButton(b,b.policy.city)}</article>`).join("");
+  return { amount, count:available.length, html:available.length
+    ? `<section class="cabinet-expenses" aria-label="Оплаченные брони"><h3>Для бронирования</h3><p class="small muted">Выберите новое время по уже оплаченной брони.</p>${cards}</section>`
+    : "" };
+}
 async function cabinetPage() {
   if (!me) return authPage(false);
   const data = await api("/bookings"),
@@ -1020,6 +1033,7 @@ async function cabinetPage() {
       ),
     ),
     done = data.bookings.filter((b) => b.status === "completed").length;
+  const bookingBalance = bookingBalanceSection(active,data.payments);
   if (me.accountType === "master" && ["portfolio", "drafts"].includes(cabTab)) { profileTab = cabTab; cabTab = "bookings"; }
   const personalPoints=cabTab==="profile"&&me.accountType==="master"?await api("/me/ranking"):null;
   const publicProfileId = me.publicProfileId || me.id;
@@ -1045,7 +1059,7 @@ async function cabinetPage() {
         .map((b) => bookingItem(b, data.payments))
         .join("") || '<div class="empty">Здесь будет история сеансов.</div>';
   if (cabTab === "balance")
-    body = `<h3>Баланс</h3><p data-help class="small muted">Баланс используется автоматически для предоплаты. Это учёт внесённых средств, а не банковский счёт.</p><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>${data.ledger.map((x) => `<tr><td>${dateLabel(x.created_at)}</td><td>${esc(x.description)}</td><td>${x.amount > 0 ? "+" : ""}${money(x.amount)}</td></tr>`).join("")}</tbody></table></div>${!data.ledger.length ? '<div class="empty">Операций пока нет.</div>' : ""}`;
+    body = `<h3>Баланс</h3>${bookingBalance.html}${data.ledger.length || !bookingBalance.count ? `<p data-help class="small muted">Средства из истории операций используются для записей с предоплатой.</p><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Операция</th><th>Сумма</th></tr></thead><tbody>${data.ledger.map((x) => `<tr><td>${dateLabel(x.created_at)}</td><td>${esc(x.description)}</td><td>${x.amount > 0 ? "+" : ""}${money(x.amount)}</td></tr>`).join("")}</tbody></table></div>${!data.ledger.length ? '<div class="empty">Операций пока нет.</div>' : ""}` : ""}`;
   if (cabTab === "notifications")
     body = inbox.notifications.length
       ? inbox.notifications
@@ -1062,7 +1076,7 @@ async function cabinetPage() {
   const accent = '';
   return win(
     "My profile",
-    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}`}${expenseBlock}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance)}</strong><span class="small muted">для следующей записи</span></div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">${running ? "Текущий сеанс" : "Ближайшая запись"}</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
+    `${testNote()}<div class="cabinet">${me.accountType === "master" ? `${awaitingBlock}${ownProfileHTML(publicProfileId)}` : `<div class="row between cabinet-heading"><div><h2>${esc(me.name)}</h2><p class="small muted cabinet-email"><code>${esc(me.email)}</code></p></div><button id="logout" class="small cabinet-action">Выйти</button></div>${awaitingBlock}`}${expenseBlock}<div class="summary-cards"><div class="stat"><span class="eyebrow">НА БАЛАНСЕ</span><strong>${money(me.balance + bookingBalance.amount)}</strong>${bookingBalance.count ? `<button type="button" class="small" data-cabtab="balance">Для бронирования · ${money(bookingBalance.amount)}</button>` : '<span class="small muted">для следующей записи</span>'}</div><div class="stat"><span class="eyebrow">В КАЛЕНДАРЕ</span><strong>${active.filter(b => b.status !== "awaiting_date").length}</strong><a class="small" href="#/booking">Забронировать место</a></div><div class="stat"><span class="eyebrow">ЗАВЕРШЕНО</span><strong>${done}</strong><span class="small muted">сеансов в этом офисе</span></div></div>${next?`<section class="cabinet-next"><span class="eyebrow">${running ? "Текущий сеанс" : "Ближайшая запись"}</span>${bookingItem(next,data.payments)}</section>`:""}${loyaltyCard(data.loyalty, accent)}<div class="tabs">${[
       ["bookings", "Мои записи"],
       ["history", "Архив"],
       ["balance", "Баланс"],
@@ -1133,7 +1147,7 @@ function bookingItem(b, payments) {
       b.status === "pending" && new Date(b.starts_at) > new Date()
     : ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > new Date();
   const paidExpenses = payments.filter((p) => p.booking_id === b.id && p.kind === "expense" && p.status === "paid");
-  return `<article class="booking-item"><div><h3>${waiting ? "Выберите новую дату" : `${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}`}</h3><p>${esc(CITY_LABELS[city])}${waiting ? "" : ` · ${esc(b.resource_name)}`} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)}${trackedSession(b) ? " · стоимость сеанса" : " · предоплата " + money(b.deposit)}</p>${fee && fee.status !== "pending" ? `<p class="small"><a href="#/payment/${fee.id}">Бронирование ${money(fee.amount)} · ${paymentStatus(fee)}</a></p>` : ""}${expenseLines(b.extras)}${trackedSession(b) && !waiting ? bookingSession(b, fee) : ""}${paidExpenses.map((p) => `<p><a href="#/payment/${p.id}"><u>Расходы · ${money(p.amount)} · оплачено</u></a></p>`).join("")}${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">${payment.kind === "hold" ? "Подтвердить блокировку" : "Оплатить " + money(payment.amount)}</a>` : ""}${canRelease ? `<button type="button" class="chrome" data-release-slot="${b.id}">Перенести бронь</button>` : ""}${waiting ? `<button type="button" class="chrome" data-pick-slot="${b.id}" data-city="${esc(city)}" data-hours="${b.tariff}">Выбрать новую дату</button>` : ""}${canCancel ? `<button class="small cabinet-action" data-cancel="${b.id}" data-fee="${paidBooking(b) && b.status !== "pending"}" data-hold="${hold}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>отменить</u></button>` : ""}</div></article>`;
+  return `<article class="booking-item"><div><h3>${waiting ? "Выберите новую дату" : `${dateLabel(b.starts_at)} · ${timeLabel(b.starts_at)}—${timeLabel(b.ends_at)}`}</h3><p>${esc(CITY_LABELS[city])}${waiting ? "" : ` · ${esc(b.resource_name)}`} · до ${b.tariff} ч ${b.session_no ? "· сеанс " + b.session_no + "/20" : ""}</p><p class="muted">${money(b.total)}${trackedSession(b) ? " · стоимость сеанса" : " · предоплата " + money(b.deposit)}</p>${fee && fee.status !== "pending" ? `<p class="small"><a href="#/payment/${fee.id}">Бронирование ${money(fee.amount)} · ${paymentStatus(fee)}</a></p>` : ""}${expenseLines(b.extras)}${trackedSession(b) && !waiting ? bookingSession(b, fee) : ""}${paidExpenses.map((p) => `<p><a href="#/payment/${p.id}"><u>Расходы · ${money(p.amount)} · оплачено</u></a></p>`).join("")}${b.policy?.masterConfirm === "awaiting" ? '<span class="badge badge--awaiting">Ждёт вашего подтверждения</span>' : `<span class="badge ${b.status === "confirmed" ? "good" : ""}">${statusName[b.status]}</span>`}</div><div class="row">${payment ? `<a href="#/payment/${payment.id}" class="chrome">${payment.kind === "hold" ? "Подтвердить блокировку" : "Оплатить " + money(payment.amount)}</a>` : ""}${canRelease ? `<button type="button" class="chrome" data-release-slot="${b.id}">Перенести бронь</button>` : ""}${waiting && fee?.status === "paid" ? bookingTransferButton(b,city) : ""}${canCancel ? `<button class="small cabinet-action" data-cancel="${b.id}" data-fee="${paidBooking(b) && b.status !== "pending"}" data-hold="${hold}" data-cancel-hours="${Number(b.policy?.cancelHours ?? pub.settings.cancelHours)}" data-late-cancellation="${esc(b.policy?.lateCancellation ?? pub.settings.lateCancellation)}"><u>${paidBooking(b) && b.status !== "pending" ? "Отказаться от брони" : "отменить"}</u></button>` : ""}</div></article>`;
 }
 // Фото и сохранение личного дела — и во вкладке, и в окне «Редактировать профиль».
 function mountProfileForm(onSaved) {
@@ -1200,8 +1214,11 @@ function editMasterPass() {
 }
 function mountBookingTransfers() {
   $$("[data-release-slot]").forEach(button => button.onclick = () =>
-    dialogForm("Перенести бронь", "<p>Текущее время освободится. Новую дату можно выбрать в личном кабинете в любое время. Повторная оплата за бронь не нужна.</p>",
-      () => api("/bookings/" + button.dataset.releaseSlot + "/transfer", "POST", {})));
+    dialogForm("Перенести бронь", "<p>Текущее время освободится. Оплаченная бронь появится в разделе «Баланс», откуда можно выбрать новую дату без доплаты за бронирование.</p>",
+      async () => {
+        await api("/bookings/" + button.dataset.releaseSlot + "/transfer", "POST", {});
+        cabTab = "balance";
+      }));
   $$("[data-pick-slot]").forEach(button => button.onclick = () => {
     const { pickSlot, city, hours } = button.dataset;
     modal(`<h2>Новая дата бронирования</h2><p>${hours} ч · ${esc(CITY_LABELS[city])} · время московское</p>${field("transfer-date","Дата",today(),"date",`min="${today()}" max="${addDate(today(),180)}"`)}<div id="transfer-slots" aria-live="polite"></div>`);
@@ -1229,6 +1246,7 @@ function mountBookingTransfers() {
           try {
             await api("/bookings/" + pickSlot + "/transfer","POST",{date:date.value,hour:Number(time.value),resourceId:results.querySelector('[name="transfer-resource"]').value});
             $("#dialog").close();
+            cabTab = "bookings";
             await render();
             notify("Бронь перенесена");
           } catch (error) { notify(error.message); await update(); }
