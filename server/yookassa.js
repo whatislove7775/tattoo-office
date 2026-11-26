@@ -19,9 +19,49 @@ export async function yookassaRequest(path, body, key) {
   if (!response.ok) fail("Не удалось открыть ЮKassa. Повторите попытку", 502);
   return response.json();
 }
+export async function verifyYookassaLiveStore(inn) {
+  const store = await yookassaRequest("me");
+  if (store.account_id !== process.env.YOOKASSA_SHOP_ID || store.test !== false || store.status !== "enabled")
+    fail("Боевой магазин ЮKassa недоступен", 409);
+  if (store.itn && store.itn !== inn)
+    fail("ИНН магазина ЮKassa не совпадает с реквизитами студии", 409);
+  if (store.fiscalization?.enabled !== true)
+    fail("В боевом магазине ЮKassa выключены чеки", 409);
+  if (!["avanpost", "yoo_receipt"].includes(store.fiscalization.provider))
+    fail("Для текущей схемы оплаты подключите «Чеки от ЮKassa»", 409);
+  if (!Array.isArray(store.payment_methods) || !store.payment_methods.length)
+    fail("В боевом магазине ЮKassa нет доступных способов оплаты", 409);
+}
+
 export function verifyYookassaPayment(remote, local) {
   if (remote.id !== local.checkout_id || remote.metadata?.payment_id !== local.id ||
       remote.amount?.currency !== "RUB" || remote.amount.value !== (local.amount / 100).toFixed(2) ||
       remote.test !== yookassaTest()) fail("Данные платежа не совпадают", 409);
   return remote.status === "succeeded" && remote.paid === true;
+}
+
+export function verifyYookassaRefund(remote, local) {
+  if (!remote.id || (local.refund_id && remote.id !== local.refund_id) ||
+      remote.payment_id !== local.checkout_id || remote.amount?.currency !== "RUB" ||
+      remote.amount.value !== (local.amount / 100).toFixed(2))
+    fail("Данные возврата не совпадают", 502);
+}
+
+export async function yookassaFiscalStatus(payment) {
+  if (!payment.checkout_id || !payment.provider_id?.startsWith("yookassa:")) return null;
+  const registration = (remote) => ["pending","succeeded","canceled"].includes(remote.receipt_registration)
+    ? remote.receipt_registration : "unreported";
+  const jobs = [async () => {
+    const remote = await yookassaRequest("payments/" + encodeURIComponent(payment.checkout_id));
+    if (!verifyYookassaPayment(remote, payment)) fail("ЮKassa не подтвердила оплату", 409);
+    return registration(remote);
+  }];
+  if (payment.refund_id) jobs.push(async () => {
+    const remote = await yookassaRequest("refunds/" + encodeURIComponent(payment.refund_id));
+    verifyYookassaRefund(remote, payment);
+    return registration(remote);
+  });
+  const [charge,refund] = (await Promise.allSettled(jobs.map(read => read())))
+    .map(result => result.status === "fulfilled" ? result.value : "unavailable");
+  return { charge, refund:refund ?? null, test:payment.is_test ?? yookassaTest() };
 }

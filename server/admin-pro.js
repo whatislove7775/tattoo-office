@@ -1,6 +1,8 @@
+import { releasePromo } from "./reservations.js";
+import { hasBookingOverlap, paidBooking } from "./paid-booking.js";
 import {holdBooking,releaseBookingHold} from "./booking-sessions.js";
 import { randomUUID as uuid } from "node:crypto";
-import { fail, integer, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
+import { fail, integer, resourceOpen, slot, validEmail, validPassword, hashPassword, verifyPassword, normalizePromoCode, validCity, validSchedule } from "./domain.js";
 
 // Владелец студии видит всё. Администратор смены (profile.staffLevel = "shift")
 // работает с расписанием и бронями, но не с деньгами, настройками и правами.
@@ -54,7 +56,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
         WHERE p.kind='expense' AND p.status='pending' ORDER BY p.created_at`),
       db.query(`SELECT b.id,b.starts_at,u.name AS user_name FROM bookings b JOIN users u ON u.id=b.user_id WHERE b.status='cancel_requested' ORDER BY b.starts_at`),
       db.query("SELECT count(*)::int AS n FROM feedback WHERE status='new'"),
-      db.query("SELECT id,name,stock,min_stock FROM catalog WHERE active AND kind='product' AND stock<=min_stock ORDER BY stock"),
+      db.query("SELECT id,name,stock,min_stock FROM catalog WHERE active AND kind='product' AND NOT unlimited AND stock<=min_stock ORDER BY stock"),
       db.query("SELECT id,name FROM users WHERE deleted_at IS NULL AND active AND account_type='master' AND role IN ('guest','resident') AND (COALESCE(profile->>'avatar','')='' OR length(COALESCE(profile->>'bio',''))<80 OR COALESCE(profile->>'city','')='') ORDER BY created_at DESC LIMIT 30"),
       db.query(`SELECT u.id,u.name,count(b.id)::int AS sessions FROM users u JOIN bookings b ON b.user_id=u.id AND b.status='completed' AND b.starts_at>now()-$2*interval '1 day' WHERE u.deleted_at IS NULL AND u.active AND u.role='guest' AND u.account_type='master' GROUP BY u.id HAVING count(b.id)>=$1 ORDER BY sessions DESC`, [rule.sessions, rule.days]),
       db.query(`SELECT u.id,u.name,max(b.starts_at) AS last_booking FROM users u LEFT JOIN bookings b ON b.user_id=u.id AND b.status IN ${BOOKED} WHERE u.deleted_at IS NULL AND u.active AND u.role='resident' AND u.created_at<now()-$1*interval '1 day' GROUP BY u.id HAVING max(b.starts_at) IS NULL OR max(b.starts_at)<now()-$1*interval '1 day'`, [rule.inactiveDays]),
@@ -86,6 +88,16 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       const [start, end] = slot(String(req.body.date || ""), Number(req.body.hour), b.tariff, s);
       if (holdBooking(b) && !(await one(q,"SELECT id FROM payments WHERE booking_id=$1 AND kind='hold' AND status='authorized' AND hold_expires_at>$2::timestamptz+interval '15 minutes'",[b.id,start])))
         fail("Блокировка карты не покрывает новую дату. Отмените запись и создайте новую",409);
+      if (paidBooking(b)) {
+        if (r.city !== b.policy.city || !resourceOpen(r, String(req.body.date || ""), Number(req.body.hour), b.tariff))
+          fail("Выберите доступное рабочее место той же студии", 409);
+        if (await hasBookingOverlap(q, b.user_id, start, end, b.id))
+          fail("На это время у мастера уже есть запись", 409);
+        if (b.resource_id !== r.id) {
+          const old = await one(q,"SELECT calendar_id FROM resources WHERE id=$1",[b.resource_id]);
+          await enqueue(q,"calendar.delete",{ bookingId:b.id, calendarId:old?.calendar_id, removedSlot:true });
+        }
+      }
       if (!(await available(q, r.id, start, end, b.id))) fail("Это время на выбранном месте занято", 409);
       // Запись от администратора после переноса снова ждёт подтверждения мастера — если не выбрано «без подтверждения».
       const askMaster = !!b.policy?.adminCreated && req.body.skipConfirm !== true;
@@ -120,11 +132,11 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
       if (b.extras.some((item) => item.addedOnSite)) fail("К записи уже добавлены расходы на месте", 409);
       if (new Date(b.starts_at) > new Date()) fail("Сеанс ещё не начался", 409);
       await q.query("UPDATE bookings SET status='no_show' WHERE id=$1", [b.id]);
-      if (holdBooking(b)) {
-        await releaseBookingHold(q,b.id);
-        if (b.policy?.promo?.code) await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1",[b.policy.promo.code]);
+      if (holdBooking(b) || paidBooking(b)) {
+        if (holdBooking(b)) await releaseBookingHold(q,b.id);
+        await releasePromo(q, b);
         for (const x of b.extras) if (x.kind === "product")
-          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2",[x.qty,x.id]);
+          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited",[x.qty,x.id]);
       }
       await enqueue(q, "booking.no_show", { bookingId: b.id });
       await enqueue(q, "calendar.delete", { bookingId: b.id });
@@ -264,10 +276,11 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
     if (!Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 100000) fail("Укажите количество, не равное нулю");
     await db.transaction(async (q) => {
       await lock(q);
-      const x = await one(q, "SELECT id,stock,kind FROM catalog WHERE id=$1 FOR UPDATE", [req.params.id]);
+      const x = await one(q, "SELECT id,stock,kind,unlimited FROM catalog WHERE id=$1 FOR UPDATE", [req.params.id]);
       if (!x || x.kind !== "product") fail("Товар не найден", 404);
+      if (x.unlimited) fail("У этой позиции нет складского лимита", 409);
       if (x.stock + delta < 0) fail("Остаток не может быть меньше нуля", 409);
-      await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [delta, x.id]);
+      await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [delta, x.id]);
       await q.query("INSERT INTO stock_moves(id,catalog_id,delta,reason,actor) VALUES($1,$2,$3,$4,$5)", [uuid(), x.id, delta, reason || (delta > 0 ? "Приход" : "Списание"), req.user.id]);
     });
     res.json({ ok: true });
@@ -276,10 +289,11 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
     const code = normalizePromoCode(req.body.code), kind = req.body.kind;
     if (!["percent", "amount"].includes(kind)) fail("Выберите тип скидки");
     const value = integer(req.body.value, 1, kind === "percent" ? 100 : 10000000, "Скидка");
-    const maxUses = req.body.maxUses === null || req.body.maxUses === "" || req.body.maxUses === undefined ? null : integer(Number(req.body.maxUses), 1, 100000, "Лимит использований");
+    const maxUses = req.body.singleUse === true ? 1 : req.body.maxUses === null || req.body.maxUses === "" || req.body.maxUses === undefined ? null : integer(Number(req.body.maxUses), 1, 100000, "Лимит использований");
     const expires = req.body.expiresAt ? new Date(`${req.body.expiresAt}T23:59:59+03:00`) : null;
     if (expires && Number.isNaN(+expires)) fail("Проверьте дату окончания");
     await db.transaction(async (q) => {
+      await lock(q);
       await q.query("INSERT INTO promo_codes(code,kind,value,max_uses,expires_at,active,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(code) DO UPDATE SET kind=$2,value=$3,max_uses=$4,expires_at=$5,active=$6,note=$7", [code, kind, value, maxUses, expires, req.body.active !== false, String(req.body.note || "").slice(0, 200)]);
       await audit(q, req.user.id, "promo.save", { code });
     });
@@ -288,6 +302,7 @@ export function adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, set
   app.delete("/api/admin/promos/:code", ownerOnly, async (req, res) => {
     const code = normalizePromoCode(req.params.code);
     await db.transaction(async (q) => {
+      await lock(q);
       const p = await one(q, "SELECT used FROM promo_codes WHERE code=$1", [code]);
       if (!p) fail("Промокод не найден", 404);
       if (p.used) await q.query("UPDATE promo_codes SET active=false WHERE code=$1", [code]);

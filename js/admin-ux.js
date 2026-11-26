@@ -27,7 +27,7 @@ export function scheduleTimeline(a, s, date, city) {
   const occupancy = a.bookings.flatMap(b => b.segments?.length
     ? [{...b,ends_at:b.first_ends_at}, ...b.segments.map(segment => ({...b,...segment, extension:true}))]
     : [b]);
-  const day = occupancy.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
+  const day = occupancy.filter((b) => places.some((r) => r.id === b.resource_id) && ACTIVE.includes(b.status) && !(c.paidBooking(b) && b.status === "cancel_requested") && new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart);
   const closedList = a.blocks.filter((k) => new Date(k.starts_at) < dayEnd && new Date(k.ends_at) > dayStart && (!k.resource_id || places.some((r) => r.id === k.resource_id)));
   // Видимые часы: рабочее время студии; если студия круглосуточная — ночь свёрнута, пока в ней нет записей.
   let from = s.openHour, to = s.closeHour;
@@ -286,14 +286,14 @@ export function bookingPanel(id) {
     : [];
   const act = (key, label, primary) => `<button type="button" class="${primary ? "chrome pro-primary" : "chrome"}" data-panel-act="${key}">${label}</button>`;
   const actions = [
-    b.status === "confirmed" && started && act("invoice", "Выставить итоговый счёт", true),
+    b.status === "confirmed" && started && (!c.trackedSession(b) || b.started_at) && act("invoice", "Выставить итоговый счёт", true),
     started && ["confirmed", "invoiced", "completed"].includes(b.status) && act("expenses", "Добавить расходы"),
     ...cashPayments.map((p) => act(p.id, `Наличные · ${p.kind === "expense" ? "расходы" : "сеанс"} · ${money(p.amount)}`, true)),
-    b.status === "cancel_requested" && act("resolve", "Решить отмену", true),
+    b.status === "cancel_requested" && (!c.paidBooking(b) || !c.isShift()) && act("resolve", "Решить отмену", true),
     b.policy?.masterConfirm === "awaiting" && act("skipconfirm", "Подтвердить без мастера", true),
     ["pending", "confirmed"].includes(b.status) && future && act("move", "Перенести"),
     b.status === "confirmed" && started && !b.extras?.some((item) => item.addedOnSite) && act("noshow", "Неявка"),
-    ["pending", "confirmed"].includes(b.status) && future && act("cancel", "Отменить бронь"),
+    (["pending", "confirmed"].includes(b.status) && future || c.paidBooking(b) && b.status === "awaiting_date") && act("cancel", "Отменить бронь"),
   ].filter(Boolean).join("");
   modal(`<div class="pro-panel"><p class="pro-panel__eyebrow">Бронь № ${b.session_no || b.id.slice(0, 6)} · ${bookingBadge(b)}</p><h2>${fullDate(b.starts_at)}<br><span>${range(b)} · до ${b.tariff} ч</span></h2>
   <dl class="pro-panel__facts"><div><dt>Мастер</dt><dd><button type="button" class="pro-link" data-user-card="${b.user_id}">${esc(b.user_name)}</button></dd></div><div><dt>Место</dt><dd>${esc(CITY_LABELS[resourceCity(r)] || "")} · ${esc(b.resource_name)}</dd></div><div><dt>Стоимость</dt><dd>${money(b.total)}${b.policy?.pricePercent ? ` <small class="muted">(${b.policy.pricePercent > 0 ? "+" : ""}${b.policy.pricePercent}% за время)</small>` : ""}${b.policy?.promo ? ` <small class="muted">промокод ${esc(b.policy.promo.code)} −${money(b.policy.promo.discount)}</small>` : ""}</dd></div><div><dt>Предоплата</dt><dd>${b.deposit ? money(b.deposit) : "без предоплаты"}${b.policy?.paymentMethod === "cash" ? " · расчёт наличными" : ""}</dd></div>${b.extras?.length ? `<div><dt>Дополнительно</dt><dd>${b.extras.map((x) => `${esc(x.name || "")} × ${x.qty}`).join(", ")}</dd></div>` : ""}${pays.length ? `<div><dt>Платежи</dt><dd>${pays.map((p) => `${c.paymentLabels[p.kind]} ${money(p.amount)} · ${c.paymentStatus(p).toLowerCase()}${p.items?.length ? `<small class="muted"> (${p.items.map((x) => `${esc(x.name)} × ${x.qty}`).join(", ")})</small>` : ""}`).join("<br>")}</dd></div>` : ""}</dl>
@@ -302,13 +302,13 @@ export function bookingPanel(id) {
   $("#dialog").addEventListener("close", () => $("#dialog").classList.remove("is-panel"), { once: true });
   $$("[data-user-card]", $("#dialog")).forEach((x) => (x.onclick = () => { $("#dialog").close(); c.openUserCard(x.dataset.userCard); }));
   const run = {
-    invoice: () => dialogForm("Итоговый счёт", `${select("duration", "Тариф после сеанса", [3, 6, 12].filter((h) => h >= b.tariff).map((h) => [h, `До ${h} часов`]), b.tariff)}<p class="small muted">Предоплата ${money(b.deposit)} будет вычтена. Счёт появится в кабинете мастера.</p>`, (d) => api(`/admin/bookings/${b.id}/invoice`, "POST", { duration: Number(d.duration) })),
+    invoice: () => c.invoiceDialog(b),
     expenses: () => bookingExpensesForm(b, a.catalog),
-    resolve: () => dialogForm("Решение по отмене", select("credit", "Предоплата", [["yes", "Вернуть на внутренний баланс"], ["no", "Удержать по регламенту"]], "yes"), (d) => api(`/admin/bookings/${b.id}/resolve-cancel`, "POST", { credit: d.credit === "yes" })),
+    resolve: () => c.cancellationDialog(b),
     move: () => dialogForm("Перенести запись", `${field("date", "Новая дата", mskDay(b.starts_at), "date", "required")}${select("hour", "Начало, МСК", Array.from({ length: 24 }, (_, h) => [h, String(h).padStart(2, "0") + ":00"]), mskHour(b.starts_at))}${select("resourceId", "Место", a.resources.filter((x) => x.active).map((x) => [x.id, CITY_LABELS[resourceCity(x)] + " · " + x.name]), b.resource_id)}${b.policy?.adminCreated ? '<label class="check"><input type="checkbox" name="skipConfirm"><span>Перенести без подтверждения мастера</span></label>' : ""}<p class="small muted">${b.policy?.adminCreated ? "Мастер получит уведомление и подтвердит новое время в кабинете." : "Мастер получит уведомление."} Тариф и оплата сохраняются.</p>`, (d) => api(`/admin/bookings/${b.id}/move`, "POST", { date: d.date, resourceId: d.resourceId, hour: Number(d.hour), skipConfirm: d.skipConfirm === "on" })),
     skipconfirm: () => dialogForm("Подтвердить без мастера", "<p>Запись станет подтверждённой, не дожидаясь ответа мастера. Мастер увидит её в кабинете как обычную запись.</p>", () => api(`/admin/bookings/${b.id}/master-confirm`, "POST", {})),
-    noshow: () => dialogForm("Отметить неявку", "<p>Мастер не пришёл. Предоплата остаётся у студии, запись закроется.</p>", () => api(`/admin/bookings/${b.id}/no-show`, "POST", {})),
-    cancel: () => dialogForm("Отменить бронь", "<p>Бронь будет отменена по правилам студии: при ранней отмене предоплата вернётся мастеру на баланс, при поздней — по регламенту.</p>", () => api(`/bookings/${b.id}/cancel`, "POST", {})),
+    noshow: () => dialogForm("Отметить неявку", c.trackedSession(b) ? "<p>Запись будет закрыта. Итоговый счёт за сеанс не появится.</p>" : "<p>Мастер не пришёл. Предоплата остаётся у студии, запись закроется.</p>", () => api(`/admin/bookings/${b.id}/no-show`, "POST", {})),
+    cancel: () => dialogForm("Отменить бронь", c.paidBooking(b) && b.status !== "pending" ? "<p>Запись будет снята. Решение о возврате можно оформить в карточке записи.</p>" : "<p>Бронь будет отменена по правилам студии: при ранней отмене предоплата вернётся мастеру на баланс, при поздней — по регламенту.</p>", () => api(`/bookings/${b.id}/cancel`, "POST", {})),
   };
   $$("[data-panel-act]").forEach((x) => (x.onclick = () => {
     $("#dialog").classList.remove("is-panel");

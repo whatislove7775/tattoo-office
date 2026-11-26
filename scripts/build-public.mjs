@@ -1,7 +1,7 @@
 import {responsiveImages} from "./responsive-images.mjs";
 import {mkdir,cp,readFile,writeFile,rm} from 'node:fs/promises';
 import {defaults} from '../server/domain.js';
-import {bookingTerms} from '../server/booking-terms.js';
+import {bookingTerms,paidBookingTerms} from '../server/booking-terms.js';
 await rm('dist',{recursive:true,force:true});await mkdir('dist');
 for(const folder of ['assets','css','js'])await cp(folder,`dist/${folder}`,{recursive:true});
 await mkdir('dist/interior');
@@ -12,5 +12,5 @@ await writeFile('dist/index.html',html.replace('<script src="js/sound.js">','<sc
 // Превью-сборки Vercel работают в тестовом режиме со своей базой (api/demo.js).
 const demo=process.env.VERCEL_ENV==='preview'||process.env.OFFICE_DEMO==='1';
 await writeFile('dist/public-mode.js','window.OFFICE_PUBLIC_ONLY = false;\n'+(demo?'window.OFFICE_API_BASE = "/api/demo";\n':''));
-await writeFile('dist/public-data.json',JSON.stringify({settings:defaults,resources:[],catalog:[],content:[],telegramEnabled:false,paymentEnabled:false,bookingTerms}));
+await writeFile('dist/public-data.json',JSON.stringify({settings:defaults,resources:[],catalog:[],content:[],telegramEnabled:false,paymentEnabled:false,bookingTerms,paidBookingTerms}));
 console.log('Site built: static assets; API requests are proxied to the separate server.');

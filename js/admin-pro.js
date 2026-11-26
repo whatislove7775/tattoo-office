@@ -14,7 +14,7 @@ const plural = (n, one, few, many) => {
 };
 const DEFAULT_TEMPLATES = ["Спасибо за обращение! Мы уже разбираемся.", "Спасибо за идею — передали команде студии.", "Извините за неудобство. Свяжемся с вами в ближайшее время."];
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const SEGMENTS = [["masters", "Все мастера"], ["residents", "Резиденты"], ["guests", "Мастера без резидентства"], ["inactive", "Не были 60+ дней"]];
+const SEGMENTS = [["masters", "Все мастера"], ["residents", "Участники клуба"], ["guests", "Мастера вне клуба"], ["inactive", "Не были 60+ дней"]];
 export const isShift = () => c.state().me?.staffLevel === "shift";
 const mskDay = (d) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(d));
 
@@ -44,8 +44,8 @@ export function overviewHTML(ov) {
     item(a.cancelRequests.length, "Запросы на отмену ждут решения", a.cancelRequests.slice(0, 4).map((b) => `<button type="button" class="small" data-booking-open="${b.id}"><u>${esc(b.user_name)}: решить</u></button>`).join(" ")),
     item(a.newFeedback, "Новые обращения", go("feedback", "Прочитать")),
     item(a.lowStock.length, "Расходники заканчиваются", go("catalog", "Товары и услуги"), names(a.lowStock)),
-    item(a.residentCandidates.length, `Кандидаты в резиденты (${ov.residentRule.sessions}+ сеансов за ${ov.residentRule.days} дн.)`, a.residentCandidates.slice(0, 3).map((u) => `<button type="button" class="small" data-make-resident="${u.id}"><u>${esc(u.name)}: сделать резидентом</u></button>`).join(" "), names(a.residentCandidates)),
-    item(a.inactiveResidents.length, `Резиденты не бронировали ${ov.residentRule.inactiveDays}+ дней`, go("users", "Список"), names(a.inactiveResidents)),
+    item(a.residentCandidates.length, `Кандидаты в клуб (${ov.residentRule.sessions}+ сеансов за ${ov.residentRule.days} дн.)`, a.residentCandidates.slice(0, 3).map((u) => `<button type="button" class="small" data-make-resident="${u.id}"><u>${esc(u.name)}: добавить в клуб</u></button>`).join(" "), names(a.residentCandidates)),
+    item(a.inactiveResidents.length, `Участники клуба не бронировали ${ov.residentRule.inactiveDays}+ дней`, go("users", "Список"), names(a.inactiveResidents)),
     item(a.risky.length, "Мастера с 2+ неявками за 90 дней", a.risky.slice(0, 3).map((u) => `<button type="button" class="small" data-full-prepay="${u.id}"><u>${esc(u.name)}: полная предоплата</u></button>`).join(" ")),
     item(a.incompleteProfiles.length, "Профили мастеров без фото, города или описания", "", names(a.incompleteProfiles)),
     item(a.waitlist.length, "В листе ожидания", "", `<small class="muted">${a.waitlist.slice(0, 4).map((w) => `${esc(w.user_name)} · ${dateLabel(w.date + "T12:00:00+03:00")} ${w.hour}:00`).join(", ")}</small>`),
@@ -90,10 +90,20 @@ function filteredPayments(a) {
     return (!f.from || d >= f.from) && (!f.to || d <= f.to) && (f.method === "all" || paymentMethod(p, a) === f.method) && (f.kind === "all" || p.kind === f.kind);
   });
 }
-function fiscalDraftHTML({ drafts, review, requestExamples }, { esc, money }) {
+function fiscalDraftHTML({ drafts, review, requestExamples, registration }, { esc, money }) {
   const modes = { partial_prepayment: "Частичная предоплата", full_prepayment: "Полная предоплата", full_payment: "Полный расчёт" };
   const types = { cashless: "Безналичный расчёт", cash: "Наличные", prepayment: "Зачёт предоплаты" };
-  return `<h2>Предпросмотр чеков</h2><p class="small muted">Черновики для сверки. Касса их не получила.</p>
+  const statuses = {
+    succeeded: "зарегистрирован",
+    pending: "ожидает регистрации",
+    canceled: "касса не зарегистрировала чек",
+    unreported: "ЮKassa не передала статус",
+    unavailable: "не удалось получить статус от ЮKassa",
+  };
+  const receiptStatus = registration ? `<section class="note-paper"><h3>${registration.test ? "Статус в тестовой ЮKassa" : "Статус в ЮKassa"}</h3>
+    <p>Чек прихода · ${statuses[registration.charge]}</p>
+    ${registration.refund ? `<p>Чек возврата · ${statuses[registration.refund]}</p>` : ""}</section>` : "";
+  return `<h2>Сверка чеков</h2>${receiptStatus}<p class="small muted">Ниже расчётный состав позиций для сверки с кассовым чеком.</p>
     ${drafts.map((draft) => `<section class="note-paper"><h3>${modes[draft.mode]} · ${money(draft.total)}</h3>
       <ul>${draft.items.map((item) => `<li>${esc(item.description)} · ${item.quantity} × ${money(item.unitPrice)}</li>`).join("")}</ul>
       <ul>${draft.settlements.map((part) => `<li>${types[part.type]} · ${money(part.amount)}</li>`).join("")}</ul></section>`).join("")}
@@ -109,7 +119,7 @@ export function financeHTML(a, s) {
   return `<div class="note-paper">${s.mode === "test" ? "Тестовый реестр. Это не реальные поступления." : "Реестр платежей"}</div>
   <form class="pro-filter" id="finance-filter"><label class="field"><span>С</span><input type="date" name="from" value="${financeFilter.from}"></label><label class="field"><span>По</span><input type="date" name="to" value="${financeFilter.to}"></label>${select("method", "Способ", [["all", "Все"], ...Object.entries(METHOD)], financeFilter.method)}${select("kind", "Назначение", [["all", "Все"], ...Object.entries(c.paymentLabels)], financeFilter.kind)}<div class="pro-filter__actions"><button type="button" class="chrome" data-finance-range="month">Этот месяц</button><button type="button" class="chrome" data-finance-range="all">Весь период</button><button type="button" class="chrome" id="finance-csv">Скачать для Excel</button><button type="button" class="chrome" data-fiscal-example>Пример чеков</button></div></form>
   <div class="pro-tiles"><div class="pro-tile"><span>Получено</span><strong>${money(sum(paid))}</strong><small>${plural(paid.length, "платёж", "платежа", "платежей")}</small></div><div class="pro-tile"><span>Ожидает оплаты</span><strong>${money(sum(pending))}</strong><small>${plural(pending.length, "платёж", "платежа", "платежей")}</small></div>${byMethod.map(([m, v]) => `<div class="pro-tile"><span>${METHOD[m]}</span><strong>${money(v)}</strong></div>`).join("")}</div>
-  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}${p.kind === "hold" ? "" : `<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Черновик чека</button>`}</td></tr>`))}`;
+  ${c.table(["Дата", "Мастер", "Назначение", "Способ", "Сумма", "Статус"], rows.map((p) => `<tr><td>${dateLabel(p.created_at)}<br><small class="muted">№ ${p.id.slice(0, 8)}</small></td><td>${userOf(p) ? `<button type="button" class="pro-link" data-user-card="${userOf(p).user_id}">${esc(userOf(p).user_name)}</button>` : "—"}</td><td>${c.paymentLabels[p.kind]}</td><td>${METHOD[paymentMethod(p, a)]}</td><td>${money(p.amount)}</td><td>${esc(c.paymentStatus(p))}${p.kind === "hold" ? "" : `<br><button type="button" class="pro-link small" data-fiscal-payment="${p.id}">Сверить чек</button>`}</td></tr>`))}`;
 }
 function downloadCSV(name, header, rows) {
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -124,14 +134,14 @@ function downloadCSV(name, header, rows) {
 // ---------- Склад и промокоды ----------
 export function catalogExtrasHTML(a) {
   const { esc, money, dateLabel } = c;
-  const low = a.catalog.filter((x) => x.kind === "product" && x.active && x.stock <= (x.min_stock ?? 5));
+  const low = a.catalog.filter((x) => x.kind === "product" && !x.unlimited && x.active && x.stock <= (x.min_stock ?? 5));
   const purchase = low.map((x) => `${x.name} — ${Math.max(1, (x.min_stock ?? 5) * 2 - x.stock)} шт.`).join("\n");
   return `<h3 class="pro-section-title">Список закупки</h3>${low.length ? `<div class="pro-purchase"><pre>${esc(purchase)}</pre><button type="button" class="chrome" id="copy-purchase" data-text="${esc(purchase)}">Скопировать список</button></div>` : '<p class="small muted">Все расходники выше минимального остатка.</p>'}
   <h3 class="pro-section-title">Движение склада</h3>${(a.stockMoves || []).length ? c.table(["Дата", "Позиция", "Количество", "Причина"], a.stockMoves.map((m) => `<tr><td>${dateLabel(m.created_at)}</td><td>${esc(m.item_name)}</td><td>${m.delta > 0 ? "+" : ""}${m.delta}</td><td>${esc(m.reason)}</td></tr>`)) : '<p class="small muted">Приходов и списаний пока не было.</p>'}`;
 }
 export function promosHTML(a) {
   const { esc, money, dateLabel } = c;
-  const promoRows = (a.promos || []).map((p) => `<tr><td><b>${esc(p.code)}</b>${p.note ? `<br><small class="muted">${esc(p.note)}</small>` : ""}</td><td>${p.kind === "percent" ? `−${p.value}%` : `−${money(p.value)}`}</td><td>${p.used}${p.max_uses ? ` из ${p.max_uses}` : ""}</td><td>${p.expires_at ? "до " + dateLabel(p.expires_at + "T12:00:00+03:00") : "без срока"}</td><td>${p.active ? "Активен" : "Выключен"}</td><td><button type="button" data-edit-promo="${esc(p.code)}">Изменить</button> <button type="button" data-delete-promo="${esc(p.code)}">Удалить</button></td></tr>`);
+  const promoRows = (a.promos || []).map((p) => `<tr><td><b>${esc(p.code)}</b>${p.note ? `<br><small class="muted">${esc(p.note)}</small>` : ""}</td><td>${p.kind === "percent" ? `−${p.value}%` : `−${money(p.value)}`}</td><td>${p.used}${p.max_uses === 1 ? " из 1 · одноразовый" : p.max_uses ? ` из ${p.max_uses}` : ""}</td><td>${p.expires_at ? "до " + dateLabel(p.expires_at + "T12:00:00+03:00") : "без срока"}</td><td>${p.active ? "Активен" : "Выключен"}</td><td><button type="button" data-edit-promo="${esc(p.code)}">Изменить</button> <button type="button" data-delete-promo="${esc(p.code)}">Удалить</button></td></tr>`);
   return `<h3 class="pro-section-title">Промокоды и подарочные сертификаты</h3><p data-help class="small muted">Скидка применяется к аренде места (без расходников). Сертификат — это промокод на сумму с лимитом 1 использование.</p><div class="admin-tools"><button type="button" class="chrome" id="add-promo">+ Промокод</button><button type="button" class="chrome" id="add-gift">+ Подарочный сертификат</button></div>${promoRows.length ? c.table(["Код", "Скидка", "Использован", "Срок", "Статус", ""], promoRows) : '<p class="small muted">Промокодов пока нет.</p>'}`;
 }
 
@@ -142,7 +152,7 @@ export function settingsFieldset(s) {
   return `<fieldset class="admin-group"><legend>Автоматизация</legend>
   <label class="check"><input name="pro_autoInvoice" type="checkbox" ${s.autoInvoice === true ? "checked" : ""}><span>Выставлять итоговый счёт автоматически через 15 минут после окончания сеанса (по забронированному тарифу)</span></label>
   <p data-help class="small muted">Напоминания уходят сами: за ${s.reminderHours || 24} ч и за 2 ч до сеанса, а также через сутки после сеанса, если счёт не оплачен. Мастер из листа ожидания получает сообщение, когда место освобождается.</p>
-  <div class="form-grid">${field("pro_resSessions", "Кандидат в резиденты: сеансов", rr.sessions ?? 8, "number", 'min="1" max="100" step="1" data-plain-number="true"')}${field("pro_resDays", "…за дней", rr.days ?? 60, "number", 'min="7" max="365" step="1" data-plain-number="true"')}${field("pro_resInactive", "Резидент неактивен после, дней", rr.inactiveDays ?? 90, "number", 'min="14" max="365" step="1" data-plain-number="true"')}</div>
+  <div class="form-grid">${field("pro_resSessions", "Кандидат в клуб: сеансов", rr.sessions ?? 8, "number", 'min="1" max="100" step="1" data-plain-number="true"')}${field("pro_resDays", "…за дней", rr.days ?? 60, "number", 'min="7" max="365" step="1" data-plain-number="true"')}${field("pro_resInactive", "Участник клуба неактивен после, дней", rr.inactiveDays ?? 90, "number", 'min="14" max="365" step="1" data-plain-number="true"')}</div>
   <div class="wide">${textarea("pro_replyTemplates", "Шаблоны ответов на обращения (каждый с новой строки)", (s.replyTemplates || DEFAULT_TEMPLATES).join("\n"))}</div></fieldset>`;
 }
 export function settingsPayload(d) {
@@ -154,7 +164,7 @@ export function settingsPayload(d) {
   for (const k of Object.keys(d)) if (k.startsWith("pro_")) delete d[k];
   return out;
 }
-const SETTING_LABELS = { rates: "Тарифы", cities: "Города", deposit: "Предоплата", cancelHours: "Срок отмены", reminderHours: "Напоминание", openHour: "Открытие", closeHour: "Закрытие", rankingRules: "Баллы", priceRules: "Наценки", residentRule: "Правило резидентов", autoInvoice: "Автосчёт", replyTemplates: "Шаблоны ответов", rules: "Правила", privacy: "Политика", consent: "Согласие", offer: "Оферта", legalApproved: "Проверка документов" };
+const SETTING_LABELS = { rates: "Тарифы", cities: "Города", deposit: "Предоплата", cancelHours: "Срок отмены", reminderHours: "Напоминание", openHour: "Открытие", closeHour: "Закрытие", rankingRules: "Баллы", priceRules: "Наценки", residentRule: "Правило клуба", autoInvoice: "Автосчёт", replyTemplates: "Шаблоны ответов", rules: "Правила", privacy: "Политика", consent: "Согласие", offer: "Оферта", legalApproved: "Проверка документов" };
 export function settingsLogHTML(a) {
   const { esc, dateLabel, timeLabel } = c;
   const rows = (a.settingsLog || []).map((x) => `<tr><td>${dateLabel(x.created_at)} ${timeLabel(x.created_at)}</td><td>${esc(x.actor_name || "—")}</td><td>${(x.details?.changed || []).map((k) => esc(SETTING_LABELS[k] || k)).join(", ") || "—"}</td></tr>`);
@@ -185,7 +195,7 @@ export async function userCard(id) {
   const row = c.state().adminData.users.find((x) => x.id === id) || {};
   const stats = { done: data.bookings.filter((b) => b.status === "completed").length, upcoming: data.bookings.filter((b) => ["pending", "confirmed"].includes(b.status) && new Date(b.starts_at) > Date.now()).length, noShows: data.bookings.filter((b) => b.status === "no_show").length, spent: data.payments.filter((p) => p.status === "paid").reduce((t, p) => t + Number(p.amount), 0) };
   const isAdmin = u.role === "admin";
-  modal(`<div class="pro-card"><h2>${esc(u.name)}</h2><p class="small muted" data-keep-case>${u.email ? esc(u.email) + " · " : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? `Админ смены · вход по паролю <button type="button" class="pro-link" id="card-shift-link">скопировать ссылку для входа</button>` : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? "" : isAdmin ? "Администратор" : u.accountType === "customer" ? "Клиент" : u.role === "resident" ? "Резидент" : "Мастер"}${u.city ? " · " + esc(u.city) : ""} · с ${dateLabel(u.createdAt)}${u.telegramLinked ? " · Telegram подключён" : ""}</p><div class="pro-tags">${tagChips(row)}</div>
+  modal(`<div class="pro-card"><h2>${esc(u.name)}</h2><p class="small muted" data-keep-case>${u.email ? esc(u.email) + " · " : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? `Админ смены · вход по паролю <button type="button" class="pro-link" id="card-shift-link">скопировать ссылку для входа</button>` : ""}${isAdmin && u.staffLevel === "shift" && !u.email ? "" : isAdmin ? "Администратор" : u.accountType === "customer" ? "Клиент" : u.role === "resident" ? "Club member" : "Мастер"}${u.city ? " · " + esc(u.city) : ""} · с ${dateLabel(u.createdAt)}${u.telegramLinked ? " · Telegram подключён" : ""}</p><div class="pro-tags">${tagChips(row)}</div>
   ${isAdmin ? "" : `<div class="pro-tiles"><div class="pro-tile"><span>Сеансов</span><strong>${stats.done}</strong></div><div class="pro-tile"><span>Впереди</span><strong>${stats.upcoming}</strong></div><div class="pro-tile"><span>Неявки</span><strong>${stats.noShows}</strong></div>${owner ? `<div class="pro-tile"><span>Оплачено</span><strong>${money(stats.spent)}</strong></div><div class="pro-tile"><span>Баланс</span><strong>${money(u.balance)}</strong></div>` : ""}</div>`}
   ${owner ? `<form id="card-extra" class="pro-card__form"><h3>Заметки администратора</h3><label class="field"><span>Видны только администраторам</span><textarea name="notes" maxlength="4000">${esc(u.notes)}</textarea></label>${isAdmin ? select("staffLevel", "Уровень доступа", [["owner", "Владелец — всё, включая деньги и настройки"], ["shift", "Администратор смены — расписание и брони"]], u.staffLevel) : `<label class="check"><input type="checkbox" name="fullPrepay" ${u.fullPrepay ? "checked" : ""}><span>Полная предоплата для новых броней (защита от неявок)</span></label>`}<button type="submit" class="chrome">Сохранить</button></form>
   ${u.accountType === 'master' ? `<div class="pro-card__form"><h3>Профиль мастера</h3><p class="small muted">Имя, фото, описание, ссылка для записи, работы и эскизы.</p><button type="button" class="chrome" id="card-edit-master">Редактировать профиль и портфолио</button></div>` : ''}
@@ -277,7 +287,7 @@ export function mount(tab) {
   $$("[data-make-resident]").forEach((b) => (b.onclick = () => {
     const u = a.users.find((x) => x.id === b.dataset.makeResident);
     if (!u) return;
-    dialogForm("Сделать резидентом", `<p>${c.esc(u.name)} получит тариф резидента для новых броней.</p>`, () => api("/admin/users/" + u.id, "PATCH", { role: "resident" }));
+    dialogForm("Добавить в клуб", `<p>${c.esc(u.name)} получит клубный тариф для новых броней.</p>`, () => api("/admin/users/" + u.id, "PATCH", { role: "resident" }));
   }));
   $$("[data-full-prepay]").forEach((b) => (b.onclick = async () => { try { await api(`/admin/users/${b.dataset.fullPrepay}/extra`, "PATCH", { fullPrepay: true }); await reload("Для мастера включена полная предоплата"); } catch (e) { notify(e.message); } }));
   $$("[data-move-booking]").forEach((b) => {
@@ -295,7 +305,7 @@ export function mount(tab) {
       try { await api(`/admin/bookings/${id}/move`, "POST", { resourceId, hour: Number(hour), date: c.state().adminDate }); await reload("Запись перенесена"); } catch (err) { notify(err.message); }
     });
   });
-  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "hold" ? "<p>Запись закроется, запрос на снятие холда уйдёт в ЮKassa.</p>" : "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
+  $$("[data-no-show]").forEach((b) => (b.onclick = () => dialogForm("Отметить неявку", a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "booking_fee" ? "<p>Запись закроется без счёта за доступ к месту.</p>" : a.bookings.find(x => x.id === b.dataset.noShow)?.policy?.bookingPayment === "hold" ? "<p>Запись закроется, запрос на снятие холда уйдёт в ЮKassa.</p>" : "<p>Мастер не пришёл на сеанс. Предоплата остаётся у студии, запись закроется. После двух неявок за 90 дней система предложит включить мастеру полную предоплату.</p>", () => api(`/admin/bookings/${b.dataset.noShow}/no-show`, "POST", {}))));
   // Платежи
   const ff = $("#finance-filter");
   if (ff) {
@@ -338,7 +348,7 @@ export function mount(tab) {
   }));
   if ($("#copy-purchase")) $("#copy-purchase").onclick = async (e) => { try { await navigator.clipboard.writeText(e.currentTarget.dataset.text); notify("Список скопирован"); } catch { notify("Не удалось скопировать"); } };
   // Промокоды
-  const promoForm = (p, gift) => dialogForm(p ? "Промокод" : gift ? "Подарочный сертификат" : "Новый промокод", `${field("code", "Код", p?.code || (gift ? "GIFT-" + Math.random().toString(36).slice(2, 8).toUpperCase() : ""), "text", `required pattern="[A-Za-zА-Яа-яЁё0-9_-]{3,32}" ${p ? "readonly" : ""}`)}${select("kind", "Тип", [["percent", "Процент от аренды"], ["amount", "Сумма, ₽"]], p?.kind || (gift ? "amount" : "percent"))}${field("value", "Размер скидки (% или ₽)", p ? (p.kind === "amount" ? p.value / 100 : p.value) : gift ? 3000 : 10, "number", 'required min="1" step="1" data-plain-number="true"')}${field("maxUses", "Лимит использований (пусто — без лимита)", p ? p.max_uses ?? "" : gift ? 1 : "", "number", 'min="1" step="1" data-plain-number="true"')}${field("expiresAt", "Действует до", p?.expires_at || "", "date")}${field("note", "Заметка", p?.note || (gift ? "Подарочный сертификат" : ""), "text", 'maxlength="200"')}<label class="check"><input type="checkbox" name="active" ${p?.active === false ? "" : "checked"}><span>Активен</span></label>`, (d) => api("/admin/promos", "POST", { ...d, value: d.kind === "amount" ? Math.round(Number(d.value) * 100) : Number(d.value), maxUses: d.maxUses === "" ? null : Number(d.maxUses), active: d.active === "on" }));
+  const promoForm = (p, gift) => dialogForm(p ? "Промокод" : gift ? "Подарочный сертификат" : "Новый промокод", `${field("code", "Код", p?.code || (gift ? "GIFT-" + Math.random().toString(36).slice(2, 8).toUpperCase() : ""), "text", `required pattern="[A-Za-zА-Яа-яЁё0-9_-]{3,32}" ${p ? "readonly" : ""}`)}${select("kind", "Тип", [["percent", "Процент от аренды"], ["amount", "Сумма, ₽"]], p?.kind || (gift ? "amount" : "percent"))}${field("value", "Размер скидки (% или ₽)", p ? (p.kind === "amount" ? p.value / 100 : p.value) : gift ? 3000 : 10, "number", 'required min="1" step="1" data-plain-number="true"')}<label class="check"><input type="checkbox" name="singleUse" ${p?.max_uses === 1 || gift ? "checked" : ""}><span>Одно использование на всех</span></label>${field("maxUses", "Лимит использований (пусто — без лимита)", p?.max_uses > 1 ? p.max_uses : "", "number", 'min="1" step="1" data-plain-number="true"')}${field("expiresAt", "Действует до", p?.expires_at || "", "date")}${field("note", "Заметка", p?.note || (gift ? "Подарочный сертификат" : ""), "text", 'maxlength="200"')}<label class="check"><input type="checkbox" name="active" ${p?.active === false ? "" : "checked"}><span>Активен</span></label>`, (d) => api("/admin/promos", "POST", { ...d, value: d.kind === "amount" ? Math.round(Number(d.value) * 100) : Number(d.value), maxUses: d.maxUses === "" ? null : Number(d.maxUses), singleUse:d.singleUse === "on", active: d.active === "on" }));
   if ($("#add-promo")) $("#add-promo").onclick = () => promoForm(null, false);
   if ($("#add-gift")) $("#add-gift").onclick = () => promoForm(null, true);
   $$("[data-edit-promo]").forEach((b) => (b.onclick = () => promoForm(a.promos.find((p) => p.code === b.dataset.editPromo))));

@@ -66,6 +66,11 @@ CREATE TABLE IF NOT EXISTS waitlist(id uuid PRIMARY KEY,user_id uuid NOT NULL RE
 CREATE TABLE IF NOT EXISTS promo_codes(code text PRIMARY KEY,kind text NOT NULL CHECK(kind IN ('percent','amount')),value integer NOT NULL CHECK(value>0),max_uses integer,used integer NOT NULL DEFAULT 0,expires_at timestamptz,active boolean NOT NULL DEFAULT true,note text NOT NULL DEFAULT '',created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS stock_moves(id uuid PRIMARY KEY,catalog_id uuid NOT NULL REFERENCES catalog(id),delta integer NOT NULL,reason text NOT NULL DEFAULT '',actor uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now());
 ALTER TABLE catalog ADD COLUMN IF NOT EXISTS min_stock integer NOT NULL DEFAULT 5;
+ALTER TABLE catalog ADD COLUMN IF NOT EXISTS unlimited boolean NOT NULL DEFAULT false;
+ALTER TABLE catalog ADD COLUMN IF NOT EXISTS shop boolean NOT NULL DEFAULT false;
+ALTER TABLE catalog ADD COLUMN IF NOT EXISTS receipt_unmarked boolean NOT NULL DEFAULT false;
+UPDATE catalog SET price=0,stock=0,min_stock=0,unlimited=true,shop=false
+  WHERE name IN ('Защитная плёнка','Набор расходников') AND kind='product' AND NOT unlimited;
 ALTER TABLE resources ADD COLUMN IF NOT EXISTS schedule jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS contact text NOT NULL DEFAULT '';
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS reply text NOT NULL DEFAULT '';
@@ -75,6 +80,8 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS started_at timestamptz;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS finished_at timestamptz;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS first_ends_at timestamptz;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS hold_expires_at timestamptz;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS refund_id text;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS refund_requested_at timestamptz;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS checkout_attempt integer NOT NULL DEFAULT 0;
 CREATE TABLE IF NOT EXISTS booking_segments(
   id uuid PRIMARY KEY, booking_id uuid NOT NULL REFERENCES bookings(id),
@@ -84,7 +91,8 @@ CREATE TABLE IF NOT EXISTS booking_segments(
 );
 CREATE INDEX IF NOT EXISTS booking_segments_resource_idx ON booking_segments(resource_id,starts_at);
 CREATE OR REPLACE VIEW booking_occupancy AS
-  SELECT id AS booking_id,id AS event_id,resource_id,starts_at,COALESCE(first_ends_at,ends_at) AS ends_at,status FROM bookings
+  SELECT id AS booking_id,id AS event_id,resource_id,starts_at,COALESCE(first_ends_at,ends_at) AS ends_at,
+    CASE WHEN status='cancel_requested' AND policy @> '{"bookingPayment":"booking_fee"}' THEN 'cancelled' ELSE status END AS status FROM bookings
   UNION ALL
   SELECT b.id,s.id,s.resource_id,s.starts_at,s.ends_at,b.status FROM booking_segments s JOIN bookings b ON b.id=s.booking_id;
 
@@ -97,3 +105,5 @@ CREATE TABLE IF NOT EXISTS master_about_photos(
   image text NOT NULL, thumbnail text NOT NULL
 );
 CREATE INDEX IF NOT EXISTS master_about_photos_owner ON master_about_photos(user_id);
+
+CREATE TABLE IF NOT EXISTS ranking_seasons(year integer PRIMARY KEY, prizes jsonb NOT NULL, examples boolean NOT NULL, winners jsonb);

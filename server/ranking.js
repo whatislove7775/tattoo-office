@@ -1,7 +1,7 @@
 import {masterDirectory} from './master-directory.js';
 import {pointRules} from "./ranking-points.js";
-export async function masterRanking(db,{period='all'}={}) {
-  const masters=(await masterDirectory(db,{period})).filter(m=>m.rankingVisible && (m.registered||m.featured))
+export async function masterRanking(db,{period='all',year}={}) {
+  const masters=(await masterDirectory(db,{period,year})).filter(m=>m.rankingVisible && (m.registered||m.featured))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'ru')||a.id.localeCompare(b.id));
   const rules=pointRules((await db.query("SELECT data FROM settings WHERE id=1")).rows[0]?.data);
   return {rules,period,masters:masters.map(({rankingVisible,portfolio,drafts,bio,...m},i)=>({...m,rank:i+1}))};

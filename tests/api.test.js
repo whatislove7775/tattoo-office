@@ -62,6 +62,7 @@ before(async () => {
   resident = await register("resident@test.invalid");
   await db.query("UPDATE users SET role='resident' WHERE email='resident@test.invalid'");
   other = await register("other@test.invalid");
+  await db.query("INSERT INTO catalog(id,name,kind,price,stock) VALUES($1,'Картридж для тестов','product',12500,8)", [randomUUID()]);
   pub = (await request("/public")).data;
 });
 after(async () => {
@@ -165,7 +166,7 @@ test("payment is idempotent, credits cancellation once and uses balance first", 
   );
 });
 test("expired unpaid bookings release stock and balance", async () => {
-  const item = pub.catalog.find((x) => x.kind === "product");
+  const item = pub.catalog.find((x) => x.kind === "product" && !x.unlimited);
   const b = await request(
     "/bookings",
     "POST",
@@ -196,7 +197,7 @@ test("expired unpaid bookings release stock and balance", async () => {
   );
 });
 test("inventory rejects overselling and negative quantities", async () => {
-  const item = pub.catalog.find((x) => x.kind === "product");
+  const item = pub.catalog.find((x) => x.kind === "product" && !x.unlimited);
   for (const qty of [item.stock + 1, -1])
     assert.ok(
       [400, 409].includes(
@@ -688,7 +689,8 @@ test("staff expenses update an open invoice, preserve a settled invoice and dedu
   assert.equal((await request("/admin/payments/" + separate + "/cash", "POST", {}, admin)).status, 200);
   const after = (await request("/me/ranking", "GET", null, cookie)).data;
   assert.equal(after.breakdown.bookings, before.breakdown.bookings);
-  assert.equal(after.breakdown.services, before.breakdown.services + 20);
+  assert.deepEqual(after.breakdown, {bookings:70});
+  assert.equal(after.score,before.score);
   const history = (await request("/bookings", "GET", null, cookie)).data;
   assert.equal(history.payments.find((p) => p.id === finalId).amount, 400000);
   assert.equal(history.payments.find((p) => p.id === separate).status, "paid");
@@ -700,4 +702,52 @@ test("staff expenses update an open invoice, preserve a settled invoice and dedu
   assert.equal((await db.query("SELECT amount FROM payments WHERE id=$1", [checkout])).rows[0].amount, 15000);
   const notes = (await request("/notifications", "GET", null, cookie)).data.notifications;
   assert.ok(notes.some((n) => n.message.includes("Кола × 1")));
+});
+
+test("catalogue supports unlimited supplies and adds a shop item to the owner's session", async () => {
+  const buyer = await register("shop-buyer@test.invalid");
+  const item = pub.catalog.find(x => x.name === "Защитная плёнка");
+  const kit = pub.catalog.find(x => x.name === "Набор расходников");
+  assert.ok([item,kit].every(x => x.unlimited && x.price === 0 && x.onlineReceipt));
+  const created = await request("/admin/catalog", "POST", {
+    name:"Тестовый товар Shop", kind:"product", price:32500, stock:4, shop:true, receiptUnmarked:true,
+  }, admin);
+  assert.equal(created.status,200);
+  const catalogue = (await request("/public")).data.catalog;
+  assert.ok(catalogue.find(x => x.id === created.data.id)?.shop);
+  const book = await request("/bookings","POST",{
+    ...booking(pub.resources[0].id,tomorrow(23)), extras:[{id:item.id,qty:25},{id:kit.id,qty:5}],
+  },buyer);
+  assert.equal(book.status,201);
+  const b = (await db.query("SELECT total,rate,extras FROM bookings WHERE id=$1",[book.data.bookingId])).rows[0];
+  assert.equal(b.total,b.rate);
+  assert.equal(b.extras[0].qty,25);
+  assert.equal((await db.query("SELECT stock FROM catalog WHERE id=$1",[item.id])).rows[0].stock,0);
+  const path = "/bookings/" + book.data.bookingId + "/session-expenses";
+  const extra = { requestId:randomUUID(), shop:true, items:[{id:created.data.id,qty:2}] };
+  assert.equal((await request(path,"POST",extra,buyer)).status,409);
+  await db.query("UPDATE bookings SET status='confirmed',starts_at=now()-interval '1 hour',ends_at=now()+interval '2 hours' WHERE id=$1",[book.data.bookingId]);
+  assert.equal((await request(path,"POST",extra,resident)).status,409);
+  assert.equal((await request(path,"POST",extra,buyer)).status,201);
+  assert.equal((await request(path,"POST",extra,buyer)).status,201);
+  assert.equal((await db.query("SELECT total FROM bookings WHERE id=$1",[book.data.bookingId])).rows[0].total,b.rate+65000);
+  assert.equal((await db.query("SELECT stock FROM catalog WHERE id=$1",[created.data.id])).rows[0].stock,2);
+});
+test("a dated one-use promo is reserved once and becomes final after confirmation", async () => {
+  const code = "SINGLE-DATE";
+  const buyers = await Promise.all([register("promo-a@test.invalid"),register("promo-b@test.invalid")]);
+  assert.equal((await request("/admin/promos","POST",{code,kind:"percent",value:5,singleUse:true,expiresAt:tomorrow(30)},admin)).status,200);
+  const data = await Promise.all([
+    request("/bookings","POST",{...booking(pub.resources[1].id,tomorrow(25)),promo:code},buyers[0]),
+    request("/bookings","POST",{...booking(pub.resources[2].id,tomorrow(25)),promo:code},buyers[1]),
+  ]);
+  assert.deepEqual(data.map(x=>x.status).sort(),[201,409]);
+  const owner = data[0].status === 201 ? buyers[0] : buyers[1];
+  const pending = data.find(x=>x.status === 201).data;
+  await db.query("UPDATE bookings SET expires_at=now()-interval '1 second' WHERE id=$1",[pending.bookingId]);
+  const next = await request("/bookings","POST",{...booking(pub.resources[1].id,tomorrow(25)),promo:code},owner);
+  assert.equal(next.status,201);
+  assert.equal((await request("/payments/"+next.data.paymentId+"/test","POST",{},owner)).status,200);
+  assert.equal((await request("/bookings/"+next.data.bookingId+"/cancel","POST",{},owner)).status,200);
+  assert.equal((await request("/promo/check","POST",{code},owner)).status,404);
 });

@@ -1,4 +1,5 @@
-import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
+import {FIRST_PRIZE_YEAR,currentRankingSeason,openRankingSeason} from "./ranking-seasons.js";
+import {POINT_RULES,pointRules,rankingFacts,bookingEarns,sessionPoints,rankingYear} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import { updateStudioWorkspaces } from "./studio-workspaces.js";
 import {updateOperatorDetails} from "./operator-details.js";
@@ -10,8 +11,9 @@ import {masterDirectory,catalogIds,catalogContentId,bookingContact} from "./mast
 import {jpegPayload,mediaView} from "./master-media.js";
 import {imageSrc} from "./site-media.js";
 import {createInvoice} from "./invoicing.js";
-import {bookingTerms, bookingTermsVersion, holdAmount, holdCancelHours, holdDays} from "./booking-terms.js";
-import {checkoutEnabled, holdEnabled, holdBooking, releaseBookingHold, sessionRoutes} from "./booking-sessions.js";
+import {bookingTerms, bookingTermsVersion, holdAmount, holdCancelHours, holdDays, paidBookingTerms} from "./booking-terms.js";
+import {checkoutEnabled, holdEnabled, paidBookingEnabled, holdBooking, sessionBooking, releaseBookingHold, sessionRoutes} from "./booking-sessions.js";
+import {bookingFee, transferHours, paidBookingVersion, paidBooking, bookingTransferRoutes, hasBookingOverlap} from "./paid-booking.js";
 import {checkoutReceipt, supportsOnlineReceipt} from "./checkout-receipt.js";
 import { fiscalDrafts, fiscalExample } from "./fiscal-drafts.js";
 import {addBookingExpenses} from "./booking-expenses.js";
@@ -19,9 +21,9 @@ import {adminProRoutes,ownerOnly,isOwner,shiftAdminsByPassword,assertShiftPasswo
 import { masterRanking, registeredMasterProfile } from "./ranking.js";
 import { emailConfigured } from "./integrations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
-import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment } from "./yookassa.js";
+import { yookassaEnabled, yookassaTest, yookassaRequest, verifyYookassaPayment, verifyYookassaRefund, yookassaFiscalStatus, verifyYookassaLiveStore } from "./yookassa.js";
 import express from "express";
-import { expireReservations } from "./reservations.js";
+import { expireReservations, releasePromo } from "./reservations.js";
 import { startWorker } from "./worker.js";
 import { telegramRoutes } from "./telegram.js";
 import helmet from "helmet";
@@ -103,15 +105,15 @@ export async function createApp(db) {
     ]);
   };
   if (!(await one(db, "SELECT id FROM catalog LIMIT 1")))
-    for (const [name, kind, price, stock] of [
-      ["Сборка места", "service", 30000, 0],
-      ["Разборка места", "service", 30000, 0],
-      ["Защитная плёнка", "product", 15000, 30],
-      ["Набор расходников", "product", 45000, 20],
+    for (const [name, kind, price, unlimited] of [
+      ["Сборка места", "service", 30000, false],
+      ["Разборка места", "service", 30000, false],
+      ["Защитная плёнка", "product", 0, true],
+      ["Набор расходников", "product", 0, true],
     ])
       await db.query(
-        "INSERT INTO catalog(id,name,kind,price,stock) VALUES($1,$2,$3,$4,$5)",
-        [uuid(), name, kind, price, stock],
+        "INSERT INTO catalog(id,name,kind,price,unlimited) VALUES($1,$2,$3,$4,$5)",
+        [uuid(), name, kind, price, unlimited],
       );
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
     const email = validEmail(process.env.ADMIN_EMAIL);
@@ -254,8 +256,7 @@ export async function createApp(db) {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
   };
   const release = async (q, b, status) => {
-    if (b.policy?.promo?.code)
-      await q.query("UPDATE promo_codes SET used=GREATEST(0,used-1) WHERE code=$1", [b.policy.promo.code]);
+    await releasePromo(q, b);
     if (b.balance_used)
       await ledger(
         q,
@@ -266,7 +267,7 @@ export async function createApp(db) {
       );
     for (const x of b.extras)
       if (x.kind === "product")
-        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+        await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
           x.qty,
           x.id,
         ]);
@@ -315,6 +316,7 @@ export async function createApp(db) {
     ));
   };
   sessionRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, createInvoice, addBookingExpenses, refreshCalendarBusy });
+  bookingTransferRoutes(app, { db, auth, lock, one, settings, available, enqueue, audit, expire, refreshCalendarBusy });
   telegramRoutes(app, { db, session, auth });
   adminProRoutes(app, { db, one, lock, audit, enqueue, ledger, settings, staff, session, available, expire });
   adminMasterProfileRoutes(app, { db, one, ownerOnly, audit });
@@ -327,6 +329,7 @@ export async function createApp(db) {
     const s = await settings();
     res.json({
       settings: s,
+      prizeFund: await currentRankingSeason(db),
       resources: (
         await db.query("SELECT id,name,active,city,photo FROM resources WHERE NOT deleted ORDER BY name")
       ).rows,
@@ -343,6 +346,8 @@ export async function createApp(db) {
         !!process.env.TELEGRAM_CLIENT_SECRET,
       paymentEnabled: checkoutEnabled(s),
       bookingHold: holdEnabled(s) ? { amount:holdAmount, days:holdDays, cancelHours:holdCancelHours, version:bookingTermsVersion } : null,
+      paidBooking: paidBookingEnabled(s) ? { amount:bookingFee, transferHours, version:paidBookingVersion } : null,
+      paidBookingTerms,
       bookingTerms,
     });
   });
@@ -354,14 +359,26 @@ export async function createApp(db) {
   });
   app.get("/api/ranking", async (req,res) => {
     res.set("Cache-Control", "no-store");
-    if(req.query.period && !["all","month"].includes(req.query.period))fail("Выберите период рейтинга");
+    if(req.query.period && !["all","month","year"].includes(req.query.period))fail("Выберите период рейтинга");
+    if(req.query.period==="year"){
+      const year=rankingYear();
+      const prizeFund=await currentRankingSeason(db);
+      const ranking=await masterRanking(db,{period:"year",year});
+      const previous=(await db.query("SELECT year,prizes,examples,winners FROM ranking_seasons WHERE year >= $1 AND winners IS NOT NULL ORDER BY year DESC LIMIT 1",[FIRST_PRIZE_YEAR])).rows[0];
+      return res.json({...ranking,year,prizeFund,previous});
+    }
     res.json(await masterRanking(db,{period:req.query.period||"all"}));
   });
   app.get("/api/me/ranking", auth, async (req,res) => {
     if(req.user.account_type!=="master")fail("Баллы доступны мастерам",403);
     const master=await registeredMasterProfile(db,req.user.id);
     if(!master)fail("Мастер не найден",404);
-    res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress:master.profileProgress,rules:pointRules(await settings())});
+    const hasWork=await one(db,"SELECT 1 FROM master_media WHERE user_id=$1 AND kind='portfolio' LIMIT 1",[req.user.id]);
+    const fields={name:!!master.name?.trim(),avatar:!!master.avatar,city:!!master.city,bio:master.bio?.trim().length>=80,specialty:!!master.specialty?.trim(),experience:!!master.exp?.trim(),portfolio:!!hasWork};
+    const missing=Object.keys(fields).filter(key=>!fields[key]);
+    const total=Object.keys(fields).length;
+    const profileProgress={total,filled:total-missing.length,missing};
+    res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress,rules:pointRules(await settings())});
   });
   app.get("/api/me", async (req, res) => {
     const user = safe(req.user);
@@ -683,14 +700,15 @@ export async function createApp(db) {
       const cash = u.role === "resident" && u.deposit_waived;
       const fullPrepay = u.profile?.fullPrepay === true && !cash;
       const bonus = await loyalty(q, u.id);
-      const hold = !manual && !cash && !fullPrepay && !bonus.freeNext && holdEnabled(s);
-      if (hold) {
-        if (req.body.bookingTermsVersion !== bookingTermsVersion)
+      const eligible = !manual && !cash && !fullPrepay && !bonus.freeNext;
+      const fee = eligible && paidBookingEnabled(s);
+      const hold = eligible && !fee && holdEnabled(s);
+      if (fee || hold) {
+        if (req.body.bookingTermsVersion !== (fee ? paidBookingVersion : bookingTermsVersion))
           fail("Откройте условия бронирования и подтвердите актуальную редакцию", 409);
-        if (+new Date(start) > Date.now() + holdDays * 86400000)
+        if (hold && +new Date(start) > Date.now() + holdDays * 86400000)
           fail("С блокировкой на карте можно бронировать на пять суток вперёд", 409);
-        if (await one(q, `SELECT id FROM bookings WHERE user_id=$1 AND starts_at<$3 AND ends_at>$2
-          AND status IN ('pending','confirmed','invoiced','completed','cancel_requested') LIMIT 1`, [u.id,start,end]))
+        if (await hasBookingOverlap(q, u.id, start, end))
           fail("У вас уже есть запись на это время", 409);
       }
       const rates = cityRates(s, r.city)[u.role];
@@ -707,14 +725,14 @@ export async function createApp(db) {
           [item.id],
         );
         if (!x) fail("Позиция больше недоступна");
-        if (hold && !supportsOnlineReceipt(x,s.mode)) fail("Товар пока не подключён к онлайн-чекам",409);
+        if ((fee || hold) && !supportsOnlineReceipt(x,s.mode)) fail("Товар пока не подключён к онлайн-чекам",409);
         const qty = integer(
           item.qty,
           1,
           x.kind === "service" ? 1 : 100,
           "Количество",
         );
-        if (x.kind === "product") {
+        if (x.kind === "product" && !x.unlimited) {
           if (x.stock < qty) fail(`Недостаточно на складе: ${x.name}`, 409);
           await q.query("UPDATE catalog SET stock=stock-$1 WHERE id=$2", [
             qty,
@@ -726,6 +744,7 @@ export async function createApp(db) {
           name: x.name,
           kind: x.kind,
           price: x.price,
+          receipt_unmarked: x.receipt_unmarked,
           qty,
         });
       }
@@ -742,11 +761,11 @@ export async function createApp(db) {
       }
       const rate = bonus.freeNext ? 0 : Math.max(0, adjusted.rate - discount),
         total = rate + extras.reduce((a, x) => a + x.price * x.qty, 0),
-        deposit = hold || cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
+        deposit = fee || hold || cash || bonus.freeNext ? 0 : fullPrepay ? total : Math.min(s.deposit, total),
         used = manual ? 0 : Math.min(u.balance, deposit),
         id = uuid();
       await q.query(
-        "INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,extras,total,balance_used,status,expires_at,deposit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',now()+interval '15 minutes',$11)",
+        "INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,extras,total,balance_used,status,expires_at,deposit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',CASE WHEN $12 THEN LEAST($4,now()+interval '15 minutes') ELSE now()+interval '15 minutes' END,$11)",
         [
           id,
           u.id,
@@ -759,14 +778,16 @@ export async function createApp(db) {
           total,
           used,
           deposit,
+          fee,
         ],
       );
       if (used) await ledger(q, u.id, id, -used, "Предоплата с баланса");
       let payment = null;
       await q.query("UPDATE bookings SET policy=$1 WHERE id=$2", [
         JSON.stringify({
-          cancelHours: hold ? holdCancelHours : s.cancelHours,
-          lateCancellation: hold ? "review" : s.lateCancellation,
+          cancelHours: fee ? transferHours : hold ? holdCancelHours : s.cancelHours,
+          lateCancellation: fee || hold ? "review" : s.lateCancellation,
+          ...(fee ? { bookingPayment:"booking_fee", bookingTermsVersion:paidBookingVersion, bookingFee, extensionPriceRules:s.priceRules } : {}),
           ...(hold ? { bookingPayment:"hold", bookingTermsVersion, extensionPriceRules:s.priceRules } : {}),
           rates,
           city: r.city,
@@ -775,7 +796,7 @@ export async function createApp(db) {
           loyaltyFree: bonus.freeNext,
           pricePercent: adjusted.percent,
           baseRate: rates[duration],
-          promo: promo ? { code: promo.code, discount } : undefined,
+          promo: promo ? { code: promo.code, discount, singleUse:promo.max_uses === 1 } : undefined,
           fullPrepay: fullPrepay || undefined,
         }),
         id,
@@ -788,6 +809,11 @@ export async function createApp(db) {
         await q.query("UPDATE bookings SET deposit=0,policy=policy||$2::jsonb WHERE id=$1", [id, JSON.stringify({ masterConfirm: askMaster ? "awaiting" : "skipped", adminCreated: true })]);
         if (askMaster) await enqueue(q, "booking.master_confirm", { bookingId: id });
         await audit(q, req.user.id, "booking.manual", { id });
+      } else if (fee) {
+        payment = uuid();
+        await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'booking_fee',$3)", [payment,id,bookingFee]);
+        await q.query("INSERT INTO consents(id,user_id,kind,version) VALUES($1,$2,'paid_booking',$3)", [uuid(),u.id,paidBookingVersion]);
+        await audit(q, u.id, "booking.fee.terms", { id, version:paidBookingVersion });
       } else if (hold) {
         payment = uuid();
         await q.query("INSERT INTO payments(id,booking_id,kind,amount) VALUES($1,$2,'hold',$3)", [payment,id,holdAmount]);
@@ -872,6 +898,17 @@ export async function createApp(db) {
       ]);
       if (!b || (b.user_id !== req.user.id && req.user.role !== "admin"))
         fail("Бронь не найдена", 404);
+      if (paidBooking(b) && b.status !== "pending") {
+        if (b.status === "cancel_requested") return;
+        if (b.started_at || !["confirmed", "awaiting_date", "no_show"].includes(b.status))
+          fail("Эту бронь нельзя отменить", 409);
+        if (b.status !== "awaiting_date")
+          await enqueue(q, "calendar.delete", { bookingId:b.id });
+        await q.query("UPDATE bookings SET status='cancel_requested' WHERE id=$1", [b.id]);
+        await enqueue(q, "booking.cancel_requested", { bookingId:b.id });
+        await audit(q, req.user.id, "booking.fee.cancel_request", { id:b.id });
+        return;
+      }
       if (
         !["pending", "confirmed"].includes(b.status) ||
         new Date(b.starts_at) <= new Date()
@@ -909,7 +946,7 @@ export async function createApp(db) {
         );
       for (const x of b.extras)
         if (x.kind === "product")
-          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+          await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
             x.qty,
             x.id,
           ]);
@@ -1080,6 +1117,17 @@ export async function createApp(db) {
         if (!Array.isArray(req.body.replyTemplates) || req.body.replyTemplates.length > 20) fail("До 20 шаблонов ответов");
         s.replyTemplates = req.body.replyTemplates.map((t) => String(t).trim().slice(0, 1000)).filter(Boolean);
       }
+      if (req.body.prizeFund !== undefined) {
+        const fund=req.body.prizeFund, season=await openRankingSeason(q);
+        if(fund?.year!==season.year) fail("Год зачёта изменился. Обновите настройки.",409);
+        if(!Array.isArray(fund.prizes)||fund.prizes.length!==3||fund.prizes.some(p=>typeof p!=="string"||p.trim().length>200)||typeof fund.examples!=="boolean")
+          fail("Для каждого из трёх мест укажите приз длиной до 200 символов");
+        const prizes=fund.prizes.map(p=>p.trim());
+        if(JSON.stringify(prizes)!==JSON.stringify(season.prizes)||fund.examples!==season.examples){
+          await q.query("UPDATE ranking_seasons SET prizes=$2,examples=$3 WHERE year=$1",[season.year,JSON.stringify(prizes),fund.examples]);
+          await audit(q,req.user.id,"ranking.prizes.update",{year:season.year,prizes,examples:fund.examples});
+        }
+      }
       if (req.body.rankingRules !== undefined) {
         if (!req.body.rankingRules || typeof req.body.rankingRules !== "object" || Array.isArray(req.body.rankingRules)) fail("Проверьте правила рейтинга");
         const rules=pointRules(old);
@@ -1140,11 +1188,13 @@ export async function createApp(db) {
           fail("Ставка НДС");
         s.vat = req.body.vat;
       }
-      if (s.mode === "live")
-        fail(
-          "Боевой режим заблокирован до проверки кассовых сценариев и инфраструктуры РФ. См. docs/LAUNCH.md",
-          409,
-        );
+      if (s.mode === "live") {
+        if (!s.legalApproved)
+          fail("Подтвердите реквизиты и документы студии перед запуском", 409);
+        if (yookassaTest() || !paidBookingEnabled(s))
+          fail("Для боевого режима нужен настроенный магазин ЮKassa и ставка «Без НДС»", 409);
+        if (old.mode !== "live" || old.inn !== s.inn) await verifyYookassaLiveStore(s.inn);
+      }
       await q.query("UPDATE settings SET data=$1 WHERE id=1", [
         JSON.stringify(s),
       ]);
@@ -1240,28 +1290,8 @@ export async function createApp(db) {
     res.json({ok:true});
   });
   app.patch("/api/admin/masters/:id/points", ownerOnly, async (req,res) => {
-    const target=req.body.score;
-    if(!Number.isSafeInteger(target)||target<0||target>10000000)fail("Укажите целое количество баллов от 0 до 10 000 000");
-    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
-    await db.transaction(async q=>{
-      await lock(q);
-      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
-      if(!master)fail("Мастер не найден",404);
-      if(master.registered) {
-        const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
-        const id=link?.user_id||master.id;
-        // Rebase on earned points, even when an older negative offset clamps the total to zero.
-        const earned=Object.entries(master.pointsBreakdown||{}).filter(([k])=>k!=="adjustment").reduce((sum,[,v])=>sum+v,0);
-        await q.query("UPDATE users SET profile=jsonb_set(profile,'{adminPointsAdjustment}',$1::jsonb) WHERE id=$2",[JSON.stringify(target-earned),id]);
-      } else {
-        const contentId=catalogContentId(master.id);
-        await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[contentId,JSON.stringify({pointsAdjustment:target})]);
-      }
-      await audit(q,req.user.id,"master.points.update",{id:master.id,previous:master.score,score:target});
-    });
-    res.json({ok:true,score:target});
+    fail("Баллы рассчитываются автоматически по завершённым и оплаченным сеансам",405);
   });
-  // История баллов мастера: дата, действие, за что и как начислено (автоматически по правилам рейтинга или вручную).
   app.get("/api/admin/masters/:id/points-history", roles("admin"), async (req,res) => {
     if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
     const master=(await masterDirectory(db,{includeInactive:true})).find(m=>m.id===req.params.id);
@@ -1270,28 +1300,12 @@ export async function createApp(db) {
     const userId=master.registered?(link?.user_id||master.id):null;
     const rub=v=>Math.round(Number(v)/100).toLocaleString("ru-RU")+" ₽", items=[];
     if(userId){
-      const {rules,byUser}=await rankingFacts(db), facts=byUser.get(userId)||{bookings:[],media:[]};
-      for(const b of facts.bookings){
+      const {rules,byUser}=await rankingFacts(db), bookings=byUser.get(userId)||[];
+      for(const b of bookings){
         if(!bookingEarns(b))continue;
-        items.push({at:b.starts_at,action:"Сеанс завершён и оплачен",reason:`Аренда ${rub(b.rate)} · ${rules.bookingPoints} баллов за каждые ${rub(rules.bookingRubles*100)}`,method:"Автоматически",points:Math.round(Math.max(0,Number(b.rate))*rules.bookingPoints/(rules.bookingRubles*100))});
-        for(const x of b.extras||[]){
-          if(!(x.price>0&&x.qty>0))continue;
-          if(x.kind==="service")items.push({at:b.starts_at,action:"Дополнительная услуга",reason:`${x.name||"Услуга"} × ${x.qty} · ${rules.servicePoints} за каждую`,method:"Автоматически",points:x.qty*rules.servicePoints});
-          if(x.kind==="product")items.push({at:b.starts_at,action:"Товары к сеансу",reason:`${x.name||"Товары"} на ${rub(x.price*x.qty)} · ${rules.productPointsPer1000} за каждую 1 000 ₽`,method:"Автоматически",points:Math.round(x.price*x.qty*rules.productPointsPer1000/100000)});
-        }
+        items.push({at:b.starts_at,action:"Сеанс завершён и оплачен",reason:`Аренда ${rub(b.rate)} · ${rules.bookingPoints} баллов за ${rub(rules.bookingRubles*100)}`,method:"Автоматически",points:sessionPoints(b,rules)});
       }
-      // Работы и эскизы — по уникальным фотографиям, в порядке загрузки и с лимитами из правил.
-      const media=(await db.query("SELECT kind,md5(image) AS fp,created_at FROM master_media WHERE user_id=$1 ORDER BY created_at,id",[userId])).rows;
-      const works=new Set(media.filter(m=>m.kind==="portfolio").map(m=>m.fp)), seen=new Set();let w=0,d=0;
-      for(const m of media){
-        if(seen.has(m.fp))continue;
-        if(m.kind==="portfolio"&&w<rules.workLimit){seen.add(m.fp);w++;items.push({at:m.created_at,action:"Работа в портфолио",reason:`Уникальная фотография · ${rules.workPoints} за работу (до ${rules.workLimit})`,method:"Автоматически",points:rules.workPoints});}
-        else if(m.kind==="drafts"&&!works.has(m.fp)&&d<rules.draftLimit){seen.add(m.fp);d++;items.push({at:m.created_at,action:"Эскиз",reason:`Уникальная фотография · ${rules.draftPoints} за эскиз (до ${rules.draftLimit})`,method:"Автоматически",points:rules.draftPoints});}
-      }
-      if(master.pointsBreakdown?.profile>0)items.push({at:null,action:"Профиль заполнен полностью",reason:"Имя, фото, город, описание от 80 символов, стиль, стаж и хотя бы одна работа",method:"Автоматически",points:master.pointsBreakdown.profile});
     }
-    const manual=(await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='master.points.update' AND a.details->>'id'=$1 ORDER BY a.created_at DESC LIMIT 100",[req.params.id])).rows;
-    for(const r of manual){const from=Number(r.details?.previous??0),to=Number(r.details?.score??0);items.push({at:r.created_at,action:"Ручное изменение",reason:`Было ${from.toLocaleString("ru-RU")} → стало ${to.toLocaleString("ru-RU")}`,method:"Вручную"+(r.actor_name?" · "+r.actor_name:""),points:to-from});}
     items.sort((x,y)=>(y.at?new Date(y.at):Infinity)-(x.at?new Date(x.at):Infinity));
     res.json({score:master.score,history:items});
   });
@@ -1404,12 +1418,16 @@ export async function createApp(db) {
     const minStock = req.body.minStock === undefined ? 5 : integer(Number(req.body.minStock), 0, 100000, "Минимальный остаток");
     await db.transaction(async (q) => {
       await lock(q);
-      const before = await one(q, "SELECT stock FROM catalog WHERE id=$1", [id]);
+      const before = await one(q, "SELECT stock,unlimited,shop,receipt_unmarked FROM catalog WHERE id=$1", [id]);
+      const unlimited = kind === "product" && (before?.unlimited || ["Защитная плёнка","Набор расходников"].includes(name));
+      if (before?.unlimited && kind !== "product") fail("Бесплатную позицию можно сохранить только как товар", 409);
+      const shop = !unlimited && kind === "product" && (req.body.shop ?? before?.shop) === true;
+      const receiptUnmarked = kind === "product" && (req.body.receiptUnmarked ?? before?.receipt_unmarked) === true;
       await q.query(
-        "INSERT INTO catalog(id,name,kind,price,stock,active,min_stock) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(id) DO UPDATE SET name=$2,price=$4,stock=$5,active=$6,min_stock=$7",
-        [id, name, kind, price, stock, req.body.active !== false, minStock],
+        "INSERT INTO catalog(id,name,kind,price,stock,active,min_stock,unlimited,shop,receipt_unmarked) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(id) DO UPDATE SET name=$2,kind=$3,price=$4,stock=$5,active=$6,min_stock=$7,unlimited=$8,shop=$9,receipt_unmarked=$10",
+        [id, name, kind, unlimited ? 0 : price, unlimited ? 0 : stock, req.body.active !== false, unlimited ? 0 : minStock, Boolean(unlimited), shop, receiptUnmarked],
       );
-      if (kind === "product" && (before ? before.stock : 0) !== stock)
+      if (kind === "product" && !unlimited && (before ? before.stock : 0) !== stock)
         await q.query("INSERT INTO stock_moves(id,catalog_id,delta,reason,actor) VALUES($1,$2,$3,$4,$5)", [uuid(), id, stock - (before ? before.stock : 0), before ? "Исправление остатка" : "Начальный остаток", req.user.id]);
       await audit(q, req.user.id, "catalog.save", { id });
     });
@@ -1483,6 +1501,24 @@ export async function createApp(db) {
           [req.params.id],
         );
         if (!b) fail("Заявка не найдена");
+        if (paidBooking(b)) {
+          if (!isOwner(req.user)) fail("Решение о возврате доступно владельцу студии", 403);
+          const p = await one(q, "SELECT * FROM payments WHERE booking_id=$1 AND kind='booking_fee' AND status='paid' FOR UPDATE", [b.id]);
+          if (!p) fail("Платёж за бронь недоступен", 409);
+          if (!["refund","close"].includes(req.body.decision)) fail("Выберите решение по возврату");
+          const reason = String(req.body.reason || "").trim().slice(0,500);
+          if (reason.length < 5) fail("Укажите основание решения");
+          if (req.body.decision === "refund") {
+            if (!p.checkout_id || !p.provider_id?.startsWith("yookassa:")) fail("Возврат через ЮKassa недоступен",409);
+            await q.query("UPDATE payments SET status='refund_pending',refund_requested_at=now() WHERE id=$1", [p.id]);
+          }
+          await release(q, b, "cancelled");
+          await enqueue(q, "booking.cancelled", { bookingId:b.id });
+          await q.query("INSERT INTO notifications(id,user_id,message) VALUES($1,$2,$3)", [uuid(),b.user_id,
+            `Решение по брони ${b.id.slice(0,8)}: ${req.body.decision === "refund" ? "возврат на исходный способ оплаты" : "отмена без возврата"}. ${reason}`]);
+          await audit(q, req.user.id, "booking.fee.cancel_resolve", { id:b.id, decision:req.body.decision, reason });
+          return;
+        }
         if (holdBooking(b)) {
           await release(q, b, "cancelled");
           await enqueue(q, "calendar.delete", { bookingId:b.id });
@@ -1500,7 +1536,7 @@ export async function createApp(db) {
           );
         for (const x of b.extras)
           if (x.kind === "product")
-            await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2", [
+            await q.query("UPDATE catalog SET stock=stock+$1 WHERE id=$2 AND NOT unlimited", [
               x.qty,
               x.id,
             ]);
@@ -1572,7 +1608,13 @@ export async function createApp(db) {
       id,
     ]);
     if (!p) fail("Платёж не найден", 404);
-    if (p.status === "paid") {
+    if (p.kind === "booking_fee" && p.status === "expired" && provider.startsWith("yookassa:")) {
+      await q.query("UPDATE payments SET status='refund_pending',provider_id=$2,is_test=$3,refund_requested_at=now() WHERE id=$1",
+        [p.id,provider,yookassaTest()]);
+      await audit(q, null, "booking.fee.late_payment", { paymentId:p.id, bookingId:p.booking_id });
+      return;
+    }
+    if (["paid","refund_pending","refunded","refund_review"].includes(p.status)) {
       if (p.provider_id !== provider)
         fail("Счёт уже оплачен другой транзакцией", 409);
       return;
@@ -1590,7 +1632,7 @@ export async function createApp(db) {
       p.booking_id,
     ]);
     if (
-      (p.kind === "deposit" && b.status !== "pending") ||
+      (["deposit","booking_fee"].includes(p.kind) && b.status !== "pending") ||
       (p.kind === "final" && b.status !== "invoiced")
     )
       fail("Статус брони изменился", 409);
@@ -1598,13 +1640,13 @@ export async function createApp(db) {
       "UPDATE payments SET status='paid',provider_id=$1,is_test=$3 WHERE id=$2",
       [provider, p.id, provider.startsWith("test-") || (provider.startsWith("yookassa:") && yookassaTest())],
     );
-    if (p.kind === "deposit") await confirmed(q, b);
+    if (["deposit","booking_fee"].includes(p.kind)) await confirmed(q, b);
     else if (p.kind === "final")
       await q.query("UPDATE bookings SET status='completed' WHERE id=$1", [
         b.id,
       ]);
     await enqueue(q, "payment.paid", { bookingId: b.id, paymentId: p.id });
-    if (!provider.startsWith("yookassa:") && !provider.startsWith("cash:"))
+    if (!sessionBooking(b) && !provider.startsWith("yookassa:") && !provider.startsWith("cash:"))
       await enqueue(q, "receipt.create", { bookingId: b.id, paymentId: p.id });
   };
 
@@ -1616,7 +1658,7 @@ export async function createApp(db) {
         "SELECT * FROM bookings WHERE id=$1 AND user_id=$2 FOR UPDATE",
         [req.params.id, req.user.id],
       );
-      if (!b || holdBooking(b) || b.status !== "invoiced")
+      if (!b || sessionBooking(b) || b.status !== "invoiced")
         fail("Нет открытого итогового счёта", 409);
       const h = Number(req.body.duration);
       if (![3, 6, 12].includes(h) || h < b.tariff)
@@ -1649,7 +1691,9 @@ export async function createApp(db) {
       FROM payments p JOIN bookings b ON b.id=p.booking_id WHERE p.id=$1`, [req.params.id]);
     if (!row) fail("Платёж не найден", 404);
     if (row.kind === "hold") fail("Блокировка средств не является оплатой сеанса", 409);
-    res.json(fiscalDrafts(row.booking, row, { amount: row.paid_deposit }));
+    const draft = fiscalDrafts(row.booking, row, { amount:row.paid_deposit });
+    const registration = await yookassaFiscalStatus(row);
+    res.json({ ...draft, registration });
   });
   app.post("/api/admin/payments/:id/cash", roles("admin"), async (req, res) => {
     await db.transaction(async q => {
@@ -1662,13 +1706,37 @@ export async function createApp(db) {
     });
     res.json({ ok: true });
   });
+  const syncBookingRefund = async (p) => {
+    // YooKassa keeps idempotency keys for 24 hours. After that, an unknown
+    // request needs reconciliation before it can be retried safely.
+    const expiredKey = !p.refund_id && Date.now() - +new Date(p.refund_requested_at) >= 23 * 3600000;
+    let id = p.refund_id, status = "refund_review";
+    if (!expiredKey) {
+      const amount = { value:(p.amount / 100).toFixed(2), currency:"RUB" };
+      const remote = id
+        ? await yookassaRequest("refunds/" + encodeURIComponent(id))
+        : await yookassaRequest("refunds", { payment_id:p.checkout_id, amount }, "booking-refund-" + p.id);
+      verifyYookassaRefund(remote, p);
+      id = remote.id;
+      status = remote.status === "succeeded" ? "refunded" : remote.status === "pending" ? "refund_pending" : "refund_review";
+    }
+    await db.transaction(async q => {
+      const result = await q.query("UPDATE payments SET status=$2,refund_id=$3 WHERE id=$1 AND status='refund_pending' RETURNING booking_id",
+        [p.id,status,id]);
+      if (!result.rows.length || status === "refund_pending") return;
+      await audit(q, null, "booking.fee.refund", { paymentId:p.id, status, refundId:id });
+    });
+  };
   const syncYookassa = async (p) => {
+    if (p.kind === "booking_fee" && p.status === "refund_pending") return syncBookingRefund(p);
     if (!p.checkout_id || !["pending", "authorized", "release_pending", "expired"].includes(p.status)) return;
     const path = "payments/" + encodeURIComponent(p.checkout_id);
     const remote = await yookassaRequest(path);
     const paid = verifyYookassaPayment(remote, p);
     if (p.kind !== "hold") {
       if (paid) await db.transaction(q => settle(q, p.id, "yookassa:" + remote.id));
+      if (p.kind === "booking_fee" && p.status === "expired" && remote.status === "canceled")
+        await db.query("UPDATE payments SET status='void' WHERE id=$1 AND status='expired'", [p.id]);
       if (p.status === "pending" && p.kind !== "deposit" && remote.status === "canceled")
         await db.query("UPDATE payments SET checkout_id=NULL,checkout_attempt=checkout_attempt+1 WHERE id=$1 AND checkout_id=$2 AND status='pending'", [p.id,p.checkout_id]);
       return;
@@ -1717,15 +1785,16 @@ export async function createApp(db) {
   app.locals.reconcilePayments = async () => {
     if (!yookassaEnabled()) return;
     const payments = (await db.query(`SELECT * FROM payments WHERE checkout_id IS NOT NULL AND
-      ((kind='hold' AND (status IN ('pending','release_pending','expired') OR (status='authorized' AND hold_expires_at<=now()))) OR
+      ((kind='booking_fee' AND status='refund_pending') OR
+       (kind='hold' AND (status IN ('pending','release_pending','expired') OR (status='authorized' AND hold_expires_at<=now()))) OR
        (kind<>'hold' AND status IN ('pending','expired') AND created_at>now()-interval '1 day'))
-      ORDER BY CASE WHEN status='release_pending' THEN 0 ELSE 1 END, created_at DESC LIMIT 50`)).rows;
+      ORDER BY CASE WHEN status IN ('release_pending','refund_pending') THEN 0 ELSE 1 END, created_at DESC LIMIT 50`)).rows;
     for (const payment of payments) {
       try { await syncYookassa(payment); }
       catch (error) { console.error("Payment reconciliation:", error.message); }
     }
   };
-  const paymentProvider = (s, p) => checkoutEnabled(s) && (yookassaTest() || holdBooking(p));
+  const paymentProvider = (s, p) => checkoutEnabled(s) && (yookassaTest() || sessionBooking(p));
   app.post("/api/payments/:id/checkout", auth, async (req, res) => {
     const existing = await one(db, `SELECT p.* FROM payments p JOIN bookings b ON b.id=p.booking_id
       WHERE p.id=$1 AND b.user_id=$2`,[req.params.id,req.user.id]);
@@ -1747,9 +1816,9 @@ export async function createApp(db) {
             amount: { value: (p.amount / 100).toFixed(2), currency: "RUB" },
             capture: !isHold,
             ...(isHold ? {payment_method_data:{type:"bank_card"}} : {}),
-            ...(holdBooking(p) ? {receipt:checkoutReceipt(p,{...p,settings:s})} : {}),
+            ...(sessionBooking(p) ? {receipt:checkoutReceipt(p,{...p,settings:s})} : {}),
             confirmation: { type: "redirect", return_url: (process.env.APP_ORIGIN || "http://127.0.0.1:3000").split(",")[0] + "/#/payment/" + p.id },
-            description: isHold ? "Tattoo Office — блокировка для брони" : p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
+            description: isHold ? "Tattoo Office — блокировка для брони" : p.kind === "booking_fee" ? "Tattoo Office — бронирование рабочего места" : p.kind === "deposit" ? "Tattoo Office — предоплата рабочего места" : p.kind === "expense" ? "Tattoo Office — счёт за расходы" : "Tattoo Office — итоговый счёт за сеанс",
             metadata: { payment_id: p.id, booking_id: p.booking_id },
           }, p.id + "-" + p.checkout_attempt + "-" + p.amount);
       verifyYookassaPayment(remote, { ...p, checkout_id: remote.id });
@@ -1770,7 +1839,11 @@ export async function createApp(db) {
       FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN resources r ON r.id=b.resource_id WHERE p.id=$1`, [req.params.id]);
     let p=await read();
     if (!p || p.user_id !== req.user.id) fail("Платёж не найден", 404);
-    await syncYookassa(p);
+    try { await syncYookassa(p); }
+    catch (error) {
+      if (p.status !== "refund_pending") throw error;
+      console.error("Booking refund reconciliation:", error.message);
+    }
     p=await read();
     const s=await settings(), mode=s.mode;
     res.json({ payment:p, mode, provider:p.policy.paymentMethod === "cash" ? "cash" : paymentProvider(s,p) ? "yookassa" : null, test:yookassaTest(), testPaymentAvailable:mode === "test" && !yookassaEnabled() && process.env.NODE_ENV !== "production" });
@@ -1780,7 +1853,7 @@ export async function createApp(db) {
     if (typeof id !== "string" || id.length > 64) return res.sendStatus(400);
     const p = await one(db, "SELECT * FROM payments WHERE checkout_id=$1", [id]);
     // Verify notifications against the authenticated provider API, never their body.
-    if (p) await syncYookassa(p);
+    if (p && p.status !== "refund_pending") await syncYookassa(p);
     res.json({ ok: true });
   });
   app.post("/api/payments/:id/test", auth, async (req, res) => {
@@ -1814,11 +1887,11 @@ export async function createApp(db) {
     const { InvoiceId, Amount, Currency, AccountId, TransactionId } = req.body;
     const p = await one(
       db,
-      "SELECT p.*,u.email FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id WHERE p.id=$1",
+      "SELECT p.*,u.email,b.policy FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN users u ON u.id=b.user_id WHERE p.id=$1",
       [InvoiceId],
     );
     if (
-      !p ||
+      !p || sessionBooking(p) ||
       p.amount !== Math.round(Number(Amount) * 100) ||
       Currency !== "RUB" ||
       AccountId !== p.email

@@ -1,6 +1,5 @@
 import { randomUUID as uuid, randomBytes } from "node:crypto";
 import { hashPassword, hashToken } from "./domain.js";
-import { masterDirectory, catalogContentId } from "./master-directory.js";
 
 // Тестовый режим на превью Vercel: своя база в памяти с примерами данных,
 // чтобы все функции админки и кабинета можно было проверить без боевого сервера.
@@ -43,7 +42,7 @@ export async function seedDemo(db) {
     const id = did("8004"), total = extra.total ?? 320000, deposit = extra.deposit ?? 50000;
     const extras = extra.extras || [], sum = total + extras.reduce((a, x) => a + x.price * x.qty, 0);
     await db.query("INSERT INTO bookings(id,user_id,resource_id,starts_at,ends_at,tariff,rate,total,status,deposit,policy,created_at,extras) VALUES($1,$2,$3,$4,$5,$6,$7,$12,$8,$9,$10,$11,$13)", [id, ids[user], places[place % places.length], start, new Date(+start + hours * 3600000), hours, total, status, deposit, JSON.stringify(extra.policy || {}), new Date(+start - 5 * 86400000), sum, JSON.stringify(extras)]);
-    // Завершённые сеансы оплачены по-настоящему (наличными в студии) — за них начисляются рейтинговые баллы.
+    // Идентификатор cash:demo отделяет демонстрационные сеансы от реальных.
     const real = status === "completed";
     if (["confirmed", "invoiced", "completed", "no_show", "cancel_requested"].includes(status) && deposit)
       await db.query("INSERT INTO payments(id,booking_id,kind,amount,status,provider_id,created_at,is_test) VALUES($1,$2,'deposit',$3,'paid',$4,$5,$6)", [did("8005"), id, deposit, (real ? "cash:demo-" : "demo-") + id + "-d", new Date(+start - 4 * 86400000), !real]);
@@ -70,32 +69,17 @@ export async function seedDemo(db) {
   await booking("risky", 1, MSK(-20, 12), 3, "no_show");
   // Прошлый месяц для сравнения.
   for (let i = 0; i < 6; i++) await booking("resident", i, MSK(-33 - i * 4, 12), 6, "completed", { total: 450000, ...(i === 1 ? { extras: kit } : {}) });
-  await db.query("UPDATE catalog SET stock=2 WHERE id=(SELECT id FROM catalog WHERE kind='product' ORDER BY name LIMIT 1)");
+  await db.query("INSERT INTO catalog(id,name,kind,price,stock,shop,receipt_unmarked) VALUES($1,'Тестовый держатель','product',25000,2,true,true) ON CONFLICT(id) DO NOTHING", [did("8008")]);
   await db.query("INSERT INTO feedback(id,message,status,contact,created_at) VALUES($1,'Было бы здорово поставить ещё одну лампу у второго места.','new','guest@example.com',now()-interval '1 day'),($2,'Спасибо за кофе и музыку!','done','',now()-interval '8 days')", [did("8006"), did("8006")]);
   await db.query("INSERT INTO promo_codes(code,kind,value,max_uses,note) VALUES('OFFICE10','percent',10,100,'Пример промокода')");
   // Запись от администратора, которую Катя ещё не подтвердила (штриховка в календаре, блок в кабинете).
   await booking("master", 2, MSK(1, 16), 3, "confirmed", { deposit: 0, policy: { masterConfirm: "awaiting", adminCreated: true } });
   const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Moscow" }).format(new Date(Date.now() + 2 * 86400000));
   await db.query("INSERT INTO waitlist(id,user_id,city,date,hour,duration) VALUES($1,$2,'spb',$3,12,3)", [did("8007"), ids.master, day]);
-  // История баллов у каждого: сеансы новичка и Миши, затем ручные изменения владельца (с записью в журнале).
+  // Завершённые сеансы для истории записей новичка и Миши.
   await booking("newbie", 3, MSK(-2, 10), 3, "completed");
   await booking("risky", 0, MSK(-15, 12), 3, "completed");
-  const manual = async (masterId, previous, score, daysAgo) => db.query("INSERT INTO audit(id,actor,action,details,created_at) VALUES($1,$2,'master.points.update',$3,now()-$4*interval '1 day')", [did("8008"), ids.owner, JSON.stringify({ id: masterId, previous, score }), daysAgo]);
-  const directory = await masterDirectory(db, { includeInactive: true });
-  const earned = (id) => directory.find((m) => m.id === id)?.score || 0;
-  for (const [key, delta, daysAgo] of [["master", -26, 4], ["resident", 100, 12], ["risky", -40, 9], ["newbie", 15, 1]]) {
-    const id = ids[key], before = earned(id);
-    await db.query("UPDATE users SET profile=profile||$1::jsonb WHERE id=$2", [JSON.stringify({ adminPointsAdjustment: delta }), id]);
-    await manual(id, before, Math.max(0, before + delta), daysAgo);
-  }
-  // Карточки из архива студии: баллы перенесены вручную, у части — два изменения.
-  const cards = [["zinaida", 611], ["mr-a", 883], ["sexova", 515], ["kostya", 323], ["vera", 248], ["gleb", 285], ["nastya", 322], ["petr", 359], ["liza", 396], ["sasha", 433]];
-  for (const [i, [id, score]] of cards.entries()) {
-    const first = i % 3 === 0 ? Math.round(score * 0.7) : score;
-    await manual(id, 0, first, 60 - i * 3);
-    if (first !== score) await manual(id, first, score, 20 - i);
-    await db.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb", [catalogContentId(id), JSON.stringify({ pointsAdjustment: score })]);
-  }
+
 }
 
 // Вход в тестовый аккаунт одной кнопкой (только в тестовом режиме).

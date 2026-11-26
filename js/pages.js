@@ -137,7 +137,7 @@
                '</button>';
       }).join('');
 
-      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Top artist</span></a>';
+      return '<div class="drift" id="driftBox">' + cards + '</div><a class="ranking-launch chrome" href="#/ranking" data-sfx="nav"><svg class="ranking-users ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="ranking-users-path" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/></svg><span>Top artists</span></a>';
     },
 
     mount: function (root) {
@@ -198,7 +198,7 @@
              '<div class="master">' +
                '<div class="master-profile">' +
                  img(m.photo, m.id, name, 'master__photo') + '<div class="master-profile__copy">' +
-                 '<div class="master-profile__identity"><div class="master__name"><span>' + esc(name) + (m.resident ? '<button type="button" class="resident-info-trigger" aria-label="Резидент Tattoo Office Private Club" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : '') + '</span></div>' +
+                 '<div class="master-profile__identity"><div class="master__name"><span>' + esc(name) + (m.resident ? '<button type="button" class="resident-info-trigger" aria-label="Tattoo Office Club member" aria-haspopup="dialog" aria-controls="resident-info-popover" aria-expanded="false"><img class="resident-mark" src="assets/resident-mark.svg?v=clean-2" width="16" height="16" alt=""></button>' : '') + '</span></div>' +
                  masterPassHTML(m) + '</div>' +
                  '<div class="master-profile__facts">' +
                    '<span class="master__city">' + esc(pick(m.city)) + '</span>' +

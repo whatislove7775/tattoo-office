@@ -1,3 +1,4 @@
+import {openRankingSeason} from "./ranking-seasons.js";
 import { randomUUID as uuid } from "node:crypto";
 import { expireReservations } from "./reservations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -43,7 +44,7 @@ async function notifyUser(q, user, text) {
 // Автоматизация студии: итоговый счёт после сеанса, напоминания, лист ожидания.
 export async function automationTick(q, settings) {
   if (settings.autoInvoice === true) {
-    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND COALESCE(policy->>'bookingPayment','')<>'hold' AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
+    const done = (await q.query("SELECT * FROM bookings WHERE status='confirmed' AND COALESCE(policy->>'bookingPayment','') NOT IN ('hold','booking_fee') AND ends_at<now()-interval '15 minutes' ORDER BY ends_at LIMIT 20 FOR UPDATE SKIP LOCKED")).rows;
     for (const b of done) await createInvoice(q, b, { duration: b.tariff, settings, auto: true });
   }
   const remind = async (sql, kind, label) => {
@@ -69,6 +70,7 @@ export async function workerTick(db) {
   catch (e) { console.error("Calendar availability:", e.message); }
   await db.transaction(async (q) => {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
+    await openRankingSeason(q);
     await expireReservations(q);
     const settings = (await one(q, "SELECT data FROM settings WHERE id=1"))
       .data;
@@ -126,25 +128,30 @@ export async function workerTick(db) {
             job.kind === "calendar.upsert" ||
             job.kind === "calendar.delete"
           ) {
-            const segment = job.payload.segmentId
-              ? await one(db,"SELECT o.*,r.calendar_id FROM booking_occupancy o JOIN resources r ON r.id=o.resource_id WHERE o.event_id=$1 AND o.booking_id=$2",[job.payload.segmentId,b.id])
-              : { ...b, event_id:b.id, ends_at:b.first_ends_at || b.ends_at };
-            const cancelled = ["cancelled", "expired", "no_show"].includes(b.status);
-            await syncCalendar(
-              segment.calendar_id,
-              segment.event_id,
-              job.kind === "calendar.delete" || cancelled
-                ? null
-                : {
-                    summary: "Tattoo Office / запись " + b.id.slice(0, 8),
-                    start: { dateTime: new Date(segment.starts_at).toISOString() },
-                    end: { dateTime: new Date(segment.ends_at).toISOString() },
-                    // The workspace calendar itself is private. Normal events
-                    // allow the service account to edit without access to personal events.
-                    visibility: "default",
-                    extendedProperties: {private:{tattooOffice:"workspace"}},
-                  },
-            );
+            if (job.payload.removedSlot) {
+              if (b.status === "awaiting_date" || b.calendar_id !== job.payload.calendarId)
+                await syncCalendar(job.payload.calendarId, b.id, null);
+            } else {
+              const segment = job.payload.segmentId
+                ? await one(db,"SELECT o.*,r.calendar_id FROM booking_occupancy o JOIN resources r ON r.id=o.resource_id WHERE o.event_id=$1 AND o.booking_id=$2",[job.payload.segmentId,b.id])
+                : { ...b, event_id:b.id, ends_at:b.first_ends_at || b.ends_at };
+              const cancelled = ["cancelled", "expired", "no_show", "awaiting_date"].includes(b.status) ||
+                (b.policy?.bookingPayment === "booking_fee" && b.status === "cancel_requested");
+              await syncCalendar(
+                segment.calendar_id,
+                segment.event_id,
+                job.kind === "calendar.delete" || cancelled
+                  ? null
+                  : {
+                      summary: "Tattoo Office / запись " + b.id.slice(0, 8),
+                      start: { dateTime: new Date(segment.starts_at).toISOString() },
+                      end: { dateTime: new Date(segment.ends_at).toISOString() },
+                      // The workspace calendar is private.
+                      visibility: "default",
+                      extendedProperties: {private:{tattooOffice:"workspace"}},
+                    },
+              );
+            }
           } else {
             const block =
               job.payload.block ||
@@ -248,7 +255,9 @@ export async function workerTick(db) {
           timeZone: "Europe/Moscow",
         }).format(new Date(b.starts_at));
         const label = job.kind === "booking.no_show" && b.policy?.bookingPayment === "hold"
-          ? "Отмечена неявка на сеанс. Блокировку 500 ₽ снимаем" : labels[job.kind];
+          ? "Отмечена неявка на сеанс. Блокировку 500 ₽ снимаем"
+          : job.kind === "booking.no_show" && b.policy?.bookingPayment === "booking_fee"
+            ? "Отмечена неявка на сеанс" : labels[job.kind];
         const text = `${label}\n${time} (МСК)\nЗапись ${b.id.slice(0, 8)}\n${process.env.APP_ORIGIN || "http://127.0.0.1:3000"}/#/cabinet`;
         await db.transaction(async (q) => {
           for (const u of recipients) {
