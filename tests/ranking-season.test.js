@@ -13,12 +13,14 @@ test('annual prizes isolate real dated points, accept owner edits and preserve t
   await new Promise(r=>server.on('listening',r));
   const origin='http://127.0.0.1:'+server.address().port;
   const get=async()=> (await fetch(origin+'/api/ranking?period=year')).json();
-  const year=rankingYear(), member=randomUUID(),owner=randomUUID();
+  const year=Math.max(2027,rankingYear()), member=randomUUID(),owner=randomUUID();
   try{
     for(const [id,role,account] of [[member,'guest','master'],[owner,'admin','admin']]){
       await db.query('INSERT INTO users(id,email,name,password,role,account_type,profile) VALUES($1,$2,$3,$4,$5,$6,$7)',[id,id+'@example.invalid','Мастер','unused',role,account,JSON.stringify({avatar:'data:image/jpeg;base64,/9j/2Q==',city:'СПБ',bio:'я'.repeat(81),specialty:'Графика',experience:'5 лет',adminPointsAdjustment:999})]);
       await db.query("INSERT INTO sessions VALUES($1,$2,now()+interval '1 day')",[hashToken(id),id]);
     }
+    await db.query("INSERT INTO ranking_seasons(year,prizes,examples) VALUES(2026,$1,true)",[JSON.stringify(['A','B','C'])]);
+    await db.transaction(q=>openRankingSeason(q,2026));
     const resource=(await db.query('SELECT id FROM resources LIMIT 1')).rows[0].id;
     for(const [start,demo] of [[year+'-01-01T00:00:00+03:00',false],[(year-1)+'-12-31T23:59:59+03:00',false],[year+'-05-01T12:00:00+03:00',true]]){
       const id=randomUUID();
@@ -32,10 +34,12 @@ test('annual prizes isolate real dated points, accept owner edits and preserve t
       await db.query("INSERT INTO audit VALUES($1,$2,'master.points.update',$3,$4)",[id,owner,JSON.stringify({id:member,previous,score}),year+'-03-01T12:00:00+03:00']);
     }
     const initial=await get();
-    assert.equal(initial.prizeFund.examples,true);
+    assert.equal(initial.prizeFund.year,year);
+    assert.equal(initial.year,rankingYear());
+    if (year===2027) assert.deepEqual(initial.prizeFund.prizes,['A','B','C']);
     assert.equal(initial.prizeFund.prizes.length,3);
     const match=initial.masters.find(m=>m.id===member);
-    assert.equal(match.score,82);assert.equal(match.rank,1);
+    assert.equal(match.score,70);assert.equal(match.rank,1);
     const fund={year,prizes:['Смена','Сертификат','Набор'],examples:false};
     const save=(user,data)=>fetch(origin+'/api/admin/settings',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:'office_session='+user},body:JSON.stringify({prizeFund:data})});
     assert.equal((await save(member,fund)).status,403);
@@ -45,7 +49,8 @@ test('annual prizes isolate real dated points, accept owner edits and preserve t
     assert.deepEqual((await get()).prizeFund,fund);
     await db.transaction(q=>openRankingSeason(q,year+1));
     const final=(await db.query('SELECT winners,prizes FROM ranking_seasons WHERE year=$1',[year])).rows[0];
-    assert.deepEqual(final.prizes,fund.prizes);assert.deepEqual(final.winners,[{id:member,name:'Мастер',rank:1,score:82}]);
+    assert.equal((await db.query("SELECT winners FROM ranking_seasons WHERE year=2026")).rows[0].winners,null);
+    assert.deepEqual(final.prizes,fund.prizes);assert.deepEqual(final.winners,[{id:member,name:'Мастер',rank:1,score:70}]);
     await db.query('DELETE FROM master_media WHERE user_id=$1',[member]);
     await db.transaction(q=>openRankingSeason(q,year+1));
     assert.deepEqual((await db.query('SELECT winners FROM ranking_seasons WHERE year=$1',[year])).rows[0].winners,final.winners);

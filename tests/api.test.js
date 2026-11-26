@@ -689,7 +689,8 @@ test("staff expenses update an open invoice, preserve a settled invoice and dedu
   assert.equal((await request("/admin/payments/" + separate + "/cash", "POST", {}, admin)).status, 200);
   const after = (await request("/me/ranking", "GET", null, cookie)).data;
   assert.equal(after.breakdown.bookings, before.breakdown.bookings);
-  assert.equal(after.breakdown.services, before.breakdown.services + 20);
+  assert.deepEqual(after.breakdown, {bookings:70});
+  assert.equal(after.score,before.score);
   const history = (await request("/bookings", "GET", null, cookie)).data;
   assert.equal(history.payments.find((p) => p.id === finalId).amount, 400000);
   assert.equal(history.payments.find((p) => p.id === separate).status, "paid");

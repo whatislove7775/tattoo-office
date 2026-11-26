@@ -103,12 +103,9 @@ test("master status switch: regular, resident, archive; itemized points history"
     assert.equal((await call(shift, `/admin/masters/${guest.id}/status`, "PATCH", { status: "resident" })).status, 403);
     assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "vip" })).status, 400);
 
-    // История баллов: ручное изменение — с датой, причиной, способом и разницей.
-    assert.equal((await call(owner, `/admin/masters/${guest.id}/points`, "PATCH", { score: 40 })).status, 200);
+    assert.equal((await call(owner, `/admin/masters/${guest.id}/points`, "PATCH", { score: 40 })).status, 405);
     const history = await (await call(shift, `/admin/masters/${guest.id}/points-history`, "GET")).json();
-    const manual = history.history.find((h) => h.action === "Ручное изменение");
-    assert.ok(manual.at && manual.method.startsWith("Вручную") && manual.points === 40 && /стало 40/.test(manual.reason));
-    assert.equal(history.score, 40);
+    assert.deepEqual(history,{score:0,history:[]});
     // Удалить тату-мастера можно только из архива.
     assert.equal((await call(owner, `/admin/users/${guest.id}`, "DELETE")).status, 409);
     assert.equal((await call(owner, `/admin/masters/${guest.id}/status`, "PATCH", { status: "archive" })).status, 200);

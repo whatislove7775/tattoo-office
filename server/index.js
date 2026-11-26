@@ -1,5 +1,5 @@
-import {currentRankingSeason,openRankingSeason} from "./ranking-seasons.js";
-import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
+import {FIRST_PRIZE_YEAR,currentRankingSeason,openRankingSeason} from "./ranking-seasons.js";
+import {POINT_RULES,pointRules,rankingFacts,bookingEarns,sessionPoints,rankingYear} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import { updateStudioWorkspaces } from "./studio-workspaces.js";
 import {updateOperatorDetails} from "./operator-details.js";
@@ -361,10 +361,11 @@ export async function createApp(db) {
     res.set("Cache-Control", "no-store");
     if(req.query.period && !["all","month","year"].includes(req.query.period))fail("Выберите период рейтинга");
     if(req.query.period==="year"){
+      const year=rankingYear();
       const prizeFund=await currentRankingSeason(db);
-      const ranking=await masterRanking(db,{period:"year",year:prizeFund.year});
-      const previous=(await db.query("SELECT year,prizes,examples,winners FROM ranking_seasons WHERE winners IS NOT NULL ORDER BY year DESC LIMIT 1")).rows[0];
-      return res.json({...ranking,prizeFund,previous});
+      const ranking=await masterRanking(db,{period:"year",year});
+      const previous=(await db.query("SELECT year,prizes,examples,winners FROM ranking_seasons WHERE year >= $1 AND winners IS NOT NULL ORDER BY year DESC LIMIT 1",[FIRST_PRIZE_YEAR])).rows[0];
+      return res.json({...ranking,year,prizeFund,previous});
     }
     res.json(await masterRanking(db,{period:req.query.period||"all"}));
   });
@@ -372,7 +373,12 @@ export async function createApp(db) {
     if(req.user.account_type!=="master")fail("Баллы доступны мастерам",403);
     const master=await registeredMasterProfile(db,req.user.id);
     if(!master)fail("Мастер не найден",404);
-    res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress:master.profileProgress,rules:pointRules(await settings())});
+    const hasWork=await one(db,"SELECT 1 FROM master_media WHERE user_id=$1 AND kind='portfolio' LIMIT 1",[req.user.id]);
+    const fields={name:!!master.name?.trim(),avatar:!!master.avatar,city:!!master.city,bio:master.bio?.trim().length>=80,specialty:!!master.specialty?.trim(),experience:!!master.exp?.trim(),portfolio:!!hasWork};
+    const missing=Object.keys(fields).filter(key=>!fields[key]);
+    const total=Object.keys(fields).length;
+    const profileProgress={total,filled:total-missing.length,missing};
+    res.json({score:master.score,breakdown:master.pointsBreakdown,profileProgress,rules:pointRules(await settings())});
   });
   app.get("/api/me", async (req, res) => {
     const user = safe(req.user);
@@ -1284,28 +1290,8 @@ export async function createApp(db) {
     res.json({ok:true});
   });
   app.patch("/api/admin/masters/:id/points", ownerOnly, async (req,res) => {
-    const target=req.body.score;
-    if(!Number.isSafeInteger(target)||target<0||target>10000000)fail("Укажите целое количество баллов от 0 до 10 000 000");
-    if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
-    await db.transaction(async q=>{
-      await lock(q);
-      const master=(await masterDirectory(q,{includeInactive:true})).find(m=>m.id===req.params.id);
-      if(!master)fail("Мастер не найден",404);
-      if(master.registered) {
-        const link=await one(q,"SELECT user_id FROM master_links WHERE master_id=$1",[master.id]);
-        const id=link?.user_id||master.id;
-        // Rebase on earned points, even when an older negative offset clamps the total to zero.
-        const earned=Object.entries(master.pointsBreakdown||{}).filter(([k])=>k!=="adjustment").reduce((sum,[,v])=>sum+v,0);
-        await q.query("UPDATE users SET profile=jsonb_set(profile,'{adminPointsAdjustment}',$1::jsonb) WHERE id=$2",[JSON.stringify(target-earned),id]);
-      } else {
-        const contentId=catalogContentId(master.id);
-        await q.query("INSERT INTO content(id,data) VALUES($1,$2) ON CONFLICT(id) DO UPDATE SET data=content.data || $2::jsonb",[contentId,JSON.stringify({pointsAdjustment:target})]);
-      }
-      await audit(q,req.user.id,"master.points.update",{id:master.id,previous:master.score,score:target});
-    });
-    res.json({ok:true,score:target});
+    fail("Баллы рассчитываются автоматически по завершённым и оплаченным сеансам",405);
   });
-  // История баллов мастера: дата, действие, за что и как начислено (автоматически по правилам рейтинга или вручную).
   app.get("/api/admin/masters/:id/points-history", roles("admin"), async (req,res) => {
     if(!/^[\w-]{1,50}$/.test(req.params.id))fail("Мастер не найден",404);
     const master=(await masterDirectory(db,{includeInactive:true})).find(m=>m.id===req.params.id);
@@ -1314,28 +1300,12 @@ export async function createApp(db) {
     const userId=master.registered?(link?.user_id||master.id):null;
     const rub=v=>Math.round(Number(v)/100).toLocaleString("ru-RU")+" ₽", items=[];
     if(userId){
-      const {rules,byUser}=await rankingFacts(db), facts=byUser.get(userId)||{bookings:[],media:[]};
-      for(const b of facts.bookings){
+      const {rules,byUser}=await rankingFacts(db), bookings=byUser.get(userId)||[];
+      for(const b of bookings){
         if(!bookingEarns(b))continue;
-        items.push({at:b.starts_at,action:"Сеанс завершён и оплачен",reason:`Аренда ${rub(b.rate)} · ${rules.bookingPoints} баллов за каждые ${rub(rules.bookingRubles*100)}`,method:"Автоматически",points:Math.round(Math.max(0,Number(b.rate))*rules.bookingPoints/(rules.bookingRubles*100))});
-        for(const x of b.extras||[]){
-          if(!(x.price>0&&x.qty>0))continue;
-          if(x.kind==="service")items.push({at:b.starts_at,action:"Дополнительная услуга",reason:`${x.name||"Услуга"} × ${x.qty} · ${rules.servicePoints} за каждую`,method:"Автоматически",points:x.qty*rules.servicePoints});
-          if(x.kind==="product")items.push({at:b.starts_at,action:"Товары к сеансу",reason:`${x.name||"Товары"} на ${rub(x.price*x.qty)} · ${rules.productPointsPer1000} за каждую 1 000 ₽`,method:"Автоматически",points:Math.round(x.price*x.qty*rules.productPointsPer1000/100000)});
-        }
+        items.push({at:b.starts_at,action:"Сеанс завершён и оплачен",reason:`Аренда ${rub(b.rate)} · ${rules.bookingPoints} баллов за ${rub(rules.bookingRubles*100)}`,method:"Автоматически",points:sessionPoints(b,rules)});
       }
-      // Работы и эскизы — по уникальным фотографиям, в порядке загрузки и с лимитами из правил.
-      const media=(await db.query("SELECT kind,md5(image) AS fp,created_at FROM master_media WHERE user_id=$1 ORDER BY created_at,id",[userId])).rows;
-      const works=new Set(media.filter(m=>m.kind==="portfolio").map(m=>m.fp)), seen=new Set();let w=0,d=0;
-      for(const m of media){
-        if(seen.has(m.fp))continue;
-        if(m.kind==="portfolio"&&w<rules.workLimit){seen.add(m.fp);w++;items.push({at:m.created_at,action:"Работа в портфолио",reason:`Уникальная фотография · ${rules.workPoints} за работу (до ${rules.workLimit})`,method:"Автоматически",points:rules.workPoints});}
-        else if(m.kind==="drafts"&&!works.has(m.fp)&&d<rules.draftLimit){seen.add(m.fp);d++;items.push({at:m.created_at,action:"Эскиз",reason:`Уникальная фотография · ${rules.draftPoints} за эскиз (до ${rules.draftLimit})`,method:"Автоматически",points:rules.draftPoints});}
-      }
-      if(master.pointsBreakdown?.profile>0)items.push({at:null,action:"Профиль заполнен полностью",reason:"Имя, фото, город, описание от 80 символов, стиль, стаж и хотя бы одна работа",method:"Автоматически",points:master.pointsBreakdown.profile});
     }
-    const manual=(await db.query("SELECT a.created_at,a.details,u.name AS actor_name FROM audit a LEFT JOIN users u ON u.id=a.actor WHERE a.action='master.points.update' AND a.details->>'id'=$1 ORDER BY a.created_at DESC LIMIT 100",[req.params.id])).rows;
-    for(const r of manual){const from=Number(r.details?.previous??0),to=Number(r.details?.score??0);items.push({at:r.created_at,action:"Ручное изменение",reason:`Было ${from.toLocaleString("ru-RU")} → стало ${to.toLocaleString("ru-RU")}`,method:"Вручную"+(r.actor_name?" · "+r.actor_name:""),points:to-from});}
     items.sort((x,y)=>(y.at?new Date(y.at):Infinity)-(x.at?new Date(x.at):Infinity));
     res.json({score:master.score,history:items});
   });

@@ -1,4 +1,4 @@
-import {rankingFacts,scoreMaster,applyPointsAdjustment,rankingRange} from "./ranking-points.js";
+import {rankingFacts,scoreMaster,rankingRange} from "./ranking-points.js";
 import {ageFromBirthDate} from "./profile-age.js";
 import {readFile} from 'node:fs/promises';
 const catalog=JSON.parse(await readFile(new URL('./master-catalog.json',import.meta.url),'utf8'));
@@ -22,16 +22,6 @@ export async function masterDirectory(db,{period='all',year,includeInactive=fals
     db.query('SELECT id,user_id,kind,caption,position FROM master_media ORDER BY position,created_at,id')
   ]);
   const points=await rankingFacts(db,{period,year});
-  // A lifetime offset can contain demo seeds. Only dated, human corrections enter a season.
-  const corrections=new Map();
-  if(period==='year'){
-    const {rows}=await db.query(`SELECT details->>'id' AS id,
-      SUM((details->>'score')::int-(details->>'previous')::int) AS delta FROM audit
-      WHERE action='master.points.update' AND actor IS NOT NULL
-      AND id::text NOT LIKE '00000000-0000-4000-8008-%' AND created_at >= $1 AND created_at < $2
-      GROUP BY details->>'id'`,range);
-    for(const row of rows)corrections.set(row.id,Number(row.delta));
-  }
   const byUser=new Map(users.map(u=>[u.id,u])),byContent=new Map(content.map(c=>[c.id,c.data]));
   const gallery=(id,kind)=>media.filter(m=>m.user_id===id&&m.kind===kind).map(m=>({id:m.id,src:'/api/media/'+m.id,thumb:'/api/media/'+m.id+'?size=thumb',cap:m.caption}));
   const fromUser=(u,base={})=>{
@@ -48,7 +38,7 @@ export async function masterDirectory(db,{period='all',year,includeInactive=fals
       completed:u.completed,bookings:u.bookings,score:0,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};
-    return applyPointsAdjustment({...master,...scoreMaster(master,points.byUser.get(u.id)||{},points.rules)},period==='year'?(corrections.get(master.id)||0)+(master.id===u.id?0:corrections.get(u.id)||0):p.adminPointsAdjustment);
+    return {...master,...scoreMaster(points.byUser.get(u.id),points.rules)};
   };
   const linked=new Set(links.map(l=>l.user_id));
   const result=catalog.map(m=>{
@@ -59,7 +49,7 @@ export async function masterDirectory(db,{period='all',year,includeInactive=fals
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,
       portfolio:(c.portfolio?.length?c.portfolio.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.portfolio.map(w=>({...w,cap:''}))),
       drafts:(c.drafts?.length?c.drafts.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.drafts.map(w=>({...w,cap:''})))};
-    const link=links.find(l=>l.master_id===m.id);return link?(byUser.has(link.user_id)?fromUser(byUser.get(link.user_id),base):{...base,active:false}):applyPointsAdjustment(base,period==='year'?corrections.get(base.id):c.pointsAdjustment);
+    const link=links.find(l=>l.master_id===m.id);return link?(byUser.has(link.user_id)?fromUser(byUser.get(link.user_id),base):{...base,active:false}):base;
   });
   return [...result,...users.filter(u=>!linked.has(u.id)).map(u=>fromUser(u,{featured:true}))].filter(m=>includeInactive||m.active).map(({active,mainChoice,featuredFlag,...m})=>m);
 }
