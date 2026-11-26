@@ -1733,7 +1733,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 }
 .ranking-list--compact a.ranking-row:hover {color:var(--ink);opacity:1;}
 @media (max-width:700px) {
- body[data-page="ranking"] .office-feature .window>.window-head {display:grid;grid-template-columns:16px minmax(0,1fr);width:46%;gap:8px;align-items:start;}
+ body[data-page="ranking"] .office-feature .window>.window-head {display:grid;grid-template-columns:16px minmax(0,1fr);width:46%;gap:8px;align-items:center;}
  body[data-page="ranking"] .window-head h1 {font-size:15px;line-height:1.25;white-space:normal;overflow:visible;}
  body[data-page="ranking"] .office-feature .window-head .back {display:none;}
 }
