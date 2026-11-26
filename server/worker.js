@@ -1,3 +1,4 @@
+import {openRankingSeason} from "./ranking-seasons.js";
 import { randomUUID as uuid } from "node:crypto";
 import { expireReservations } from "./reservations.js";
 import { refreshCalendarBusy } from "./calendar-sync.js";
@@ -69,6 +70,7 @@ export async function workerTick(db) {
   catch (e) { console.error("Calendar availability:", e.message); }
   await db.transaction(async (q) => {
     await q.query("SELECT id FROM settings WHERE id=1 FOR UPDATE");
+    await openRankingSeason(q);
     await expireReservations(q);
     const settings = (await one(q, "SELECT data FROM settings WHERE id=1"))
       .data;

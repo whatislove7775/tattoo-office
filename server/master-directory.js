@@ -1,4 +1,4 @@
-import {rankingFacts,scoreMaster,applyPointsAdjustment} from "./ranking-points.js";
+import {rankingFacts,scoreMaster,applyPointsAdjustment,rankingRange} from "./ranking-points.js";
 import {ageFromBirthDate} from "./profile-age.js";
 import {readFile} from 'node:fs/promises';
 const catalog=JSON.parse(await readFile(new URL('./master-catalog.json',import.meta.url),'utf8'));
@@ -11,16 +11,27 @@ export function bookingContact(value) {
 }
 export function safeAvatar(value) {return typeof value==='string' && value.length<=90000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value)?value:'';}
 const localized=v=>typeof v==='object'?v?.ru||'':v||'';
-export async function masterDirectory(db,{period='all',includeInactive=false}={}) {
+export async function masterDirectory(db,{period='all',year,includeInactive=false}={}) {
+  const range=rankingRange(period,year);
   const [{rows:users},{rows:content},{rows:links},{rows:media}]=await Promise.all([
     db.query(`SELECT u.id,u.name,u.role,u.active,u.profile,u.username,
-      COUNT(b.id) FILTER (WHERE b.status IN ('confirmed','invoiced','completed') AND ($1='all' OR (b.starts_at >= (date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'Europe/Moscow') AND b.starts_at < ((date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') + interval '1 month') AT TIME ZONE 'Europe/Moscow'))))::int AS bookings,
-      COUNT(b.id) FILTER (WHERE b.status='completed' AND ($1='all' OR (b.starts_at >= (date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') AT TIME ZONE 'Europe/Moscow') AND b.starts_at < ((date_trunc('month',now() AT TIME ZONE 'Europe/Moscow') + interval '1 month') AT TIME ZONE 'Europe/Moscow'))))::int AS completed
-      FROM users u LEFT JOIN bookings b ON b.user_id=u.id WHERE u.deleted_at IS NULL AND u.account_type='master' AND u.role IN ('guest','resident') GROUP BY u.id`,[period]),
+      COUNT(b.id) FILTER (WHERE b.status IN ('confirmed','invoiced','completed') AND ($1::timestamptz IS NULL OR (b.starts_at >= $1 AND b.starts_at < $2)))::int AS bookings,
+      COUNT(b.id) FILTER (WHERE b.status='completed' AND ($1::timestamptz IS NULL OR (b.starts_at >= $1 AND b.starts_at < $2)))::int AS completed
+      FROM users u LEFT JOIN bookings b ON b.user_id=u.id WHERE u.deleted_at IS NULL AND u.account_type='master' AND u.role IN ('guest','resident') GROUP BY u.id`,range),
     db.query("SELECT id,data FROM content WHERE id LIKE 'master-%'"),db.query('SELECT * FROM master_links'),
     db.query('SELECT id,user_id,kind,caption,position FROM master_media ORDER BY position,created_at,id')
   ]);
-  const points=await rankingFacts(db,{period});
+  const points=await rankingFacts(db,{period,year});
+  // A lifetime offset can contain demo seeds. Only dated, human corrections enter a season.
+  const corrections=new Map();
+  if(period==='year'){
+    const {rows}=await db.query(`SELECT details->>'id' AS id,
+      SUM((details->>'score')::int-(details->>'previous')::int) AS delta FROM audit
+      WHERE action='master.points.update' AND actor IS NOT NULL
+      AND id::text NOT LIKE '00000000-0000-4000-8008-%' AND created_at >= $1 AND created_at < $2
+      GROUP BY details->>'id'`,range);
+    for(const row of rows)corrections.set(row.id,Number(row.delta));
+  }
   const byUser=new Map(users.map(u=>[u.id,u])),byContent=new Map(content.map(c=>[c.id,c.data]));
   const gallery=(id,kind)=>media.filter(m=>m.user_id===id&&m.kind===kind).map(m=>({id:m.id,src:'/api/media/'+m.id,thumb:'/api/media/'+m.id+'?size=thumb',cap:m.caption}));
   const fromUser=(u,base={})=>{
@@ -37,7 +48,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
       completed:u.completed,bookings:u.bookings,score:0,
       portfolio:p.galleryManaged?gallery(u.id,'portfolio'):base.portfolio||[],
       drafts:p.galleryManaged?gallery(u.id,'drafts'):base.drafts||[]};
-    return applyPointsAdjustment({...master,...scoreMaster(master,points.byUser.get(u.id)||{},points.rules)},p.adminPointsAdjustment);
+    return applyPointsAdjustment({...master,...scoreMaster(master,points.byUser.get(u.id)||{},points.rules)},period==='year'?(corrections.get(master.id)||0)+(master.id===u.id?0:corrections.get(u.id)||0):p.adminPointsAdjustment);
   };
   const linked=new Set(links.map(l=>l.user_id));
   const result=catalog.map(m=>{
@@ -48,7 +59,7 @@ export async function masterDirectory(db,{period='all',includeInactive=false}={}
       bookingLink:bookingContact(c.bookingLink),completed:0,bookings:0,score:0,
       portfolio:(c.portfolio?.length?c.portfolio.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.portfolio.map(w=>({...w,cap:''}))),
       drafts:(c.drafts?.length?c.drafts.map(f=>({src:'assets/works/'+f+'.png',cap:''})):m.drafts.map(w=>({...w,cap:''})))};
-    const link=links.find(l=>l.master_id===m.id);return link?(byUser.has(link.user_id)?fromUser(byUser.get(link.user_id),base):{...base,active:false}):applyPointsAdjustment(base,c.pointsAdjustment);
+    const link=links.find(l=>l.master_id===m.id);return link?(byUser.has(link.user_id)?fromUser(byUser.get(link.user_id),base):{...base,active:false}):applyPointsAdjustment(base,period==='year'?corrections.get(base.id):c.pointsAdjustment);
   });
   return [...result,...users.filter(u=>!linked.has(u.id)).map(u=>fromUser(u,{featured:true}))].filter(m=>includeInactive||m.active).map(({active,mainChoice,featuredFlag,...m})=>m);
 }

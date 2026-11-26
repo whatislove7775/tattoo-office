@@ -3086,3 +3086,9 @@ img {-webkit-user-drag:none;}
   font-weight: 500;
 }
 .booking-shop .extra:last-child {border-bottom: 0;}
+
+.ranking-prize-note {margin:0;color:var(--ink);font-size:14px;line-height:1.45;}
+.ranking-prize-note button {display:inline;padding:0;border:0;background:none;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:.15em;cursor:pointer;}
+.ranking-prizes-list {list-style:none;padding:0;}
+.ranking-prizes-list li {display:grid;grid-template-columns:auto 1fr;gap:1em;padding:.7em 0;border-bottom:1px solid var(--panel-edge);}
+.ranking-prizes-list span {overflow-wrap:anywhere;}

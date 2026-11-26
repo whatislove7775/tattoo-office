@@ -1,3 +1,4 @@
+import {currentRankingSeason,openRankingSeason} from "./ranking-seasons.js";
 import {POINT_RULES,pointRules,rankingFacts,bookingEarns} from "./ranking-points.js";
 import {studioRules,studioRulesVersion} from "./studio-rules.js";
 import { updateStudioWorkspaces } from "./studio-workspaces.js";
@@ -328,6 +329,7 @@ export async function createApp(db) {
     const s = await settings();
     res.json({
       settings: s,
+      prizeFund: await currentRankingSeason(db),
       resources: (
         await db.query("SELECT id,name,active,city,photo FROM resources WHERE NOT deleted ORDER BY name")
       ).rows,
@@ -357,7 +359,13 @@ export async function createApp(db) {
   });
   app.get("/api/ranking", async (req,res) => {
     res.set("Cache-Control", "no-store");
-    if(req.query.period && !["all","month"].includes(req.query.period))fail("Выберите период рейтинга");
+    if(req.query.period && !["all","month","year"].includes(req.query.period))fail("Выберите период рейтинга");
+    if(req.query.period==="year"){
+      const prizeFund=await currentRankingSeason(db);
+      const ranking=await masterRanking(db,{period:"year",year:prizeFund.year});
+      const previous=(await db.query("SELECT year,prizes,examples,winners FROM ranking_seasons WHERE winners IS NOT NULL ORDER BY year DESC LIMIT 1")).rows[0];
+      return res.json({...ranking,prizeFund,previous});
+    }
     res.json(await masterRanking(db,{period:req.query.period||"all"}));
   });
   app.get("/api/me/ranking", auth, async (req,res) => {
@@ -1102,6 +1110,17 @@ export async function createApp(db) {
       if (req.body.replyTemplates !== undefined) {
         if (!Array.isArray(req.body.replyTemplates) || req.body.replyTemplates.length > 20) fail("До 20 шаблонов ответов");
         s.replyTemplates = req.body.replyTemplates.map((t) => String(t).trim().slice(0, 1000)).filter(Boolean);
+      }
+      if (req.body.prizeFund !== undefined) {
+        const fund=req.body.prizeFund, season=await openRankingSeason(q);
+        if(fund?.year!==season.year) fail("Год зачёта изменился. Обновите настройки.",409);
+        if(!Array.isArray(fund.prizes)||fund.prizes.length!==3||fund.prizes.some(p=>typeof p!=="string"||p.trim().length>200)||typeof fund.examples!=="boolean")
+          fail("Для каждого из трёх мест укажите приз длиной до 200 символов");
+        const prizes=fund.prizes.map(p=>p.trim());
+        if(JSON.stringify(prizes)!==JSON.stringify(season.prizes)||fund.examples!==season.examples){
+          await q.query("UPDATE ranking_seasons SET prizes=$2,examples=$3 WHERE year=$1",[season.year,JSON.stringify(prizes),fund.examples]);
+          await audit(q,req.user.id,"ranking.prizes.update",{year:season.year,prizes,examples:fund.examples});
+        }
       }
       if (req.body.rankingRules !== undefined) {
         if (!req.body.rankingRules || typeof req.body.rankingRules !== "object" || Array.isArray(req.body.rankingRules)) fail("Проверьте правила рейтинга");

@@ -105,3 +105,5 @@ CREATE TABLE IF NOT EXISTS master_about_photos(
   image text NOT NULL, thumbnail text NOT NULL
 );
 CREATE INDEX IF NOT EXISTS master_about_photos_owner ON master_about_photos(user_id);
+
+CREATE TABLE IF NOT EXISTS ranking_seasons(year integer PRIMARY KEY, prizes jsonb NOT NULL, examples boolean NOT NULL, winners jsonb);
