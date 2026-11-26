@@ -1735,7 +1735,7 @@ body:is([data-page="ranking"],[data-page="profile"]) .window-head .back {flex-sh
 @media (max-width:700px) {
  body[data-page="ranking"] .office-feature .window>.window-head {display:grid;grid-template-columns:16px minmax(0,1fr);width:46%;gap:8px;align-items:start;}
  body[data-page="ranking"] .window-head h1 {font-size:15px;line-height:1.25;white-space:normal;overflow:visible;}
- body[data-page="ranking"] .window-head .back {grid-column:1/-1;justify-self:start;margin:4px 0 0;}
+ body[data-page="ranking"] .office-feature .window-head .back {display:none;}
 }
 
 /* Image geometry belongs to the card, independent of source pixel dimensions. */
@@ -3087,6 +3087,20 @@ img {-webkit-user-drag:none;}
 }
 .booking-shop .extra:last-child {border-bottom: 0;}
 
+.ranking-tools .ranking-mobile-back {display:none;}
+@media (max-width:700px) {
+  .office-feature .ranking-tools {grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+  .ranking-tools>.field:first-child {grid-column:1;}
+  .office-feature .ranking-tools #ranking-search {min-width:0;padding-right:30px;background-position:right 8px center;background-size:16px;}
+  .ranking-tools .ranking-mobile-back {
+    display:inline-flex;align-items:center;justify-content:center;align-self:stretch;gap:4px;
+    padding:0 10px;border:1px solid var(--panel-edge);border-radius:18px;
+    background:var(--control-fill);box-shadow:var(--control-shadow);color:var(--ink-2);
+    font-size:14px;text-decoration:none;white-space:nowrap;
+  }
+  .ranking-mobile-back .ui-icon {width:14px;height:14px;margin:0;}
+  .ranking-tools .ranking-prize-note {grid-column:1/-1;}
+}
 .ranking-prize-note {margin:0;color:var(--ink);font-size:14px;line-height:1.45;}
 .ranking-prize-note button {display:inline;padding:0;border:0;background:none;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:.15em;cursor:pointer;}
 .ranking-prizes-list {list-style:none;padding:0;}
